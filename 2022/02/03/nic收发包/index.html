@@ -133,7 +133,7 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>cpu一直处于忙轮询状态，调用驱动程序检查设备状态</p>
 </blockquote>
-<p><img src="/.io//roundrobin_io.png"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/roundrobin_io.png"></p>
 <h3 id="中断I-x2F-O"><a href="#中断I-x2F-O" class="headerlink" title="中断I&#x2F;O"></a>中断I&#x2F;O</h3><ol>
 <li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据；</li>
 <li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里；</li>
@@ -146,8 +146,8 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。</p>
 </blockquote>
-<p><img src="/.io//irq_io.png"></p>
-<p><img src="/.io//irq_io.webp"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.png"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.webp"></p>
 <h3 id="DMA-I-x2F-O"><a href="#DMA-I-x2F-O" class="headerlink" title="DMA I&#x2F;O"></a>DMA I&#x2F;O</h3><p>在上述中断I&#x2F;O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。</p>
 <p>DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。</p>
 <ol>
@@ -165,8 +165,8 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。</p>
 </blockquote>
-<p><img src="/.io//dma_io.png"></p>
-<p><img src="/.io//dma_io.webp"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.png"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.webp"></p>
 <h3 id="napi-I-x2F-O"><a href="#napi-I-x2F-O" class="headerlink" title="napi I&#x2F;O"></a>napi I&#x2F;O</h3><p>napi并不是基于硬件实现的，实际上napi是一种新的linux网卡数据处理API，简单来说其杂合中断和轮询的技术。</p>
 <p>中断的好处是响应及时，如果数据量较小，则不会占用太多的CPU时间；缺点是数据量大时，会产生过多中断，频繁上下文切换，同时中断也会大量消耗大量的CPU时间。</p>
 <p>轮询方式与中断方式相反，它更适合处理大量数据，因为每次轮询不需要消耗过多的CPU时间；缺点是即使只接收很少数据或不接收数据时，也要占用CPU时间。</p>

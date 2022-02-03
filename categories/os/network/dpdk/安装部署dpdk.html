@@ -131,17 +131,17 @@ var _hmt = _hmt || [];
 
 	  <h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
 <h2 id="UMA架构"><a href="#UMA架构" class="headerlink" title="UMA架构"></a>UMA架构</h2><p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
-<p><img src="/categories/os/network/dpdk/os/network/dpdk/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2dpdk/uma.webp"></p>
+<p><img src="/categories/os/network/dpdk/uma.webp"></p>
 <p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
 <h2 id="NUMA架构"><a href="#NUMA架构" class="headerlink" title="NUMA架构"></a>NUMA架构</h2><p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
-<p><img src="/categories/os/network/dpdk/os/network/dpdk/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2dpdk/numa.webp"></p>
+<p><img src="/categories/os/network/dpdk/numa.webp"></p>
 <p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote&#x2F;local）之别，而且实验分析来看，这个差别非常明显。</p>
 <h2 id="查看架构"><a href="#查看架构" class="headerlink" title="查看架构"></a>查看架构</h2><p>可以通过numactl查看或者通过查看cpu设备信息。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@GiddyPoet ~]# numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</span><br><span class="line">node 0 size: 65189 MB</span><br><span class="line">node 0 free: 56946 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0 </span><br><span class="line">  0:  10 </span><br><span class="line"></span><br><span class="line">[root@GiddyPoet node]# ls /sys/devices/system/node/</span><br><span class="line">has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent</span><br></pre></td></tr></table></figure>
 
 <p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
 <h2 id="pps算法（包转发率）"><a href="#pps算法（包转发率）" class="headerlink" title="pps算法（包转发率）"></a>pps算法（包转发率）</h2><p>pps: package per sesond</p>
-<p><img src="/categories/os/network/dpdk/os/network/dpdk/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2dpdk/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
+<p><img src="/categories/os/network/dpdk/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
 <p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
 <p>一个最短以太帧实际长度为：<br>$(12+7+1+6+6+2+46+4)*8&#x3D;672bit$</p>
 <p>通常按照万兆光计算下64个字节的包转发率。</p>
@@ -156,7 +156,7 @@ var _hmt = _hmt || [];
 
 <hr>
 <h1 id="虚拟机环境配置"><a href="#虚拟机环境配置" class="headerlink" title="虚拟机环境配置"></a>虚拟机环境配置</h1><p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
-<p><img src="/categories/os/network/dpdk/os/network/dpdk/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2dpdk/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg"></p>
+<p><img src="/categories/os/network/dpdk/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg"></p>
 <blockquote>
 <p>注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。</p>
 </blockquote>
