@@ -250,17 +250,17 @@ var _hmt = _hmt || [];
 	
 		<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
 <h2 id="UMA架构"><a href="#UMA架构" class="headerlink" title="UMA架构"></a>UMA架构</h2><p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp"></p>
+<p><img src="/.io//uma.webp"></p>
 <p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
 <h2 id="NUMA架构"><a href="#NUMA架构" class="headerlink" title="NUMA架构"></a>NUMA架构</h2><p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp"></p>
+<p><img src="/.io//numa.webp"></p>
 <p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote&#x2F;local）之别，而且实验分析来看，这个差别非常明显。</p>
 <h2 id="查看架构"><a href="#查看架构" class="headerlink" title="查看架构"></a>查看架构</h2><p>可以通过numactl查看或者通过查看cpu设备信息。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@GiddyPoet ~]# numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</span><br><span class="line">node 0 size: 65189 MB</span><br><span class="line">node 0 free: 56946 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0 </span><br><span class="line">  0:  10 </span><br><span class="line"></span><br><span class="line">[root@GiddyPoet node]# ls /sys/devices/system/node/</span><br><span class="line">has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent</span><br></pre></td></tr></table></figure>
 
 <p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
 <h2 id="pps算法（包转发率）"><a href="#pps算法（包转发率）" class="headerlink" title="pps算法（包转发率）"></a>pps算法（包转发率）</h2><p>pps: package per sesond</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
+<p><img src="/.io//%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
 <p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
 <p>一个最短以太帧实际长度为：<br>$(12+7+1+6+6+2+46+4)*8&#x3D;672bit$</p>
 <p>通常按照万兆光计算下64个字节的包转发率。</p>
@@ -275,7 +275,7 @@ var _hmt = _hmt || [];
 
 <hr>
 <h1 id="虚拟机环境配置"><a href="#虚拟机环境配置" class="headerlink" title="虚拟机环境配置"></a>虚拟机环境配置</h1><p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
-<img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg" class>
+<img src="/.io//02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg" class>
 
 
 <blockquote>
@@ -327,7 +327,7 @@ var _hmt = _hmt || [];
 <h2 id="tun-x2F-tap"><a href="#tun-x2F-tap" class="headerlink" title="tun&#x2F;tap"></a>tun&#x2F;tap</h2><p>tap&#x2F;tun是linux内核实现的一对虚拟网络设备，TAP工作在二层，tun工作在三层，linux内核通过TAP&#x2F;TUN设备向绑定该设备的用户空间应用发送数据。反之，用户空间也可以像操作网络硬件设备那样，通过TAP&#x2F;TUN设备发送数据。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if_tun.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">create_tun</span><span class="params">(<span class="keyword">char</span> *devname,<span class="keyword">int</span> flags)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ifreq</span> <span class="title">ifr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((fd = open(<span class="string">&quot;/dev/net/tun&quot;</span>,O_RDWR))&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;open&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;ifr,<span class="number">0</span>,<span class="keyword">sizeof</span>(ifr));</span><br><span class="line">    <span class="comment">// IFF_NO_PI，package info，tun/tap会默认在网卡包包信息，信息内容如下</span></span><br><span class="line">    <span class="comment">// struct tun_pi &#123;</span></span><br><span class="line">    <span class="comment">//     unsigned short flags;</span></span><br><span class="line">    <span class="comment">//     unsigned short proto;</span></span><br><span class="line">    <span class="comment">// &#125;;</span></span><br><span class="line">    ifr.ifr_flags = flags;</span><br><span class="line">    <span class="built_in">strcpy</span>(ifr.ifr_name,devname); </span><br><span class="line">    <span class="keyword">if</span>(ioctl(fd,TUNSETIFF,(<span class="keyword">void</span>*)&amp;ifr)&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;ioctl&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/tun_tap%E4%BC%A0%E8%BE%93.jpg"></p>
+<p><img src="/.io//tun_tap%E4%BC%A0%E8%BE%93.jpg"></p>
 <h2 id="Linux-Bridge"><a href="#Linux-Bridge" class="headerlink" title="Linux Bridge"></a>Linux Bridge</h2><p>Linux Bridge（网桥）是工作在二层的虚拟网络设备，功能类似于物理的交换机。</p>
 <p>对于普通的网络设备来说，只有两端，从一端进来的数据会从另一端出去，如物理网卡从外面物理<br>网络收到的数据会转发给内核协议栈，而从内核协议栈过来的数据会转发到外面的物理网络中。而<br>Bridge 不同，Bridge 有多个端口，数据可以从任何端口进来，进来之后从哪个端口出去要看MAC地址，<br>和物理交换机的原理类似。</p>
 <p>Bridge有以下特定：</p>
@@ -342,7 +342,7 @@ var _hmt = _hmt || [];
 </blockquote>
 <h3 id="STP协议"><a href="#STP协议" class="headerlink" title="STP协议"></a>STP协议</h3><p>STP（Spanning Tree Protocol）生成树协议，是运行在交换机上的二层破环协议，环路会导致广播风暴、MAC地址表震荡(交换机在学习mac地址时产生广播风暴导致的)等后果，STP的主要目的就是确保在网络中存在冗余路径时，不会产生环路。</p>
 <h3 id="Bridge搭建虚拟化环境"><a href="#Bridge搭建虚拟化环境" class="headerlink" title="Bridge搭建虚拟化环境"></a>Bridge搭建虚拟化环境</h3><p>Bridge可以通过和<code>veth</code>、<code>veth-pair</code>实现组网。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/bridge_veth.jpg"></p>
+<p><img src="/.io//bridge_veth.jpg"></p>
 
 	
 	</div>
@@ -374,7 +374,7 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>cpu一直处于忙轮询状态，调用驱动程序检查设备状态</p>
 </blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/roundrobin_io.png"></p>
+<p><img src="/.io//roundrobin_io.png"></p>
 <h3 id="中断I-x2F-O"><a href="#中断I-x2F-O" class="headerlink" title="中断I&#x2F;O"></a>中断I&#x2F;O</h3><ol>
 <li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据；</li>
 <li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里；</li>
@@ -387,8 +387,8 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。</p>
 </blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.png"></p>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.webp"></p>
+<p><img src="/.io//irq_io.png"></p>
+<p><img src="/.io//irq_io.webp"></p>
 <h3 id="DMA-I-x2F-O"><a href="#DMA-I-x2F-O" class="headerlink" title="DMA I&#x2F;O"></a>DMA I&#x2F;O</h3><p>在上述中断I&#x2F;O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。</p>
 <p>DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。</p>
 <ol>
@@ -406,8 +406,8 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。</p>
 </blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.png"></p>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.webp"></p>
+<p><img src="/.io//dma_io.png"></p>
+<p><img src="/.io//dma_io.webp"></p>
 <h3 id="napi-I-x2F-O"><a href="#napi-I-x2F-O" class="headerlink" title="napi I&#x2F;O"></a>napi I&#x2F;O</h3><p>napi并不是基于硬件实现的，实际上napi是一种新的linux网卡数据处理API，简单来说其杂合中断和轮询的技术。</p>
 <p>中断的好处是响应及时，如果数据量较小，则不会占用太多的CPU时间；缺点是数据量大时，会产生过多中断，频繁上下文切换，同时中断也会大量消耗大量的CPU时间。</p>
 <p>轮询方式与中断方式相反，它更适合处理大量数据，因为每次轮询不需要消耗过多的CPU时间；缺点是即使只接收很少数据或不接收数据时，也要占用CPU时间。</p>
@@ -469,11 +469,11 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
+			<li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
+		
 			<li><a href="/tags/memory/">memory<span>1</span></a></li>
 		
 			<li><a href="/tags/network/">network<span>3</span></a></li>
-		
-			<li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
 		
 		 
 		</ul>
