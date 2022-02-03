@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>GiddyPoet</title>
+  <title>一次内存异常问题排查经历 | GiddyPoet</title>
   <meta name="author" content="GiddyPoet">
   
   <meta name="description" content="内存异常现象在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。
@@ -16,7 +16,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  
+  <meta property="og:title" content="一次内存异常问题排查经历"/>
   <meta property="og:site_name" content="GiddyPoet"/>
 
   
@@ -110,33 +110,28 @@ var _hmt = _hmt || [];
   <div class="container">
   	<div class="content">
     	 
+
+
 	
 		<div class="page-header">
-			<h1> </h1>
+			<h1> 一次内存异常问题排查经历</h1>
 		</div>
 	
 
 
 
-<div class="row page">
+<div class="row post">
 	<!-- cols -->
 	
-	<div class="col-md-12">
+	<div id="top_meta"></div>
+	<div class="col-md-9">
 	
 
 	<!-- content -->
 	<div class="mypage">		
 	  		
 
-	  <!--
- * @Author: GiddyPoet
- * @Date: 2021-11-22 10:14:09
- * @LastEditTime: 2021-11-22 11:41:19
- * @Description: 
--->
-
-
-<h2 id="内存异常现象"><a href="#内存异常现象" class="headerlink" title="内存异常现象"></a>内存异常现象</h2><p>在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。</p>
+	  <h2 id="内存异常现象"><a href="#内存异常现象" class="headerlink" title="内存异常现象"></a>内存异常现象</h2><p>在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。</p>
 <h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="使用free-mh查看系统内存占用情况"><a href="#使用free-mh查看系统内存占用情况" class="headerlink" title="使用free -mh查看系统内存占用情况"></a>使用<code>free -mh</code>查看系统内存占用情况</h3><p>发现buff&#x2F;cache占用大量的内存</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存</span></span><br><span class="line">[root@TAC ~]# free -mh</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            62G        6.8G         8G         80M        49G         8G</span><br><span class="line">Swap:           31G          0B         31G</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
@@ -216,6 +211,17 @@ var _hmt = _hmt || [];
 	<div class="pagination">
 
     
+    
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+    
+
+    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+    
+    <a href="/2022/02/03/dpdk安装部署/" type="button" class="btn btn-default ">Next<i
+                class="fa fa-arrow-circle-o-right"></i></a>
+    
+
+    
 </div>
 
     </center>
@@ -223,9 +229,62 @@ var _hmt = _hmt || [];
 	
 	<!-- comment -->
 	
+<section id="comment">
+    <h2 class="title">Comments</h2>
+
+    
+</section>
+
 
 	</div> <!-- col-md-9/col-md-12 -->
 		
+	
+	<div id="side_meta">
+		<div class="col-md-3" id="post_meta"> 
+
+	<!-- date -->
+	
+	<div class="meta-widget">
+	<i class="fa fa-clock-o"></i>
+	2022-02-03 
+	</div>
+	
+
+	<!-- categories -->
+    
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#categorys"><i class="fa fa-folder"></i></a>	
+    <ul id="categorys" class="tag_box list-unstyled collapse in">
+          
+  <li>
+    <li><a href="/categories/os/">os<span>4</span></a></li>
+  </li>
+
+    </ul>
+	</div>
+	
+
+	<!-- tags -->
+	
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
+    <ul id="tags" class="tag_box list-unstyled collapse in">	  
+	    
+  <li><a href="/tags/memory/">memory<span>1</span></a></li>
+    </ul>
+	</div>
+		
+
+	<!-- toc -->
+	<div class="meta-widget">
+	
+	</div>
+	
+    <hr>
+	
+</div><!-- col-md-3 -->
+
+	</div>
 		
 
 </div><!-- row -->

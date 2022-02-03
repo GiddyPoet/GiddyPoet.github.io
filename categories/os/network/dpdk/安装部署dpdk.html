@@ -1,0 +1,239 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  
+  <title>安装部署dpdk | GiddyPoet</title>
+  <meta name="author" content="GiddyPoet">
+  
+  <meta name="description" content="基础知识DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
+UMA架构在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
+
+这样的架构称为UMA(Uniform Memory Access)，直译为“统">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="安装部署dpdk"/>
+  <meta property="og:site_name" content="GiddyPoet"/>
+
+  
+    <meta property="og:image" content=""/>
+  
+
+  
+  
+    <link href="/favicon.png" rel="icon">
+  
+  
+  <link rel="stylesheet" href="/css/bootstrap.min.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/font-awesome.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/responsive.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/highlight.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/google-fonts.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
+  <script src="/js/jquery-2.0.3.min.js"></script>
+
+  <!-- analytics -->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-70812759-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?cb5448498d7169c668b07c2b255d62c1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+ <body>  
+  <nav id="main-nav" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+      <button type="button" class="navbar-header navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		<span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+	  <a class="navbar-brand" href="/">GiddyPoet</a>
+      <div class="collapse navbar-collapse nav-menu">
+		<ul class="nav navbar-nav">
+		  
+		  <li>
+			<a href="/archives" title="All the articles.">
+			  <i class=""></i>Archives
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/categories" title="All the categories.">
+			  <i class=""></i>Categories
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/tags" title="All the tags.">
+			  <i class=""></i>Tags
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/about" title="About me.">
+			  <i class=""></i>About
+			</a>
+		  </li>
+		  
+		</ul>
+      </div>
+    </div> <!-- container -->
+</nav>
+<div class="clearfix"></div>
+
+  <div class="container">
+  	<div class="content">
+    	 
+	
+		<div class="page-header">
+			<h1> 安装部署dpdk</h1>
+		</div>
+	
+
+
+
+<div class="row page">
+	<!-- cols -->
+	
+	<div class="col-md-12">
+	
+
+	<!-- content -->
+	<div class="mypage">		
+	  		
+
+	  <h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
+<h2 id="UMA架构"><a href="#UMA架构" class="headerlink" title="UMA架构"></a>UMA架构</h2><p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
+<p><img src="/categories/os/network/dpdk/uma.webp"></p>
+<p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
+<h2 id="NUMA架构"><a href="#NUMA架构" class="headerlink" title="NUMA架构"></a>NUMA架构</h2><p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
+<p><img src="/categories/os/network/dpdk/numa.webp"></p>
+<p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote&#x2F;local）之别，而且实验分析来看，这个差别非常明显。</p>
+<h2 id="查看架构"><a href="#查看架构" class="headerlink" title="查看架构"></a>查看架构</h2><p>可以通过numactl查看或者通过查看cpu设备信息。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@GiddyPoet ~]# numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</span><br><span class="line">node 0 size: 65189 MB</span><br><span class="line">node 0 free: 56946 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0 </span><br><span class="line">  0:  10 </span><br><span class="line"></span><br><span class="line">[root@GiddyPoet node]# ls /sys/devices/system/node/</span><br><span class="line">has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent</span><br></pre></td></tr></table></figure>
+
+<p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
+<h2 id="pps算法（包转发率）"><a href="#pps算法（包转发率）" class="headerlink" title="pps算法（包转发率）"></a>pps算法（包转发率）</h2><p>pps: package per sesond</p>
+<p><img src="/categories/os/network/dpdk/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
+<p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
+<p>一个最短以太帧实际长度为：<br>$(12+7+1+6+6+2+46+4)*8&#x3D;672bit$</p>
+<p>通常按照万兆光计算下64个字节的包转发率。</p>
+<p>$10*1000&#x2F;672≈14.88Mpps$</p>
+<h2 id="UIO-用户空间IO"><a href="#UIO-用户空间IO" class="headerlink" title="UIO:用户空间IO"></a>UIO:用户空间IO</h2><p>小的内核模块，用于将设备内存映射到用户空间，并注册中断。<br>uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe uio_pci_generic 加载。<br>但是其不支持虚拟功能，DPDK提供一个替代模块igb_uio模块。</p>
+<h2 id="VFIO-后续补充"><a href="#VFIO-后续补充" class="headerlink" title="VFIO(后续补充)"></a>VFIO(后续补充)</h2><p>使用vfio不仅需要驱动支持，内核和bios都要支持，并配置IO虚拟化（如Intel VT-d)</p>
+<h2 id="大页内存"><a href="#大页内存" class="headerlink" title="大页内存"></a>大页内存</h2><p>通过grub进行修改</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 修改/etc/default/grub，在GRUB_CMDLINE_LINUX后新增大页内存配置，同时支持iommu，对于iommu</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 需要再虚拟机cpu里也做相应的修改</span></span><br><span class="line">default_hugepagesz=2m hugepagesz=2m hugepages=256 iommu=pt intel_iommu=on</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改后重新生成grub文件</span></span><br><span class="line">grub2-mkconfig -o /boot/grub2/grub.cfg</span><br></pre></td></tr></table></figure>
+
+<p>修改&#x2F;etc&#x2F;fstab开机挂载打页内存</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nodev /mnt/huge hugetlbfs defaults 0 0</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="虚拟机环境配置"><a href="#虚拟机环境配置" class="headerlink" title="虚拟机环境配置"></a>虚拟机环境配置</h1><p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
+<p><img src="/categories/os/network/dpdk/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg"></p>
+<blockquote>
+<p>注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。</p>
+</blockquote>
+<pre><code>修改igb_uio驱动检测方法：
+</code></pre>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> RTE_INTR_MODE_LEGACY:</span><br><span class="line">          <span class="comment">// 添加true，保证能通过检测</span></span><br><span class="line">          <span class="keyword">if</span> (pci_intx_mask_supported(udev-&gt;pdev)||<span class="literal">true</span>) &#123;                                             </span><br><span class="line">              dev_dbg(&amp;udev-&gt;pdev-&gt;dev, <span class="string">&quot;using INTX&quot;</span>);</span><br><span class="line">              udev-&gt;info.irq_flags = IRQF_SHARED | IRQF_NO_THREAD;</span><br><span class="line">              udev-&gt;info.irq = udev-&gt;pdev-&gt;irq;</span><br><span class="line">              udev-&gt;mode = RTE_INTR_MODE_LEGACY;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">          &#125;   </span><br></pre></td></tr></table></figure>
+
+<h1 id="编译安装dpdk"><a href="#编译安装dpdk" class="headerlink" title="编译安装dpdk"></a>编译安装dpdk</h1><p>dpdk的版本选择很重要，由于centos通常是趋于稳定版的版本，所以编译器等环境都是较为老旧的版本，根据官方的相关建议，选用dpdk-18.11.11-stable版本做为测试。</p>
+<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">export RTE_SDK=/root/dpdk-stable-18.11.11/</span><br><span class="line">export RTE_TARGET=x86_64-native-linuxapp-gcc</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 如果需要对相关代码进行调试可以添加</span></span><br><span class="line">export RTE_CFLAGS=&quot;-O0 -g&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="编译dpdk"><a href="#编译dpdk" class="headerlink" title="编译dpdk"></a>编译dpdk</h2><p>Makefile层层嵌套，入口为<code>GNUmakefile</code>，指定平台为<code>x86_64-native-linuxapp-gcc</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在dpdk-stable-18.11.11/config中实现</span></span><br><span class="line">make install T=x86_64-native-linuxapp-gcc</span><br></pre></td></tr></table></figure>
+
+<p>编译后的目录结构</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet x86_64-native-linuxapp-gcc]# tree -aL 1</span><br><span class="line">.</span><br><span class="line">├── app  # 测试用二进制文件</span><br><span class="line">├── build #</span><br><span class="line">├── .config # config文件</span><br><span class="line">├── .config.orig</span><br><span class="line">├── include # 头文件</span><br><span class="line">├── kmod # 驱动文件</span><br><span class="line">├── lib # 库文件</span><br><span class="line">└── Makefile</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置dpdk"><a href="#配置dpdk" class="headerlink" title="配置dpdk"></a>配置dpdk</h2><h3 id="uio驱动"><a href="#uio驱动" class="headerlink" title="uio驱动"></a>uio驱动</h3><p>内核自带了<code>uio_pci_generic</code>驱动可以实现uio功能，dpdk提供了一个<code>igb_uio</code>模块，对于不支持传统中断的设置，例如虚拟功能设备，必须使用<code>igb_uio</code>来替代<code>uio_pci_generi</code>模块。</p>
+<h2 id="常见问题解决"><a href="#常见问题解决" class="headerlink" title="常见问题解决"></a>常见问题解决</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span></span><br><span class="line">yum install numactl-devel</span><br></pre></td></tr></table></figure>
+	  
+	</div>
+
+	<div>
+  	<center>
+	<div class="pagination">
+
+    
+</div>
+
+    </center>
+	</div>
+	
+	<!-- comment -->
+	
+
+	</div> <!-- col-md-9/col-md-12 -->
+		
+		
+
+</div><!-- row -->
+
+
+
+	</div>
+  </div>
+  <div class="container-narrow">
+  <footer> <p>
+  &copy; 2022 GiddyPoet
+  
+      with help from <a href="http://hexo.io/" target="_blank">Hexo</a>,<a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind</a>,<a href="http://getbootstrap.com/" target="_blank">Twitter Bootstrap</a> and <a href="http://getbootstrap.com/" target="_blank">BOOTSTRA.386</a>. 
+     <br> Theme by <a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind.386</a>.    
+</p>
+ </footer>
+</div> <!-- container-narrow -->
+  
+
+
+  
+<a id="gotop" href="#">   
+  <span>⬆︎TOP</span>
+</a>
+
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/search.js"></script> 
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+
+
+</body>
+   </html>

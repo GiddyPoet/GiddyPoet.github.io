@@ -135,7 +135,7 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2022/02/03/index/" >GiddyPoet</a>
+			<a href="/2022/02/03/一次内存异常问题排查经历/" >一次内存异常问题排查经历</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -149,10 +149,275 @@ var _hmt = _hmt || [];
   <div class="row">
 	
 	
-		
+		<h2 id="内存异常现象"><a href="#内存异常现象" class="headerlink" title="内存异常现象"></a>内存异常现象</h2><p>在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。</p>
+<h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="使用free-mh查看系统内存占用情况"><a href="#使用free-mh查看系统内存占用情况" class="headerlink" title="使用free -mh查看系统内存占用情况"></a>使用<code>free -mh</code>查看系统内存占用情况</h3><p>发现buff&#x2F;cache占用大量的内存</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存</span></span><br><span class="line">[root@TAC ~]# free -mh</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            62G        6.8G         8G         80M        49G         8G</span><br><span class="line">Swap:           31G          0B         31G</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>大致介绍一下<code>free</code>命令输出的含义</p>
+<ul>
+<li>mem 内存使用情况<ul>
+<li>total 总共</li>
+<li>used 已用</li>
+<li>free 空闲</li>
+<li>shared 共享使用 tmpfs所用的内存</li>
+<li>buff&#x2F;cache <ul>
+<li>buff 内核缓存区所用内存</li>
+<li>cache 页面缓存和slab使用的内存（kmalloc）</li>
+</ul>
+</li>
+<li>available 预估启动新进程可用内存，不包含交换空间</li>
+</ul>
+</li>
+<li>swap 交换空间使用情况<ul>
+<li>total</li>
+<li>used</li>
+<li>free</li>
+</ul>
+</li>
+</ul>
+<h4 id="swap"><a href="#swap" class="headerlink" title="swap"></a>swap</h4><p>swap space 是磁盘上的一块区域，可以是一个分区，也可以是一个文件。所以具体的实现可以是 swap 分区也可以是 swap 文件。当系统物理内存吃紧时，Linux 会将内存中不常访问的数据保存到 swap 上，这样系统就有更多的物理内存为各个进程服务，而当系统需要访问 swap 上存储的内容时，再将 swap 上的数据加载到内存中，这就是常说的换出和换入。交换空间可以在一定程度上缓解内存不足的情况，但是它需要读写磁盘数据，所以性能不是很高。</p>
+<p>现在的机器一般都不太缺内存，如果系统默认还是使用了 swap 是不是会拖累系统的性能？理论上是的，但实际上可能性并不是很大。并且内核提供了一个叫做 swappiness 的参数，用于配置需要将内存中不常用的数据移到 swap 中去的紧迫程度。这个参数的取值范围是 0～100，0 告诉内核尽可能的不要将内存数据移到 swap 中，也即只有在迫不得已的情况下才这么做，而 100 告诉内核只要有可能，尽量的将内存中不常访问的数据移到 swap 中。</p>
+<p>内核参数位置<code>/proc/sys/vm/swappiness</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC ~]# cat /proc/sys/vm/swappiness </span><br><span class="line">60</span><br></pre></td></tr></table></figure>
+
+<h4 id="shared"><a href="#shared" class="headerlink" title="shared"></a>shared</h4><p>主要是只tmpfs系统所占用的内存，该文件系统是挂载到内存当中的</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 如下tmpfs所占用的的空间，该空间在重启后数据将丢失，内存文件系统</span></span><br><span class="line">[root@TAC tmpfiles.d]# df -h</span><br><span class="line">Filesystem      Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/sda4       3.6T   84G  3.3T   3% /</span><br><span class="line">devtmpfs         32G     0   32G   0% /dev</span><br><span class="line">tmpfs            32G   28K   32G   1% /dev/shm</span><br><span class="line">tmpfs            32G   58M   32G   1% /run</span><br><span class="line">tmpfs            32G     0   32G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2       976M  145M  765M  16% /boot</span><br><span class="line">tmpfs           6.3G     0  6.3G   0% /run/user/0</span><br></pre></td></tr></table></figure>
+<p>内核会动态分配tmpfs的大小</p>
+<h4 id="buff-x2F-cache"><a href="#buff-x2F-cache" class="headerlink" title="buff&#x2F;cache"></a>buff&#x2F;cache</h4><p>buffer和cache是两个在计算机技术中被用滥的名词，放在不通语境下会有不同的意义。在Linux的内存管理中，这里的buffer指Linux内存的：Buffer cache。这里的cache指Linux内存中的：Page cache。翻译成中文可以叫做缓冲区缓存和页面缓存。在历史上，它们一个（buffer）被用来当成对io设备写的缓存，而另一个（cache）被用来当作对io设备的读缓存，这里的io设备，主要指的是块设备文件和文件系统上的普通文件。但是现在，它们的意义已经不一样了。在当前的内核中，page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。当然，不是所有的内存都是以页（page）进行管理的，也有很多是针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（从这个角度出发，是不是buffer cache改名叫做block cache更好？）然而，也不是所有块（block）都有固定长度，系统上块的长度主要是根据所使用的块设备决定的，而页长度在X86上无论是32位还是64位都是4k。</p>
+<ul>
+<li>buff: block buff针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（不正确的理解，用来读）</li>
+<li>cache: page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。（不正确的理解，用来写）</li>
+</ul>
+<h3 id="查看-proc-sys-meminfo"><a href="#查看-proc-sys-meminfo" class="headerlink" title="查看/proc/sys/meminfo"></a>查看<code>/proc/sys/meminfo</code></h3><p>发现buff&#x2F;cache占用大量内存，则就应该跟进查看具体buff&#x2F;cache哪个部分占用更为大量的内存<br>根据meminfo发现大量slab占用内存，将近42个g</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC tmpfiles.d]# cat /proc/meminfo </span><br><span class="line">MemTotal:       65430552 kB</span><br><span class="line">MemFree:        56802616 kB</span><br><span class="line">MemAvailable:   57562116 kB</span><br><span class="line">Buffers:          259960 kB</span><br><span class="line">Cached:           978228 kB</span><br><span class="line">SwapCached:            0 kB</span><br><span class="line">Active:          7181820 kB</span><br><span class="line">Inactive:         501588 kB</span><br><span class="line">Active(anon):    6445436 kB</span><br><span class="line">Inactive(anon):    98936 kB</span><br><span class="line">Active(file):     736384 kB</span><br><span class="line">Inactive(file):   402652 kB</span><br><span class="line">Unevictable:           0 kB</span><br><span class="line">Mlocked:               0 kB</span><br><span class="line">SwapTotal:      32834556 kB</span><br><span class="line">SwapFree:       32834556 kB</span><br><span class="line">Dirty:               288 kB</span><br><span class="line">Writeback:             0 kB</span><br><span class="line">AnonPages:       6445280 kB</span><br><span class="line">Mapped:           220768 kB</span><br><span class="line">Shmem:             99160 kB</span><br><span class="line">Slab:             244800 kB</span><br><span class="line">SReclaimable:     143828 kB</span><br><span class="line">SUnreclaim:       100972 kB</span><br><span class="line">KernelStack:       23776 kB</span><br><span class="line">PageTables:        56356 kB</span><br><span class="line">NFS_Unstable:          0 kB</span><br><span class="line">Bounce:                0 kB</span><br><span class="line">WritebackTmp:          0 kB</span><br><span class="line">CommitLimit:    65549832 kB</span><br><span class="line">Committed_AS:   47565480 kB</span><br><span class="line">VmallocTotal:   34359738367 kB</span><br><span class="line">VmallocUsed:      469040 kB</span><br><span class="line">VmallocChunk:   34358892540 kB</span><br><span class="line">HardwareCorrupted:     0 kB</span><br><span class="line">AnonHugePages:   5654528 kB</span><br><span class="line">HugePages_Total:       0</span><br><span class="line">HugePages_Free:        0</span><br><span class="line">HugePages_Rsvd:        0</span><br><span class="line">HugePages_Surp:        0</span><br><span class="line">Hugepagesize:       2048 kB</span><br><span class="line">DirectMap4k:      257584 kB</span><br><span class="line">DirectMap2M:     7776256 kB</span><br><span class="line">DirectMap1G:    60817408 kB</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>MemTotal: 所有内存(RAM)大小,减去一些预留空间和内核的大小。</li>
+<li>MemFree: 完全没有用到的物理内存，lowFree+highFree</li>
+<li>MemAvailable: 在不使用交换空间的情况下，启动一个新的应用最大可用内存的大小，计算方式：MemFree+Active(file)+Inactive(file)-(watermark+min(watermark,Active(file)+Inactive(file)&#x2F;2))</li>
+<li>Buffers: 块设备所占用的缓存页，包括：直接读写块设备以及文件系统元数据(metadata)，比如superblock使用的缓存页。</li>
+<li>Cached: 表示普通文件数据所占用的缓存页。</li>
+<li>SwapCached: swap cache中包含的是被确定要swapping换页，但是尚未写入物理交换区的匿名内存页。那些匿名内存页，比如用户进程malloc申请的内存页是没有关联任何文件的，如果发生swapping换页，这类内存会被写入到交换区。</li>
+<li>Active: active包含active anon和active file</li>
+<li>Inactive: inactive包含inactive anon和inactive file</li>
+<li>Active(anon): anonymous pages（匿名页），用户进程的内存页分为两种：与文件关联的内存页(比如程序文件,数据文件对应的内存页)和与内存无关的内存页（比如进程的堆栈，用malloc申请的内存），前者称为file pages或mapped pages,后者称为匿名页。</li>
+<li>Inactive(anon): 见上</li>
+<li>Active(file): 见上</li>
+<li>Inactive(file): 见上</li>
+<li>SwapTotal: 可用的swap空间的总的大小(swap分区在物理内存不够的情况下，把硬盘空间的一部分释放出来，以供当前程序使用)</li>
+<li>SwapFree: 当前剩余的swap的大小</li>
+<li>Dirty: 需要写入磁盘的内存去的大小</li>
+<li>Writeback: 正在被写回的内存区的大小</li>
+<li>AnonPages: 未映射页的内存的大小</li>
+<li>Mapped: 设备和文件等映射的大小</li>
+<li>Slab: 内核数据结构slab的大小</li>
+<li>SReclaimable: 可回收的slab的大小</li>
+<li>SUnreclaim: 不可回收的slab的大小</li>
+<li>PageTables: 管理内存页页面的大小</li>
+<li>NFS_Unstable: 不稳定页表的大小</li>
+<li>VmallocTotal: Vmalloc内存区的大小</li>
+<li>VmallocUsed: 已用Vmalloc内存区的大小</li>
+<li>VmallocChunk: vmalloc区可用的连续最大快的大小</li>
+</ul>
+<h3 id="slabtop查看为什么slab占用大量内存"><a href="#slabtop查看为什么slab占用大量内存" class="headerlink" title="slabtop查看为什么slab占用大量内存"></a>slabtop查看为什么slab占用大量内存</h3><p>根据slabtop现场发现，大量kmalloc-2048占用大量内存，大概率是由于内核新加的一个驱动程序异常导致内存被大量占用，卸载后恢复正常</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC tmpfiles.d]# slabtop </span><br><span class="line">Active / Total Objects (% used)    : 972765 / 979478 (99.3%)</span><br><span class="line">Active / Total Slabs (% used)      : 21676 / 21676 (100.0%)</span><br><span class="line">Active / Total Caches (% used)     : 77 / 110 (70.0%)</span><br><span class="line">Active / Total Size (% used)       : 238632.48K / 242106.66K (98.6%)</span><br><span class="line">Minimum / Average / Maximum Object : 0.01K / 0.25K / 12.62K</span><br><span class="line"></span><br><span class="line">OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   </span><br><span class="line">224532 224197  99%    0.19K   5346	 42     42768K dentry</span><br><span class="line">159393 159393 100%    0.10K   4087	 39     16348K buffer_head</span><br><span class="line">65052  65052 100%    0.11K   1807	 36	 7228K kernfs_node_cache</span><br><span class="line">58432  56763  97%    0.06K    913	 64	 3652K kmalloc-64</span><br><span class="line">51119  51119 100%    1.01K   1649	 31     52768K ext4_inode_cache</span><br><span class="line">42587  42587 100%    0.21K   1151	 37	 9208K vm_area_struct</span><br><span class="line">32946  32946 100%    0.04K    323	102	 1292K ext4_extent_status</span><br><span class="line">32538  32538 100%    0.04K    319	102	 1276K selinux_inode_security</span><br><span class="line">29580  29580 100%    0.13K    493	 60	 3944K ext4_groupinfo_4k</span><br><span class="line">26880  26880 100%    0.19K    640	 42	 5120K kmalloc-192</span><br><span class="line">24320  23098  94%    0.25K    380	 64	 6080K kmalloc-256</span><br><span class="line">23856  23856 100%    0.07K    426	 56	 1704K Acpi-ParseExt</span><br><span class="line">21930  21291  97%    0.08K    430	 51	 1720K anon_vma</span><br><span class="line">21824  21824 100%    0.50K    341	 64     10912K kmalloc-512</span><br><span class="line">17920  17920 100%    0.01K     35	512	  140K kmalloc-8</span><br><span class="line">16640  16640 100%    0.02K     65	256	  260K kmalloc-16</span><br><span class="line">14847  14528  97%    0.64K    303	 49	 9696K proc_inode_cache</span><br><span class="line">13200  11762  89%    0.58K    240	 55	 7680K inode_cache</span><br><span class="line">9912   9912 100%    0.57K    177	 56	 5664K radix_tree_node</span><br><span class="line">9088   9088 100%    0.03K     71	128	  284K kmalloc-32</span><br><span class="line">8896   8708  97%    1.00K    278	 32	 8896K kmalloc-1024</span><br><span class="line">7308   7308 100%    0.09K    174	 42	  696K kmalloc-96</span><br><span class="line">5952   5952 100%    0.12K     93	 64	  744K kmalloc-128</span><br><span class="line">4672   4672 100%    0.06K     73	 64	  292K ext4_free_data</span><br><span class="line">4590   4590 100%    0.05K     54	 85	  216K shared_policy_node</span><br><span class="line">3468   3468 100%    0.62K     68	 51	 2176K sock_inode_cache</span><br></pre></td></tr></table></figure>
+
 	
 	</div>
-  <a type="button" href="/2022/02/03/index/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2022/02/03/一次内存异常问题排查经历/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/02/03/dpdk安装部署/" >dpdk安装部署</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-02-03  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
+<h2 id="UMA架构"><a href="#UMA架构" class="headerlink" title="UMA架构"></a>UMA架构</h2><p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
+<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp"></p>
+<p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
+<h2 id="NUMA架构"><a href="#NUMA架构" class="headerlink" title="NUMA架构"></a>NUMA架构</h2><p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
+<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp"></p>
+<p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote&#x2F;local）之别，而且实验分析来看，这个差别非常明显。</p>
+<h2 id="查看架构"><a href="#查看架构" class="headerlink" title="查看架构"></a>查看架构</h2><p>可以通过numactl查看或者通过查看cpu设备信息。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@GiddyPoet ~]# numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</span><br><span class="line">node 0 size: 65189 MB</span><br><span class="line">node 0 free: 56946 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0 </span><br><span class="line">  0:  10 </span><br><span class="line"></span><br><span class="line">[root@GiddyPoet node]# ls /sys/devices/system/node/</span><br><span class="line">has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent</span><br></pre></td></tr></table></figure>
+
+<p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
+<h2 id="pps算法（包转发率）"><a href="#pps算法（包转发率）" class="headerlink" title="pps算法（包转发率）"></a>pps算法（包转发率）</h2><p>pps: package per sesond</p>
+<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
+<p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
+<p>一个最短以太帧实际长度为：<br>$(12+7+1+6+6+2+46+4)*8&#x3D;672bit$</p>
+<p>通常按照万兆光计算下64个字节的包转发率。</p>
+<p>$10*1000&#x2F;672≈14.88Mpps$</p>
+<h2 id="UIO-用户空间IO"><a href="#UIO-用户空间IO" class="headerlink" title="UIO:用户空间IO"></a>UIO:用户空间IO</h2><p>小的内核模块，用于将设备内存映射到用户空间，并注册中断。<br>uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe uio_pci_generic 加载。<br>但是其不支持虚拟功能，DPDK提供一个替代模块igb_uio模块。</p>
+<h2 id="VFIO-后续补充"><a href="#VFIO-后续补充" class="headerlink" title="VFIO(后续补充)"></a>VFIO(后续补充)</h2><p>使用vfio不仅需要驱动支持，内核和bios都要支持，并配置IO虚拟化（如Intel VT-d)</p>
+<h2 id="大页内存"><a href="#大页内存" class="headerlink" title="大页内存"></a>大页内存</h2><p>通过grub进行修改</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 修改/etc/default/grub，在GRUB_CMDLINE_LINUX后新增大页内存配置，同时支持iommu，对于iommu</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 需要再虚拟机cpu里也做相应的修改</span></span><br><span class="line">default_hugepagesz=2m hugepagesz=2m hugepages=256 iommu=pt intel_iommu=on</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改后重新生成grub文件</span></span><br><span class="line">grub2-mkconfig -o /boot/grub2/grub.cfg</span><br></pre></td></tr></table></figure>
+
+<p>修改&#x2F;etc&#x2F;fstab开机挂载打页内存</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nodev /mnt/huge hugetlbfs defaults 0 0</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="虚拟机环境配置"><a href="#虚拟机环境配置" class="headerlink" title="虚拟机环境配置"></a>虚拟机环境配置</h1><p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
+<img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg" class>
+
+
+<blockquote>
+<p>注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。</p>
+</blockquote>
+<pre><code>修改igb_uio驱动检测方法：
+</code></pre>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> RTE_INTR_MODE_LEGACY:</span><br><span class="line">          <span class="comment">// 添加true，保证能通过检测</span></span><br><span class="line">          <span class="keyword">if</span> (pci_intx_mask_supported(udev-&gt;pdev)||<span class="literal">true</span>) &#123;                                             </span><br><span class="line">              dev_dbg(&amp;udev-&gt;pdev-&gt;dev, <span class="string">&quot;using INTX&quot;</span>);</span><br><span class="line">              udev-&gt;info.irq_flags = IRQF_SHARED | IRQF_NO_THREAD;</span><br><span class="line">              udev-&gt;info.irq = udev-&gt;pdev-&gt;irq;</span><br><span class="line">              udev-&gt;mode = RTE_INTR_MODE_LEGACY;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">          &#125;   </span><br></pre></td></tr></table></figure>
+
+<h1 id="编译安装dpdk"><a href="#编译安装dpdk" class="headerlink" title="编译安装dpdk"></a>编译安装dpdk</h1><p>dpdk的版本选择很重要，由于centos通常是趋于稳定版的版本，所以编译器等环境都是较为老旧的版本，根据官方的相关建议，选用dpdk-18.11.11-stable版本做为测试。</p>
+<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">export RTE_SDK=/root/dpdk-stable-18.11.11/</span><br><span class="line">export RTE_TARGET=x86_64-native-linuxapp-gcc</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 如果需要对相关代码进行调试可以添加</span></span><br><span class="line">export RTE_CFLAGS=&quot;-O0 -g&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="编译dpdk"><a href="#编译dpdk" class="headerlink" title="编译dpdk"></a>编译dpdk</h2><p>Makefile层层嵌套，入口为<code>GNUmakefile</code>，指定平台为<code>x86_64-native-linuxapp-gcc</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在dpdk-stable-18.11.11/config中实现</span></span><br><span class="line">make install T=x86_64-native-linuxapp-gcc</span><br></pre></td></tr></table></figure>
+
+<p>编译后的目录结构</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet x86_64-native-linuxapp-gcc]# tree -aL 1</span><br><span class="line">.</span><br><span class="line">├── app  # 测试用二进制文件</span><br><span class="line">├── build #</span><br><span class="line">├── .config # config文件</span><br><span class="line">├── .config.orig</span><br><span class="line">├── include # 头文件</span><br><span class="line">├── kmod # 驱动文件</span><br><span class="line">├── lib # 库文件</span><br><span class="line">└── Makefile</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置dpdk"><a href="#配置dpdk" class="headerlink" title="配置dpdk"></a>配置dpdk</h2><h3 id="uio驱动"><a href="#uio驱动" class="headerlink" title="uio驱动"></a>uio驱动</h3><p>内核自带了<code>uio_pci_generic</code>驱动可以实现uio功能，dpdk提供了一个<code>igb_uio</code>模块，对于不支持传统中断的设置，例如虚拟功能设备，必须使用<code>igb_uio</code>来替代<code>uio_pci_generi</code>模块。</p>
+<h2 id="常见问题解决"><a href="#常见问题解决" class="headerlink" title="常见问题解决"></a>常见问题解决</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span></span><br><span class="line">yum install numactl-devel</span><br></pre></td></tr></table></figure>
+
+	
+	</div>
+  <a type="button" href="/2022/02/03/dpdk安装部署/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/02/03/虚拟网络设备/" >虚拟网络设备</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-02-03  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="虚拟网络设备"><a href="#虚拟网络设备" class="headerlink" title="虚拟网络设备"></a>虚拟网络设备</h1><p>本文将从基础的虚拟网络设备进行介绍，开启linux网络虚拟化的学习之路。</p>
+<h2 id="tun-x2F-tap"><a href="#tun-x2F-tap" class="headerlink" title="tun&#x2F;tap"></a>tun&#x2F;tap</h2><p>tap&#x2F;tun是linux内核实现的一对虚拟网络设备，TAP工作在二层，tun工作在三层，linux内核通过TAP&#x2F;TUN设备向绑定该设备的用户空间应用发送数据。反之，用户空间也可以像操作网络硬件设备那样，通过TAP&#x2F;TUN设备发送数据。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if_tun.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">create_tun</span><span class="params">(<span class="keyword">char</span> *devname,<span class="keyword">int</span> flags)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ifreq</span> <span class="title">ifr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((fd = open(<span class="string">&quot;/dev/net/tun&quot;</span>,O_RDWR))&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;open&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;ifr,<span class="number">0</span>,<span class="keyword">sizeof</span>(ifr));</span><br><span class="line">    <span class="comment">// IFF_NO_PI，package info，tun/tap会默认在网卡包包信息，信息内容如下</span></span><br><span class="line">    <span class="comment">// struct tun_pi &#123;</span></span><br><span class="line">    <span class="comment">//     unsigned short flags;</span></span><br><span class="line">    <span class="comment">//     unsigned short proto;</span></span><br><span class="line">    <span class="comment">// &#125;;</span></span><br><span class="line">    ifr.ifr_flags = flags;</span><br><span class="line">    <span class="built_in">strcpy</span>(ifr.ifr_name,devname); </span><br><span class="line">    <span class="keyword">if</span>(ioctl(fd,TUNSETIFF,(<span class="keyword">void</span>*)&amp;ifr)&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;ioctl&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/tun_tap%E4%BC%A0%E8%BE%93.jpg"></p>
+<h2 id="Linux-Bridge"><a href="#Linux-Bridge" class="headerlink" title="Linux Bridge"></a>Linux Bridge</h2><p>Linux Bridge（网桥）是工作在二层的虚拟网络设备，功能类似于物理的交换机。</p>
+<p>对于普通的网络设备来说，只有两端，从一端进来的数据会从另一端出去，如物理网卡从外面物理<br>网络收到的数据会转发给内核协议栈，而从内核协议栈过来的数据会转发到外面的物理网络中。而<br>Bridge 不同，Bridge 有多个端口，数据可以从任何端口进来，进来之后从哪个端口出去要看MAC地址，<br>和物理交换机的原理类似。</p>
+<p>Bridge有以下特定：</p>
+<ul>
+<li>Bridge是二层设备，仅用来处理二层的通讯</li>
+<li>Bridge使用mac地址表来决定怎么转发帧</li>
+<li>Bridge会从host之间的数据通讯包中学习MAC地址，Bridge能做二层转发的原因。</li>
+<li>可以是硬件或者纯软件实现（纯软件实现会降低性能，纯用cpu实现）</li>
+</ul>
+<blockquote>
+<p>注：Bridge可能出现二层广播风暴，可以通过开启STP来防止出现环路。</p>
+</blockquote>
+<h3 id="STP协议"><a href="#STP协议" class="headerlink" title="STP协议"></a>STP协议</h3><p>STP（Spanning Tree Protocol）生成树协议，是运行在交换机上的二层破环协议，环路会导致广播风暴、MAC地址表震荡(交换机在学习mac地址时产生广播风暴导致的)等后果，STP的主要目的就是确保在网络中存在冗余路径时，不会产生环路。</p>
+<h3 id="Bridge搭建虚拟化环境"><a href="#Bridge搭建虚拟化环境" class="headerlink" title="Bridge搭建虚拟化环境"></a>Bridge搭建虚拟化环境</h3><p>Bridge可以通过和<code>veth</code>、<code>veth-pair</code>实现组网。</p>
+<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/bridge_veth.jpg"></p>
+
+	
+	</div>
+  <a type="button" href="/2022/02/03/虚拟网络设备/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/02/03/nic收发包/" >nic网卡收包</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-02-03  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h2 id="网卡收发包"><a href="#网卡收发包" class="headerlink" title="网卡收发包"></a>网卡收发包</h2><h3 id="程序控制I-x2F-O"><a href="#程序控制I-x2F-O" class="headerlink" title="程序控制I&#x2F;O"></a>程序控制I&#x2F;O</h3><p>这是最简单的一种 I&#x2F;O 模式，也叫忙等待或者轮询：用户通过发起一个系统调用，陷入内核态，内核将系统调用翻译成一个对应设备驱动程序的过程调用，接着设备驱动程序会启动 I&#x2F;O 不断循环去检查该设备，看看是否已经就绪，一般通过返回码来表示，I&#x2F;O 结束之后，设备驱动程序会把数据送到指定的地方并返回，切回用户态。</p>
+<blockquote>
+<p>cpu一直处于忙轮询状态，调用驱动程序检查设备状态</p>
+</blockquote>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/roundrobin_io.png"></p>
+<h3 id="中断I-x2F-O"><a href="#中断I-x2F-O" class="headerlink" title="中断I&#x2F;O"></a>中断I&#x2F;O</h3><ol>
+<li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据；</li>
+<li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里；</li>
+<li>完成拷贝之后磁盘控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而磁盘控制器会在后面持续发送中断信号直至中断控制器受理；</li>
+<li>中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个磁盘设备的编号，表示这次中断需要关注的设备是磁盘；</li>
+<li>中断控制器向 CPU 置起一个磁盘中断信号；</li>
+<li>CPU 收到中断信号之后停止当前的工作，把当前的 PC&#x2F;PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行磁盘中断服务，把数据从磁盘控制器的缓冲区拷贝到主存里的内核缓冲区；</li>
+<li>最后 CPU 再把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。</li>
+</ol>
+<blockquote>
+<p>内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。</p>
+</blockquote>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.png"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.webp"></p>
+<h3 id="DMA-I-x2F-O"><a href="#DMA-I-x2F-O" class="headerlink" title="DMA I&#x2F;O"></a>DMA I&#x2F;O</h3><p>在上述中断I&#x2F;O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。</p>
+<p>DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。</p>
+<ol>
+<li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设置 DMA 控制器的寄存器对它进行编程：把内核缓冲区和磁盘文件的地址分别写入 MAR 和 ADR 寄存器，然后把期望读取的字节数写入 WC 寄存器，启动 DMA 控制器；</li>
+<li>DMA 控制器根据 ADR 寄存器里的信息知道这次 I&#x2F;O 需要读取的外设是磁盘的某个地址，便向磁盘控制器发出一个命令，通知它从磁盘读取数据到其内部的缓冲区里；</li>
+<li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里，并对缓冲区内数据的校验和进行检验，如果数据是有效的，那么 DMA 就可以开始了；</li>
+<li>DMA 控制器通过总线向磁盘控制器发出一个读请求信号从而发起 DMA 传输，这个信号和前面的中断驱动 I&#x2F;O 小节里 CPU 发给磁盘控制器的读请求是一样的，它并不知道或者并不关心这个读请求是来自 CPU 还是 DMA 控制器；</li>
+<li>紧接着 DMA 控制器将引导磁盘控制器将数据传输到 MAR 寄存器里的地址，也就是内核缓冲区；</li>
+<li>数据传输完成之后，返回一个 ack 给 DMA 控制器，WC 寄存器里的值会减去相应的数据长度，如果 WC 还不为 0，则重复第 4 步到第 6 步，一直到 WC 里的字节数等于 0；</li>
+<li>收到 ack 信号的 DMA 控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而 DMA 控制器会在后面持续发送中断信号直至中断控制器受理；</li>
+<li>中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个主存设备的编号，表示这次中断需要关注的设备是主存；</li>
+<li>中断控制器向 CPU 置起一个 DMA 中断的信号；</li>
+<li>CPU 收到中断信号之后停止当前的工作，把当前的 PC&#x2F;PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行 DMA 中断服务，把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。</li>
+</ol>
+<blockquote>
+<p>简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。</p>
+</blockquote>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.png"></p>
+<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.webp"></p>
+<h3 id="napi-I-x2F-O"><a href="#napi-I-x2F-O" class="headerlink" title="napi I&#x2F;O"></a>napi I&#x2F;O</h3><p>napi并不是基于硬件实现的，实际上napi是一种新的linux网卡数据处理API，简单来说其杂合中断和轮询的技术。</p>
+<p>中断的好处是响应及时，如果数据量较小，则不会占用太多的CPU时间；缺点是数据量大时，会产生过多中断，频繁上下文切换，同时中断也会大量消耗大量的CPU时间。</p>
+<p>轮询方式与中断方式相反，它更适合处理大量数据，因为每次轮询不需要消耗过多的CPU时间；缺点是即使只接收很少数据或不接收数据时，也要占用CPU时间。</p>
+<p>实际上就是通过驱动本身的poll函数，实现一次中断收多个包。</p>
+<h3 id="硬中断和软中断"><a href="#硬中断和软中断" class="headerlink" title="硬中断和软中断"></a>硬中断和软中断</h3><p>NAPI：数据包到来，第一个数据包产生硬件中断，中断处理程序将设备的napi_struct结构挂在当前cpu的待收包设备链表softnet_data-&gt;poll_list中，并触发软中断，软中断执行过程中，遍历softnet_data-&gt;poll_list中的所有设备，依次调用其收包函数napi_sturct-&gt;poll，处理收包过程；</p>
+<p>非NAPI：每个数据包到来，都会产生硬件中断，中断处理程序将收到的包放入当前cpu的收包队列softnet_data-&gt;input_pkt_queue中，并且将非napi设备对应的虚拟设备napi结构softnet-&gt;backlog结构挂在当前cpu的待收包设备链表softnet_data-&gt;poll_list中，并触发软中断，软中断处理过程中，会调用backlog的回调处理函数process_backlog，将收包队列input_pkt_queue合并到softdata-&gt;process_queue后面，并依次处理该队列中的数据包；</p>
+
+	
+	</div>
+  <a type="button" href="/2022/02/03/nic收发包/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -189,8 +454,31 @@ var _hmt = _hmt || [];
 
 		
 			
+	<div class="widget">
+		<h4>Categories</h4>
+		<ul class="tag_box inline list-unstyled">
+		
+			<li><a href="/categories/os/">os<span>4</span></a></li>
+		
+		</ul>
+	</div>
+
 		
 			
+	<div class="widget">
+		<h4>Tag Cloud</h4>
+		<ul class="tag_box inline list-unstyled">		
+		
+			<li><a href="/tags/memory/">memory<span>1</span></a></li>
+		
+			<li><a href="/tags/network/">network<span>3</span></a></li>
+		
+			<li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
+		
+		 
+		</ul>
+	</div>
+
 
 		
 			
@@ -199,7 +487,19 @@ var _hmt = _hmt || [];
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2022/02/03/index/" ><i class="fa fa-file-o"></i>GiddyPoet</a>
+        <a href="/2022/02/03/一次内存异常问题排查经历/" ><i class="fa fa-file-o"></i>一次内存异常问题排查经历</a>
+      </li>
+    
+      <li>
+        <a href="/2022/02/03/dpdk安装部署/" ><i class="fa fa-file-o"></i>dpdk安装部署</a>
+      </li>
+    
+      <li>
+        <a href="/2022/02/03/虚拟网络设备/" ><i class="fa fa-file-o"></i>虚拟网络设备</a>
+      </li>
+    
+      <li>
+        <a href="/2022/02/03/nic收发包/" ><i class="fa fa-file-o"></i>nic网卡收包</a>
       </li>
     
   </ul>
