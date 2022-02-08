@@ -133,7 +133,7 @@ var _hmt = _hmt || [];
 	  <h1 id="linux网卡聚合及bond模式原理"><a href="#linux网卡聚合及bond模式原理" class="headerlink" title="linux网卡聚合及bond模式原理"></a>linux网卡聚合及bond模式原理</h1><h2 id="bonding的应用"><a href="#bonding的应用" class="headerlink" title="bonding的应用"></a>bonding的应用</h2><h3 id="网络负载均衡"><a href="#网络负载均衡" class="headerlink" title="网络负载均衡"></a>网络负载均衡</h3><p>用于解决一个ip地址，流量过大，服务器网络压力过大的问题。将多个网卡聚合在一起生成一个bond口，将ip配在这个bond口上，具体mac地址根据bond口的模式选择。</p>
 <h3 id="网络冗余"><a href="#网络冗余" class="headerlink" title="网络冗余"></a>网络冗余</h3><p>通过冗余服务提供服务器的可靠性和安全性，多个网卡绑定到一个IP地址上，当一个网卡发生物理损坏时，另一块网卡也能提供正常服务。</p>
 <h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>根据不同的模式有不同的原理，在介绍<a href="#%E6%A8%A1%E5%BC%8F">模式</a>时详细介绍。</p>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/image/bond.jpg"></p>
+<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond.jpg"></p>
 <h2 id="模式"><a href="#模式" class="headerlink" title="模式"></a>模式</h2><p>linux有7种网卡绑定模式：</p>
 <table>
 <thead>
@@ -209,7 +209,7 @@ var _hmt = _hmt || [];
 </ul>
 </li>
 </ul>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/image/bond_rr.png"></p>
+<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_rr.png"></p>
 <h3 id="active-backup"><a href="#active-backup" class="headerlink" title="active-backup"></a>active-backup</h3><h4 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h4><ul>
 <li>容错能力<ul>
 <li>只有一个slave是激活状态，同时只有一个网卡能够工作，只有当当前网卡故障后其他网卡才会激活。发生failover时，切换的网卡会发出arp请求</li>
@@ -225,8 +225,8 @@ var _hmt = _hmt || [];
 </ul>
 </li>
 </ul>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/image/bond_ac.png"></p>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/image/bond_ac_log.png"></p>
+<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac.png"></p>
+<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac_log.png"></p>
 <h3 id="load-balancing-xor"><a href="#load-balancing-xor" class="headerlink" title="load balancing(xor)"></a>load balancing(xor)</h3><h4 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h4><ul>
 <li>负载均衡和容错能力<ul>
 <li>基于指定的传输HASH策略传输数据包。缺省的负载均衡策略是：(源mac地址XOR目标mac地址)%slave数量，其他传输策略可以通过xmit_hash_policy选项指定。</li>
