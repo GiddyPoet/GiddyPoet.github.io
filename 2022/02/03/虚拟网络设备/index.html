@@ -221,7 +221,7 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>通过在父接口上抓包能够抓到ping包</p>
 </blockquote>
-<h3 id="MACVTAP"><a href="#MACVTAP" class="headerlink" title="MACVTAP"></a>MACVTAP</h3><p>传统使用tap+bridge实现网络虚拟化的技术存在以下缺点：</p>
+<h2 id="MACVTAP"><a href="#MACVTAP" class="headerlink" title="MACVTAP"></a>MACVTAP</h2><p>传统使用tap+bridge实现网络虚拟化的技术存在以下缺点：</p>
 <ol>
 <li>每台宿主机内都存在Bridge会使网络拓扑变得复杂，相当于增加了交换机的级联层数</li>
 <li>同一宿主机上虚拟机之间的流量直接在Bridge完成交换，使流量监控、监管变得困难。</li>
@@ -232,6 +232,39 @@ var _hmt = _hmt || [];
 <p>和TAP设备一样，每一个MACVTAP设备都拥有一个对应和Linux字符设备，因此能直接KVM&#x2F;QEMU使用，方便完成网络数据交换工作。</p>
 <p>实际上mactap只是将收到的流量转发给&#x2F;dev&#x2F;net&#x2F;tap，直接和用户态交互，虚拟机做相关操作。</p>
 <p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/mactap.jpg"></p>
+<h3 id="工作模式"><a href="#工作模式" class="headerlink" title="工作模式"></a>工作模式</h3><p>其实这三种工作模式都是继承于MACVLAN的工作模式。</p>
+<ul>
+<li>VEPA</li>
+<li>BRIDGE</li>
+<li>PRIVATE</li>
+</ul>
+<h3 id="测试验证"><a href="#测试验证" class="headerlink" title="测试验证"></a>测试验证</h3><p>测试环境基于centos7.4，与上述macvlan测试环境一致。</p>
+<h4 id="测试-1"><a href="#测试-1" class="headerlink" title="测试"></a>测试</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> macvtap依赖于macvlan的驱动，从这里也可以看出macvtap继承于macvlan</span></span><br><span class="line">[root@giddypoet ~]# modprobe macvtap</span><br><span class="line">[root@giddypoet ~]# lsmod |grep macvtap</span><br><span class="line">macvtap                22497  0 </span><br><span class="line">macvlan                19239  1 macvtap</span><br><span class="line">[root@giddypoet ~]# rmmod macvlan</span><br><span class="line">rmmod: ERROR: Module macvlan is in use by: macvtap</span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 tap0 type macvtap mode bridge</span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 tap1 type macvtap mode bridge</span><br><span class="line">[root@giddypoet ~]# ip -d link show tap0</span><br><span class="line">15: tap0@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 500</span><br><span class="line">    link/ether 3a:56:f6:88:05:01 brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvtap  mode bridge addrgenmode eui64 </span><br><span class="line">[root@giddypoet ~]# ip -d link show tap1</span><br><span class="line">16: tap1@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 500</span><br><span class="line">    link/ether 76:b2:9f:9e:1f:9a brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvtap  mode bridge addrgenmode eui64 </span><br><span class="line">[root@giddypoet ~]# ip link set tap0 netns ns0</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 netns ns1</span><br><span class="line">[root@giddypoet ~]# ip link set tap0 netns ns0</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 netns ns1</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns0 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 192.168.3.2/24 dev tap0</span><br><span class="line">[root@giddypoet ~]# ip link set tap0 up</span><br><span class="line">[root@giddypoet ~]# exit</span><br><span class="line">exit</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns1 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 192.168.3.3/24 dev tap1</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 up</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>完成上述配置后，macvtap两两就可以ping通了</p>
+</blockquote>
+<h2 id="IPVLAN"><a href="#IPVLAN" class="headerlink" title="IPVLAN"></a>IPVLAN</h2><p>IPVLAN其实原理上和MACVLAN一致，唯一区别在于IPVLAN虚拟出来的子接口和父接口mac地址一致。</p>
+<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan.jpg"></p>
+<h3 id="工作模式-1"><a href="#工作模式-1" class="headerlink" title="工作模式"></a>工作模式</h3><h4 id="L2"><a href="#L2" class="headerlink" title="L2"></a>L2</h4><p>和macvlan一样，父接口更像一个网桥和二层交换机。</p>
+<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan_l2.jpg"></p>
+<h4 id="L3"><a href="#L3" class="headerlink" title="L3"></a>L3</h4><p>在l3模式下，父接口像一个三层交换机一样，用于转发流量，提供了更强的伸缩性。</p>
+<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan_l3.jpg"></p>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>其实个人觉得，大部分ipvlan的场景和macvlan相似，核心在于ipvlan共用父接口的mac地址，在特殊的场景下有着特殊的应用价值：</p>
+<ol>
+<li>设备对网卡上的mac地址有数量限制时</li>
+<li>在802.11协议下（无线协议）对于终端的mac地址有要求</li>
+<li>大量mac地址对性能会对主机产生影响</li>
+</ol>
+<h3 id="测试-2"><a href="#测试-2" class="headerlink" title="测试"></a>测试</h3><p>由于试用的linux内核版本目前不支持ipvlan，同时基本原理和macvlan一致，暂时未对其做相关测试。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实linux上还存在其他虚拟设备如：</p>
+<ul>
+<li>bond</li>
+<li>vcan</li>
+<li>vxcan</li>
+<li>……</li>
+</ul>
+<p>上述设备的用途通常不在于云原生场景中，后续再对其他虚拟设备进行介绍。</p>
 	  
 	</div>
 
