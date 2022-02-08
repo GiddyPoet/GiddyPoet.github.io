@@ -187,7 +187,7 @@ var _hmt = _hmt || [];
 <td align="center">该策略在IPV4情况下包含适配器传输负载均衡策略，由ARP协商完成接收的负载，通道联合驱动程序截获ARP在本地系统发送出的请求，用其中一个设备的硬件地址覆盖从属设备的原地址。</td>
 </tr>
 </tbody></table>
-<h3 id="balance-rr"><a href="#balance-rr" class="headerlink" title="balance-rr"></a>balance-rr</h3><h4 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h4><ul>
+<h2 id="balance-rr"><a href="#balance-rr" class="headerlink" title="balance-rr"></a>balance-rr</h2><h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ul>
 <li>负载均衡<ul>
 <li>所有链路处于负载均衡状态，采用轮询的方式往每条链路发送报文，可以通过ping验证。</li>
 </ul>
@@ -210,7 +210,7 @@ var _hmt = _hmt || [];
 </li>
 </ul>
 <p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_rr.png"></p>
-<h3 id="active-backup"><a href="#active-backup" class="headerlink" title="active-backup"></a>active-backup</h3><h4 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h4><ul>
+<h2 id="active-backup"><a href="#active-backup" class="headerlink" title="active-backup"></a>active-backup</h2><h3 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h3><ul>
 <li>容错能力<ul>
 <li>只有一个slave是激活状态，同时只有一个网卡能够工作，只有当当前网卡故障后其他网卡才会激活。发生failover时，切换的网卡会发出arp请求</li>
 </ul>
@@ -227,7 +227,7 @@ var _hmt = _hmt || [];
 </ul>
 <p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac.png"></p>
 <p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac_log.png"></p>
-<h3 id="load-balancing-xor"><a href="#load-balancing-xor" class="headerlink" title="load balancing(xor)"></a>load balancing(xor)</h3><h4 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h4><ul>
+<h2 id="load-balancing-xor"><a href="#load-balancing-xor" class="headerlink" title="load balancing(xor)"></a>load balancing(xor)</h2><h3 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h3><ul>
 <li>负载均衡和容错能力<ul>
 <li>基于指定的传输HASH策略传输数据包。缺省的负载均衡策略是：(源mac地址XOR目标mac地址)%slave数量，其他传输策略可以通过xmit_hash_policy选项指定。</li>
 </ul>
@@ -241,9 +241,9 @@ var _hmt = _hmt || [];
 </ul>
 </li>
 </ul>
-<h3 id="fault-tolerance"><a href="#fault-tolerance" class="headerlink" title="fault-tolerance"></a>fault-tolerance</h3><p>这种模式的特点是一个报文会复制两份往bond下的两个接口分别发送出去，当有对端交换机失效，我们感觉不到任何downtime，但此法过于浪费资源；不过这种模式有很好的容错机制。此模式适用于金融行业，因为他们需要高可靠性的网络，不允许出现任何问题。</p>
-<h4 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h4><p>这种模式适用于如下拓扑，两个接口分别接入两台交换机，并且属于不同的vlan，当一边的网络出现故障不会影响服务器另一边接入的网络正常工作。而且故障过程是0丢包。</p>
-<h3 id="lacp-802-3ad"><a href="#lacp-802-3ad" class="headerlink" title="lacp(802.3ad)"></a>lacp(802.3ad)</h3><h4 id="特点-3"><a href="#特点-3" class="headerlink" title="特点"></a>特点</h4><p>802.3ad模式是IEEE标准，因此所有实现了802.3ad的对端都可以很好的互操作。802.3ad 协议包括聚合的自动配置，因此只需要很少的对交换机的手动配置（要指出的是，只有某些设备才能使用802.3ad）。802.3ad标准也要求帧按顺序（一定程度上）传递，因此通常单个连接不会看到包的乱序。802.3ad也有些缺点：标准要求所有设备在聚合操作时，要在同样的速率和双工模式，而且，和除了balance-rr模式外的其它bonding负载均衡模式一样，任何连接都不能使用多于一个接口的带宽。（保证了连接的顺序传递，但是所有接口的速率同步）</p>
+<h2 id="fault-tolerance"><a href="#fault-tolerance" class="headerlink" title="fault-tolerance"></a>fault-tolerance</h2><p>这种模式的特点是一个报文会复制两份往bond下的两个接口分别发送出去，当有对端交换机失效，我们感觉不到任何downtime，但此法过于浪费资源；不过这种模式有很好的容错机制。此模式适用于金融行业，因为他们需要高可靠性的网络，不允许出现任何问题。</p>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>这种模式适用于如下拓扑，两个接口分别接入两台交换机，并且属于不同的vlan，当一边的网络出现故障不会影响服务器另一边接入的网络正常工作。而且故障过程是0丢包。</p>
+<h2 id="lacp-802-3ad"><a href="#lacp-802-3ad" class="headerlink" title="lacp(802.3ad)"></a>lacp(802.3ad)</h2><h3 id="特点-3"><a href="#特点-3" class="headerlink" title="特点"></a>特点</h3><p>802.3ad模式是IEEE标准，因此所有实现了802.3ad的对端都可以很好的互操作。802.3ad 协议包括聚合的自动配置，因此只需要很少的对交换机的手动配置（要指出的是，只有某些设备才能使用802.3ad）。802.3ad标准也要求帧按顺序（一定程度上）传递，因此通常单个连接不会看到包的乱序。802.3ad也有些缺点：标准要求所有设备在聚合操作时，要在同样的速率和双工模式，而且，和除了balance-rr模式外的其它bonding负载均衡模式一样，任何连接都不能使用多于一个接口的带宽。（保证了连接的顺序传递，但是所有接口的速率同步）</p>
 <p>要求参与绑定的端口都运行802.3ad协议。该方式与band0很相似，但是又有区别。在IEEE802.3ad中，“链路聚合控制协议（LACP）”自动通知交换机应该聚合哪些端口，IEEE802.3ad聚合配置之后，链路聚合控制协议单元（LACPDU）就会在服务器和交换机之间进行交换，LACP会通知交换机在聚合中配置的适配器应作为交换机上的一个适配器来考虑，而不再有用户的干预。（按照协议应当如此，但是H3C5500-EI交换机上并未发现有单独启用802.3ad或LACP的命令，而聚合组中的静态聚合的所有端口均不启用LACP协议，所以如果按照band4的模式操作的话，建议在交换机上手工做动态端口聚合，且手工指定全局报文按照源MAC和目的MAC地址进行聚合负载分担。）根据IEEE802.3ad的规范，前往相同IP地址的数据包都会通过相同的适配器进行发送。因此当在802.3ad方式下操作时，信息包会始终按照标准（standard）的方式进行分发，而不会按照轮询（Round-Robin）方式进行分发。</p>
 <ul>
 <li>交换机配置<ul>
@@ -257,8 +257,8 @@ var _hmt = _hmt || [];
 </ul>
 </li>
 </ul>
-<h3 id="balance-tlb"><a href="#balance-tlb" class="headerlink" title="balance-tlb"></a>balance-tlb</h3><p>balance-tlb模式通过对端均衡外出（outgoing）流量。既然它是根据MAC地址进行均衡，在“网关”型配置（如上文所述）下，该模式会通过单个设备来发送所有流量，然而，在“本地”型网络配置下，该模式以相对智能的方式（不是balance-xor或802.3ad模式里提及的XOR方式）来均衡多个本地网络对端，因此那些数字不幸的MAC地址（比如XOR得到同样值）不会聚集到同一个接口上。不像802.3ad，该模式的接口可以有不同的速率，而且不需要特别的交换机配置。不利的一面在于，该模式下所有进入的（incoming）流量会到达同一个接口；该模式要求slave接口的网络设备驱动有某种ethtool支持；而且ARP监控不可用。</p>
-<h3 id="balance-alb"><a href="#balance-alb" class="headerlink" title="balance-alb"></a>balance-alb</h3><p>该模式包含了balance-tlb模式，同时加上针对IPV4流量的接收负载均衡(receive load balance， rlb)，而且不需要任何switch(交换机)的支持。接收负载均衡是通过ARP协商实现的。bonding驱动截获本机发送的ARP应答，并把源硬件地址改写为bond中某个slave的唯一硬件地址，从而使得不同的对端使用不同的硬件地址进行通信。所有端口都会收到对端的arp请求报文，回复arp回时，bond驱动模块会截获所发的arp回复报文，根据算法算到相应端口，这时会把arp回复报文的源mac，send源mac都改成相应端口mac。从抓包情况分析回复报文是第一个从端口1发，第二个从端口2发。以此类推。</p>
+<h2 id="balance-tlb"><a href="#balance-tlb" class="headerlink" title="balance-tlb"></a>balance-tlb</h2><p>balance-tlb模式通过对端均衡外出（outgoing）流量。既然它是根据MAC地址进行均衡，在“网关”型配置（如上文所述）下，该模式会通过单个设备来发送所有流量，然而，在“本地”型网络配置下，该模式以相对智能的方式（不是balance-xor或802.3ad模式里提及的XOR方式）来均衡多个本地网络对端，因此那些数字不幸的MAC地址（比如XOR得到同样值）不会聚集到同一个接口上。不像802.3ad，该模式的接口可以有不同的速率，而且不需要特别的交换机配置。不利的一面在于，该模式下所有进入的（incoming）流量会到达同一个接口；该模式要求slave接口的网络设备驱动有某种ethtool支持；而且ARP监控不可用。</p>
+<h2 id="balance-alb"><a href="#balance-alb" class="headerlink" title="balance-alb"></a>balance-alb</h2><p>该模式包含了balance-tlb模式，同时加上针对IPV4流量的接收负载均衡(receive load balance， rlb)，而且不需要任何switch(交换机)的支持。接收负载均衡是通过ARP协商实现的。bonding驱动截获本机发送的ARP应答，并把源硬件地址改写为bond中某个slave的唯一硬件地址，从而使得不同的对端使用不同的硬件地址进行通信。所有端口都会收到对端的arp请求报文，回复arp回时，bond驱动模块会截获所发的arp回复报文，根据算法算到相应端口，这时会把arp回复报文的源mac，send源mac都改成相应端口mac。从抓包情况分析回复报文是第一个从端口1发，第二个从端口2发。以此类推。</p>
 <p>当本机发送ARP请求时，bonding驱动把对端的IP信息从ARP包中复制并保存下来。当ARP应答从对端到达时，bonding驱动把它的硬件地址提取出来，并发起一个ARP应答给bond中的某个slave(这个算法和上面一样，比如算到1口，就给发送arp请求，1回复时mac用1的mac)。使用ARP协商进行负载均衡的一个问题是：每次广播 ARP请求时都会使用bond的硬件地址，因此对端学习到这个硬件地址后，接收流量将会全部流向当前的slave。这个问题通过给所有的对端发送更新（ARP应答）来解决，往所有端口发送应答，应答中包含他们独一无二的硬件地址，从而导致流量重新分布。当新的slave加入到bond中时，或者某个未激活的slave重新激活时，接收流量也要重新分布。接收的负载被顺序地分布（round robin）在bond中最高速的slave上。</p>
 	  
 	</div>
