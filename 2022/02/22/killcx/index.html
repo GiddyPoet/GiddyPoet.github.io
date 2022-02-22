@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  
+  <title>killcx | GiddyPoet</title>
+  <meta name="author" content="GiddyPoet">
+  
+  <meta name="description" content="killcx背景介绍今天在逛博客的时候发现一个有意思的问题：
+如何在不是同一个进程的情况下，关闭一个TCP连接？
+
+通常我们可以想到的关闭一个连接的方法如下：
+
+进程内close（通用文件描述符关闭方法）
+进程内shutdown（可以半关闭socket，专门为socket定制）
+回RST报文
+内核回">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="killcx"/>
+  <meta property="og:site_name" content="GiddyPoet"/>
+
+  
+    <meta property="og:image" content=""/>
+  
+
+  
+  
+    <link href="/favicon.png" rel="icon">
+  
+  
+  <link rel="stylesheet" href="/css/bootstrap.min.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/font-awesome.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/responsive.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/highlight.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/google-fonts.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
+  <script src="/js/jquery-2.0.3.min.js"></script>
+
+  <!-- analytics -->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-70812759-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?cb5448498d7169c668b07c2b255d62c1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+ <body>  
+  <nav id="main-nav" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+      <button type="button" class="navbar-header navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		<span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+	  <a class="navbar-brand" href="/">GiddyPoet</a>
+      <div class="collapse navbar-collapse nav-menu">
+		<ul class="nav navbar-nav">
+		  
+		  <li>
+			<a href="/archives" title="All the articles.">
+			  <i class=""></i>Archives
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/categories" title="All the categories.">
+			  <i class=""></i>Categories
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/tags" title="All the tags.">
+			  <i class=""></i>Tags
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/about" title="About me.">
+			  <i class=""></i>About
+			</a>
+		  </li>
+		  
+		</ul>
+      </div>
+    </div> <!-- container -->
+</nav>
+<div class="clearfix"></div>
+
+  <div class="container">
+  	<div class="content">
+    	 
+
+
+	
+		<div class="page-header">
+			<h1> killcx</h1>
+		</div>
+	
+
+
+
+<div class="row post">
+	<!-- cols -->
+	
+	<div id="top_meta"></div>
+	<div class="col-md-9">
+	
+
+	<!-- content -->
+	<div class="mypage">		
+	  		
+
+	  <h1 id="killcx"><a href="#killcx" class="headerlink" title="killcx"></a>killcx</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>今天在逛博客的时候发现一个有意思的问题：</p>
+<pre><code>如何在不是同一个进程的情况下，关闭一个TCP连接？
+</code></pre>
+<p>通常我们可以想到的关闭一个连接的方法如下：</p>
+<ol>
+<li>进程内close（通用文件描述符关闭方法）</li>
+<li>进程内shutdown（可以半关闭socket，专门为socket定制）</li>
+<li>回RST报文</li>
+<li>内核回调？等奇技淫巧这里就不讨论了</li>
+</ol>
+<p>但是1和2的方式都必须在同一个进程内实现，因此不满足问题的要求，所以应该就是回RST报文，实际上这也是防火墙或者一些旁路设备常的事情，有些VPN也会构造类似的请求，来阻止不合法的连接。</p>
+<p>那么既然我们知道需要怎么做，那怎么构造一个合法的RST报文就是一个问题。</p>
+<h2 id="合法的RST报文"><a href="#合法的RST报文" class="headerlink" title="合法的RST报文"></a>合法的RST报文</h2><p>合法的RST报文需要的条件：</p>
+<ol>
+<li>四元组</li>
+<li>正确的序列号</li>
+</ol>
+<!-- 正确的时间戳（这个需要开启/proc/sys/net/ipv4/tcp_timestamps） 这个需要确认下源码是否对时间戳进行了检查-->
+
+<p>上述信息通常可以由旁路设备获得（旁路设备通过侦听链路上的报文就可以获得），VPN防火墙也可以通过连接获得，那么第三方进程如何构造正确的RST报文呢？</p>
+<p>可以通过challenge ACK实现，原理如下：</p>
+<blockquote>
+<p>处于 establish 状态的服务端如果收到了客户端的 SYN 报文（注意此时的 SYN 报文其实是乱序的，因为 SYN 报文的初始化序列号其实是一个随机数），会回复一个携带了正确序列号和确认号的 ACK 报文，这个 ACK 被称之为 Challenge ACK。</p>
+</blockquote>
+<blockquote>
+<p>实际上部分防火墙和nat设备并不支持challenge ACK</p>
+</blockquote>
+<p>那么我们就可以通过raw socket进行构造乱序的SYN包，再通过服务端回的正确的ACK获取到序列号，再回复RST报文。</p>
+<p><img src="/2022/02/22/killcx/challenge_ack.jpg"></p>
+<p>其实有现成的工具就可以实现上述功能，killcx是一款基于perl实现的脚本工具，下面将对killcx进行简单的分析。</p>
+<h2 id="killcx分析"><a href="#killcx分析" class="headerlink" title="killcx分析"></a>killcx分析</h2><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> strict; </span><br><span class="line"><span class="keyword">use</span> Socket; </span><br><span class="line"><span class="keyword">use</span> Net::RawIP;</span><br><span class="line"><span class="keyword">use</span> Net::Pcap;</span><br><span class="line"><span class="keyword">use</span> NetPacket::Ethernet <span class="string">qw(:strip)</span>;</span><br><span class="line"><span class="keyword">use</span> NetPacket::IP <span class="string">qw(:strip)</span>;</span><br><span class="line"><span class="keyword">use</span> NetPacket::TCP;</span><br><span class="line"><span class="keyword">use</span> POSIX <span class="string">qw(setsid)</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> $appname = <span class="string">&#x27;killcx&#x27;</span>;</span><br><span class="line"><span class="keyword">my</span> $version = <span class="string">&#x27;v1.0.3&#x27;</span>;</span><br><span class="line"><span class="keyword">my</span> $copyright = <span class="string">&#x27;(c)2009-2011 Jerome Bruandet - http://killcx.sourceforge.net/&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;$appname $version - $copyright\n\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $&gt; ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;\t[ERROR] : you must be root\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125; <span class="keyword">elsif</span> ( $^O <span class="keyword">ne</span> <span class="string">&#x27;linux&#x27;</span> )&#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;\t[ERROR] : that script is for Linux only, not $^O\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125;</span><br><span class="line">$SIG<span class="string">&#123;USR1&#125;</span> = \&amp;check_res;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> ( $dest_ip, $dest_port ) =</span><br><span class="line">   $ARGV[<span class="number">0</span>] =~ <span class="regexp">/^(\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;):(\d+)$/</span>;</span><br><span class="line"><span class="keyword">my</span> $interface = $ARGV[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( ( ! $dest_ip ) || ( ! $dest_port ) ) &#123;</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;- syntax   : $appname &lt;destip:destport&gt; &lt;interface&gt;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">  destip               : remote IP</span></span><br><span class="line"><span class="string">  destport             : remote port</span></span><br><span class="line"><span class="string">  interface (optional) : network interface (eth0, lo etc). Note that</span></span><br><span class="line"><span class="string">                         in many cases, using &#x27;lo&#x27; (loopback) will give</span></span><br><span class="line"><span class="string">                         better results, specially when a connection</span></span><br><span class="line"><span class="string">                         is not yet or no longer in the ESTABLISHED state</span></span><br><span class="line"><span class="string">                         (SYN_RECV, TIME_WAIT etc).</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- example  : $appname 10.11.12.13:1234</span></span><br><span class="line"><span class="string">             $appname 10.11.12.13:1234 eth0</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- doc      :  http://killcx.sourceforge.net/</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> $pid = $$;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> %TCP_STATES = (</span><br><span class="line"><span class="string">&#x27;01&#x27;</span> =&gt; <span class="string">&#x27;ESTABLISHED&#x27;</span>, <span class="string">&#x27;02&#x27;</span> =&gt; <span class="string">&#x27;SYN_SENT&#x27;</span>,  <span class="string">&#x27;03&#x27;</span> =&gt; <span class="string">&#x27;SYN_RECV&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;04&#x27;</span> =&gt; <span class="string">&#x27;FIN_WAIT1&#x27;</span>,   <span class="string">&#x27;05&#x27;</span> =&gt; <span class="string">&#x27;FIN_WAIT2&#x27;</span>, <span class="string">&#x27;06&#x27;</span> =&gt; <span class="string">&#x27;TIME_WAIT&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;07&#x27;</span> =&gt; <span class="string">&#x27;CLOSE&#x27;</span>,       <span class="string">&#x27;08&#x27;</span> =&gt; <span class="string">&#x27;CLOSE_WAIT&#x27;</span>,<span class="string">&#x27;09&#x27;</span> =&gt; <span class="string">&#x27;LAST_ACK&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;0A&#x27;</span> =&gt; <span class="string">&#x27;LISTEN&#x27;</span>,      <span class="string">&#x27;0B&#x27;</span> =&gt; <span class="string">&#x27;CLOSING&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment"># convert to network byte order :</span></span><br><span class="line">$dest_ip =~ <span class="regexp">/^(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)$/</span>;</span><br><span class="line"><span class="keyword">my</span> $dest_hex = <span class="keyword">sprintf</span> <span class="string">&quot;%.2X%.2X%.2X%.2X:%.4X&quot;</span>,$4,$3,$2,$1,$dest_port;</span><br><span class="line"><span class="comment"># check in /proc/net/tcp :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] checking connection with [$dest_ip:$dest_port]\n&quot;</span>;</span><br><span class="line"><span class="keyword">my</span> ( $local_ip, $local_port, $state) = &amp;check_tcp( $dest_hex );</span><br><span class="line"><span class="keyword">if</span> ( ! $state ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] error : unable to find a connection with &quot;</span>.</span><br><span class="line">      <span class="string">&quot;[$dest_ip:$dest_port]\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] found connection with [$local_ip:$local_port] &quot;</span>.</span><br><span class="line">   <span class="string">&quot;($TCP_STATES&#123;$state&#125;)\n&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># fork our child which will hook the server response to our spoofed</span></span><br><span class="line"><span class="comment"># packet and extract the correct acknum (and seqnum) needed to close</span></span><br><span class="line"><span class="comment"># the connection :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] forking child\n&quot;</span>;</span><br><span class="line"><span class="keyword">use</span> POSIX <span class="string">&#x27;WNOHANG&#x27;</span>;</span><br><span class="line">$SIG<span class="string">&#123;CHLD&#125;</span> = <span class="function"><span class="keyword">sub</span> </span>&#123; <span class="keyword">while</span>( <span class="keyword">waitpid</span>( -<span class="number">1</span>,WNOHANG ) &gt; <span class="number">0</span> ) &#123;&#125; &#125;;</span><br><span class="line"><span class="keyword">defined</span> ( <span class="keyword">my</span> $child_pid = <span class="keyword">fork</span> ) <span class="keyword">or</span></span><br><span class="line">   <span class="keyword">die</span> <span class="string">&quot;[PARENT] error : cannot fork : $!\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $child_pid == <span class="number">0</span> ) &#123;</span><br><span class="line">   setsid <span class="keyword">or</span> <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : cannot setid : $!&quot;</span>;</span><br><span class="line">   <span class="keyword">my</span> ($err, $filter, $netmask, $address, $pcap);</span><br><span class="line"></span><br><span class="line">   <span class="comment"># no interface given, let&#x27;s try to find one :</span></span><br><span class="line">   <span class="keyword">if</span> ( ! $interface ) &#123;</span><br><span class="line">      $interface = Net::Pcap::lookupdev( \$err );</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;[CHILD]  &quot;</span>;</span><br><span class="line">      <span class="keyword">if</span> ( $interface ) &#123;</span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;interface not defined, will use [$interface]\n&quot;</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">         <span class="comment"># switch to loopback if we can&#x27;t find any interface :</span></span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;no interface found, switching to loopback\n&quot;</span>;</span><br><span class="line">         $interface = <span class="string">&#x27;lo&#x27;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment"># let&#x27;s sniff :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  setting up filter to sniff ACK on [$interface]&quot;</span>.</span><br><span class="line">      <span class="string">&quot; for 5 seconds\n&quot;</span>;</span><br><span class="line">   <span class="keyword">my</span> $pcap = Net::Pcap::open_live( $interface, <span class="number">100</span>, <span class="number">1</span>, <span class="number">5000</span>, \$err) ||</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : open_live failed : $err\n&quot;</span>;</span><br><span class="line">   <span class="comment"># setup filter :</span></span><br><span class="line">   Net::Pcap::compile( $pcap, \$filter,</span><br><span class="line">      <span class="string">&quot;(dst port $dest_port) &amp;&amp; (src port $local_port)&quot;</span>,</span><br><span class="line">      <span class="number">0</span>, $netmask) &amp;&amp;</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : compile failed : $!\n&quot;</span>;</span><br><span class="line">   Net::Pcap::setfilter($pcap, $filter) &amp;&amp;</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : setfilter failed : $!\n&quot;</span>;</span><br><span class="line">   <span class="comment"># only want to hook 1 packet :</span></span><br><span class="line">   Net::Pcap::loop($pcap, <span class="number">1</span> , \&amp;process_packet, <span class="string">&#x27;&#x27;</span>);</span><br><span class="line">   Net::Pcap::<span class="keyword">close</span>($pcap);</span><br><span class="line">   <span class="comment"># all done, let&#x27;s inform our parent :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  all done, sending USR1 signal to parent [$pid] &quot;</span>.</span><br><span class="line">      <span class="string">&quot;and exiting\n&quot;</span>;</span><br><span class="line">   <span class="string">`kill -s USR1 $pid`</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># wait 0.5 second for our child to be ready :</span></span><br><span class="line"><span class="keyword">select</span>( <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="number">0</span>.<span class="number">5</span> );</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] sending spoofed SYN to [$local_ip:$local_port]&quot;</span>.</span><br><span class="line">   <span class="string">&quot; with bogus SeqNum\n&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># send spoofed SYN packet :</span></span><br><span class="line"><span class="keyword">my</span> $packet = Net::RawIP-&gt;new(&#123;</span><br><span class="line">      <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">               <span class="string">saddr =&gt;</span> $dest_ip, <span class="string">daddr =&gt;</span> $local_ip</span><br><span class="line">            &#125;,</span><br><span class="line">      <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $local_port, <span class="string">source =&gt;</span> $dest_port,</span><br><span class="line">               <span class="string">seq =&gt;</span> <span class="number">10</span>, <span class="string">syn =&gt;</span> <span class="number">1</span></span><br><span class="line">            &#125;</span><br><span class="line">   &#125;);</span><br><span class="line">   $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># wait max 5 seconds :</span></span><br><span class="line"><span class="keyword">select</span>( <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="number">5</span> );</span><br><span class="line"></span><br><span class="line"><span class="comment"># didn&#x27;t receive any signal from our child, it has probably failed :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] no response from child, operation may have failed\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $interface <span class="keyword">ne</span> <span class="string">&#x27;lo&#x27;</span> ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] =&gt; you may try using &#x27;lo&#x27; as interface parameter\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] killing child [$child_pid] and exiting program\n\n&quot;</span>;</span><br><span class="line"><span class="comment"># kill it and exit :</span></span><br><span class="line"><span class="keyword">kill</span> <span class="number">9</span>, $child_pid;</span><br><span class="line"></span><br><span class="line"><span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">check_res</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="comment"># received signal from our child :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] received child signal, checking results...\n&quot;</span>;</span><br><span class="line">   <span class="comment"># check whether the operation was successful or not :</span></span><br><span class="line">   ( $local_ip, $local_port, $state) = &amp;check_tcp( $dest_hex );</span><br><span class="line">   <span class="keyword">if</span> ( $state ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;         =&gt; error : connection hasn&#x27;t been closed\n\n&quot;</span>;</span><br><span class="line">      <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;         =&gt; success : connection has been closed !\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">process_packet</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">my</span>( $user_data, $header, $packet ) = @_;</span><br><span class="line">   <span class="keyword">my</span> $ether_data = NetPacket::Ethernet::strip($packet);</span><br><span class="line"></span><br><span class="line">   <span class="comment"># decode TCP/IP packet (server response to our spoofed packet) :</span></span><br><span class="line">   <span class="keyword">my</span> $ip = NetPacket::IP-&gt;decode($ether_data);</span><br><span class="line">   <span class="keyword">my</span> $tcp = NetPacket::TCP-&gt;decode($ip-&gt;&#123;<span class="string">&#x27;data&#x27;</span>&#125;);</span><br><span class="line"></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  hooked ACK from [$local_ip:$local_port]\n&quot;</span>;</span><br><span class="line">   <span class="comment"># look for the magic acknum :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  &quot;</span>;</span><br><span class="line">   <span class="keyword">if</span> ( $tcp-&gt;&#123;acknum&#125; ) &#123;</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;found AckNum [$tcp-&gt;&#123;acknum&#125;] and SeqNum &quot;</span>.</span><br><span class="line">         <span class="string">&quot;[$tcp-&gt;&#123;seqnum&#125;]\n&quot;</span>;</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;[CHILD]  sending spoofed RST to [$local_ip:$local_port]&quot;</span>.</span><br><span class="line">         <span class="string">&quot; with SeqNum [$tcp-&gt;&#123;acknum&#125;]\n&quot;</span>;</span><br><span class="line">      <span class="comment"># we have it : spoof another packet (RST) with the correct seqnum</span></span><br><span class="line">      <span class="comment"># to close the connection :</span></span><br><span class="line">      <span class="keyword">my</span> $packet = Net::RawIP-&gt;new( &#123;</span><br><span class="line">         <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">                  <span class="string">saddr =&gt;</span> $dest_ip, <span class="string">daddr =&gt;</span> $local_ip</span><br><span class="line">               &#125;,</span><br><span class="line">         <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $local_port, <span class="string">source =&gt;</span> $dest_port,</span><br><span class="line">                  <span class="string">seq =&gt;</span> $tcp-&gt;&#123;acknum&#125;, <span class="string">rst =&gt;</span> <span class="number">1</span></span><br><span class="line">               &#125;</span><br><span class="line">      &#125; );</span><br><span class="line">         $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line"></span><br><span class="line">      <span class="comment"># if the connection was in the ESTABLISHED state we close it</span></span><br><span class="line">      <span class="comment"># with the remote host as well, otherwise we don&#x27;t care</span></span><br><span class="line">      <span class="comment"># (the server would reply with a RST packet anyway) :</span></span><br><span class="line">      <span class="keyword">if</span> ( $state == <span class="number">1</span> ) &#123;</span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;[CHILD]  sending RST &quot;</span>.</span><br><span class="line">            <span class="string">&quot;to remote host as well with SeqNum [$tcp-&gt;&#123;seqnum&#125;]\n&quot;</span>;</span><br><span class="line">         <span class="keyword">my</span> $packet = Net::RawIP-&gt;new( &#123;</span><br><span class="line">         <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">                  <span class="string">saddr =&gt;</span> $local_ip, <span class="string">daddr =&gt;</span> $dest_ip</span><br><span class="line">               &#125;,</span><br><span class="line">         <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $dest_port, <span class="string">source =&gt;</span> $local_port,</span><br><span class="line">                  <span class="string">seq =&gt;</span> $tcp-&gt;&#123;seqnum&#125;, <span class="string">rst =&gt;</span> <span class="number">1</span></span><br><span class="line">               &#125;</span><br><span class="line">         &#125; );</span><br><span class="line">         $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment"># very unlikely to happen (ACK packets always have acknum) :</span></span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;error : no AckNum found in packet\n&quot;</span>;</span><br><span class="line">      <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">check_tcp</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">my</span> $hex_rem = <span class="keyword">shift</span>;</span><br><span class="line">   <span class="keyword">my</span> ( $li, $lp, $st );</span><br><span class="line">   <span class="keyword">open</span> TCP, <span class="string">&quot;&lt;/proc/net/tcp&quot;</span>;</span><br><span class="line">   <span class="keyword">while</span> ( &lt;TCP&gt; ) &#123;</span><br><span class="line">      <span class="keyword">if</span> ( <span class="regexp">/^\s*\d+:\s+(.&#123;8&#125;):(.&#123;4&#125;)\s+$hex_rem\s+(.&#123;2&#125;)\s/</span> ) &#123;</span><br><span class="line">         $st = $3;</span><br><span class="line">         $lp = <span class="keyword">hex</span>( $2 );</span><br><span class="line">         ($li) = $1 =~ <span class="regexp">/(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)/</span>;</span><br><span class="line">         $li = inet_ntoa( <span class="keyword">pack</span>(<span class="string">&quot;N&quot;</span>, <span class="keyword">hex</span>( $4.$3.$2.$1 ) ) );</span><br><span class="line">         <span class="keyword">last</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">close</span> TCP;</span><br><span class="line">   <span class="comment"># if not found, check /proc/net/tcp6 :</span></span><br><span class="line">   <span class="keyword">if</span> ( ( ! $st ) &amp;&amp; ( -e <span class="string">&#x27;/proc/net/tcp6&#x27;</span> ) ) &#123;</span><br><span class="line">      <span class="keyword">open</span> TCP, <span class="string">&quot;&lt;/proc/net/tcp6&quot;</span>;</span><br><span class="line">      <span class="keyword">while</span> ( &lt;TCP&gt; ) &#123;</span><br><span class="line">         <span class="keyword">if</span> ( <span class="regexp">/^\s*\d+:\s+\d&#123;16&#125;FFFF0000(.&#123;8&#125;):(.&#123;4&#125;)\s+</span></span><br><span class="line"><span class="regexp">               \d&#123;16&#125;FFFF0000$hex_rem\s+(.&#123;2&#125;)\s/x</span> ) &#123;</span><br><span class="line">            $st = $3;</span><br><span class="line">            $lp = <span class="keyword">hex</span>( $2 );</span><br><span class="line">            ($li) = $1 =~ <span class="regexp">/(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)/</span>;</span><br><span class="line">            $li = inet_ntoa( <span class="keyword">pack</span>(<span class="string">&quot;N&quot;</span>, <span class="keyword">hex</span>( $4.$3.$2.$1 ) ) );</span><br><span class="line">            <span class="keyword">last</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">close</span> TCP;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> ( $li, $lp, $st );</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"><span class="comment"># EOF</span></span><br></pre></td></tr></table></figure>
+
+
+<ol>
+<li>首先通过输入的目的IP和端口，在<code>/proc/net/tcp</code>中查找连接状态，其中IP为网络字节序，并且16进制表示，连接状态为0A（Establish）之类的形式。</li>
+<li>通过raw socket构造syn包，seq num为10（一个随机值即可）</li>
+<li>子进程同时调用pcap抓包，用于获取challenge ack的响应中的seqnum</li>
+<li>用响应中的seqnum构造RST报文</li>
+<li>最后确认下链接是否被关闭</li>
+</ol>
+	  
+	</div>
+
+	<div>
+  	<center>
+	<div class="pagination">
+
+    
+    
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+    
+
+    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+    
+    <a href="/2022/02/08/linux网卡聚合及bond模式原理/" type="button" class="btn btn-default ">Next<i
+                class="fa fa-arrow-circle-o-right"></i></a>
+    
+
+    
+</div>
+
+    </center>
+	</div>
+	
+	<!-- comment -->
+	
+<section id="comment">
+    <h2 class="title">Comments</h2>
+
+    
+</section>
+
+
+	</div> <!-- col-md-9/col-md-12 -->
+		
+	
+	<div id="side_meta">
+		<div class="col-md-3" id="post_meta"> 
+
+	<!-- date -->
+	
+	<div class="meta-widget">
+	<i class="fa fa-clock-o"></i>
+	2022-02-22 
+	</div>
+	
+
+	<!-- categories -->
+    
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#categorys"><i class="fa fa-folder"></i></a>	
+    <ul id="categorys" class="tag_box list-unstyled collapse in">
+          
+  <li>
+    <li><a href="/categories/os/">os<span>6</span></a></li>
+  </li>
+
+    </ul>
+	</div>
+	
+
+	<!-- tags -->
+	
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
+    <ul id="tags" class="tag_box list-unstyled collapse in">	  
+	    
+  <li><a href="/tags/network/">network<span>5</span></a></li>
+    </ul>
+	</div>
+		
+
+	<!-- toc -->
+	<div class="meta-widget">
+	
+	</div>
+	
+    <hr>
+	
+</div><!-- col-md-3 -->
+
+	</div>
+		
+
+</div><!-- row -->
+
+
+
+	</div>
+  </div>
+  <div class="container-narrow">
+  <footer> <p>
+  &copy; 2022 GiddyPoet
+  
+      with help from <a href="http://hexo.io/" target="_blank">Hexo</a>,<a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind</a>,<a href="http://getbootstrap.com/" target="_blank">Twitter Bootstrap</a> and <a href="http://getbootstrap.com/" target="_blank">BOOTSTRA.386</a>. 
+     <br> Theme by <a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind.386</a>.    
+</p>
+ </footer>
+</div> <!-- container-narrow -->
+  
+
+
+  
+<a id="gotop" href="#">   
+  <span>⬆︎TOP</span>
+</a>
+
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/search.js"></script> 
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+
+
+</body>
+   </html>
