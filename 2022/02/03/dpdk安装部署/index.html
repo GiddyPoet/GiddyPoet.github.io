@@ -180,6 +180,7 @@ var _hmt = _hmt || [];
 <h3 id="调用网卡使用uio驱动"><a href="#调用网卡使用uio驱动" class="headerlink" title="调用网卡使用uio驱动"></a>调用网卡使用uio驱动</h3><p>首先要将网卡下线（原因在于网卡默认使用的是uio驱动）</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ip link set xxx down</span><br><span class="line">./dpdk-devbind.py --bind=gib_uio eth0</span><br></pre></td></tr></table></figure>
 
+<h3 id="多队列网卡支持"><a href="#多队列网卡支持" class="headerlink" title="多队列网卡支持"></a>多队列网卡支持</h3><p>在原始网卡中一个网卡只能对应一个中断，但是一个中断通常在多核cpu中只能触发一个cpu工作，因此网卡的收发包工作都有一个cpu实现，因此但队列网卡对于cpu的利用率较低。<br>多队列网卡通过在加载网卡驱动获取网卡的硬件queue数量，并结合CPU的数量，最终通过Sum&#x3D;Min的出所要激活的网卡queue数量，并申请Sum个中断号，分配给激活的各个queue，通过多队列网卡，可以将网卡queue的中断和不同的cpu绑定，同时为了避免不同的5元组交给不同的cpu处理，网卡通过hash包头的sip、dip、sport、dport实现将同一条流总是手法到相同的队列。</p>
 <h2 id="常见问题解决"><a href="#常见问题解决" class="headerlink" title="常见问题解决"></a>常见问题解决</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span></span><br><span class="line">yum install numactl-devel</span><br></pre></td></tr></table></figure>
 	  
 	</div>
@@ -236,7 +237,7 @@ var _hmt = _hmt || [];
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/os/">os<span>6</span></a></li>
+    <li><a href="/categories/os/">os<span>7</span></a></li>
   </li>
 
     </ul>
@@ -249,7 +250,7 @@ var _hmt = _hmt || [];
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/network/">network<span>5</span></a></li> <li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
+  <li><a href="/tags/network/">network<span>6</span></a></li> <li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
     </ul>
 	</div>
 		
