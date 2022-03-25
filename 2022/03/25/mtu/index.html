@@ -1,0 +1,295 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  
+  <title>mtu | GiddyPoet</title>
+  <meta name="author" content="GiddyPoet">
+  
+  <meta name="description" content="MTUMaximum Transmission Unit 最大传输单元。
+不同链路介质对网络有不同的默认MTU值，以下是一些常见的默认值:
+
+以太网MTU通常被设置为1500。
+为什么以太网帧mtu被设为1500早期的以太网使用共享链路的工作方式，为了保证CSMA&amp;#x2F;CD（载波多路复用&amp;#x">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="mtu"/>
+  <meta property="og:site_name" content="GiddyPoet"/>
+
+  
+    <meta property="og:image" content=""/>
+  
+
+  
+  
+    <link href="/favicon.png" rel="icon">
+  
+  
+  <link rel="stylesheet" href="/css/bootstrap.min.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/font-awesome.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/responsive.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/highlight.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/google-fonts.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
+  <script src="/js/jquery-2.0.3.min.js"></script>
+
+  <!-- analytics -->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-70812759-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?cb5448498d7169c668b07c2b255d62c1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+ <body>  
+  <nav id="main-nav" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+      <button type="button" class="navbar-header navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		<span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+	  <a class="navbar-brand" href="/">GiddyPoet</a>
+      <div class="collapse navbar-collapse nav-menu">
+		<ul class="nav navbar-nav">
+		  
+		  <li>
+			<a href="/archives" title="All the articles.">
+			  <i class=""></i>Archives
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/categories" title="All the categories.">
+			  <i class=""></i>Categories
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/tags" title="All the tags.">
+			  <i class=""></i>Tags
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/about" title="About me.">
+			  <i class=""></i>About
+			</a>
+		  </li>
+		  
+		</ul>
+      </div>
+    </div> <!-- container -->
+</nav>
+<div class="clearfix"></div>
+
+  <div class="container">
+  	<div class="content">
+    	 
+
+
+	
+		<div class="page-header">
+			<h1> mtu</h1>
+		</div>
+	
+
+
+
+<div class="row post">
+	<!-- cols -->
+	
+	<div id="top_meta"></div>
+	<div class="col-md-9">
+	
+
+	<!-- content -->
+	<div class="mypage">		
+	  		
+
+	  <h1 id="MTU"><a href="#MTU" class="headerlink" title="MTU"></a>MTU</h1><p>Maximum Transmission Unit 最大传输单元。</p>
+<p>不同链路介质对网络有不同的默认MTU值，以下是一些常见的默认值:</p>
+<p><img src="/2022/03/25/mtu/frame_mtu.png"></p>
+<p>以太网MTU通常被设置为1500。</p>
+<h2 id="为什么以太网帧mtu被设为1500"><a href="#为什么以太网帧mtu被设为1500" class="headerlink" title="为什么以太网帧mtu被设为1500"></a>为什么以太网帧mtu被设为1500</h2><p>早期的以太网使用共享链路的工作方式，为了保证CSMA&#x2F;CD（载波多路复用&#x2F;冲突检测）机制，所以规定了以太帧长度最小为64字节，最大为1518字节。最小64字节是为了保证最极端的冲突能被检测到，64字节是能被检测到的最小值；最大不超过1518字节是为了防止过长的帧传输时间过长而占用共享链路太长时间导致其他业务阻塞。所以规定以太网帧大小为64~1518字节，虽然技术不断发展，但协议一直没有更改。</p>
+<p>以太网最大的数据帧是1518字节，这样刨去帧头14字节和帧尾CRC校验部分4字节，那么剩下承载上层IP报文的地方最大就只有1500字节，这个值就是以太网的默认MTU值。这个MTU就是网络层协议非常关心的地方，因为网络层协议比如IP协议会根据这个值来决定是否把上层传下来的数据进行分片，如果单个IP报文长度大于MTU，则会在发送出接口前被分片，被切割为小于或等于MTU长度的IP包。</p>
+<blockquote>
+<p>其实不同厂商对于MTU的定义略有不同，常见的是MTU为IP包的最大长度，如cisco，MTU是指的IP+以太网帧头部，还有的MTU&#x3D;IP+以太网帧头部+CRC</p>
+</blockquote>
+<h2 id="MTU划分的帧格式"><a href="#MTU划分的帧格式" class="headerlink" title="MTU划分的帧格式"></a>MTU划分的帧格式</h2><p><img src="/2022/03/25/mtu/frame.png"></p>
+<h2 id="Jumbo帧与MTU"><a href="#Jumbo帧与MTU" class="headerlink" title="Jumbo帧与MTU"></a>Jumbo帧与MTU</h2><blockquote>
+<p>帧过小，导致帧的利用率过小，同时增加分片开销，帧过大，如果丢包导致大量数据重传浪费资源</p>
+</blockquote>
+<p>由于现在场景已由计算密集型转变为IO密集型，大量的网络数据需要进行分片，每个数据包都需要网络设备来进行处理，由此带来的额外开销也将很大，而且这个开销随着网络速度的提高而愈加明显。</p>
+<p>于是一些厂商提出了巨型帧（Jumbo Frame）的概念，把以太网的最大帧长扩展到了9K，相当于增强版的MTU，区别在于：</p>
+<ul>
+<li>jumbo帧是在数据链路层处理的，MTU涉及的分片通常是在网络层进行的</li>
+<li>jumbo帧包括二层以太网帧头和CRC部分，MTU一般不包括这部分，通常是指三层IP报文的长度。</li>
+</ul>
+<p>加大帧长的好处在于，减少了网络中数据包的个数，减轻了网络设备处理包头的额外开销。大量减少的帧数目也带来了性能的提高。</p>
+<h2 id="TCP-MSS和MTU"><a href="#TCP-MSS和MTU" class="headerlink" title="TCP MSS和MTU"></a>TCP MSS和MTU</h2><p>TCP MSS（Maximum Segment Size）是指TCP协议所允许的从对方收到的最大报文长度，即TCP数据包每次能够传输的最大数据分段，只包含TCP Payload，不包含TCP Header和TCP Option。MSS是TCP用来限制application层最大的发送字节数。为了达到最佳的传输效能，TCP协议在建立连接的时候通常要协商双方的MSS值，这个值TCP协议在实现的时候往往根据MTU值来计算（需要减去IP包头20字节和TCP包头20字节），所以通常MSS为1460&#x3D;1500(MTU)- 20(IP Header) -20 (TCP Header)。</p>
+<p><img src="/2022/03/25/mtu/mss.png"></p>
+<h2 id="Path-MTU"><a href="#Path-MTU" class="headerlink" title="Path MTU"></a>Path MTU</h2><blockquote>
+<p>简单来说就是路径上最小的MTU作为这条链路的MTU<br>路径MTU的探测，<br>UDP和TCP通过ICMP实现，ICMP会回复type为3code为4的差错报文，表示需要分片，但是IP包的DF已设置，导致报文不可达被丢弃，而在icmp回复的报文中会存在下一跳的的MTU值，即PATHMTUDiscovery。</p>
+</blockquote>
+<ol>
+<li>如果主机本地链路的MTU大于端到端链路中某一点的MTU值，那么这个数据包因为有DF&#x3D;1的原因，会被丢弃。</li>
+<li>如果路由器本地链路的MTU为整个端到端链路中最小值时，数据包很幸运的被送达目的地。</li>
+</ol>
+<p>对于1，路由器会回复icmp差错报文，同时在差错报文中携带了此路由器的下一跳MTU值。（Destination unreachable(fragmentation needed)），从而调整MTU值。</p>
+<p><img src="/2022/03/25/mtu/PathMTU_Discovery.png"></p>
+<blockquote>
+<p>tcp协议栈会根据路由器回复的icmp报文动态调整mss，实际上处于安全考虑并不是所有的路由器都会回复icmp报文，如果此时没有收到任何icmp报文，tcp会在超时重传后修改mss的值为更小的值。上述的一切基于tcp开启mtu_probing实现</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 默认关闭</span></span><br><span class="line">[root@giddypoet ~]# cat /proc/sys/net/ipv4/tcp_mtu_probing </span><br><span class="line">0</span><br></pre></td></tr></table></figure>	  
+	</div>
+
+	<div>
+  	<center>
+	<div class="pagination">
+
+    
+    
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+    
+
+    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+    
+    <a href="/2022/03/16/linux-start-process/" type="button" class="btn btn-default ">Next<i
+                class="fa fa-arrow-circle-o-right"></i></a>
+    
+
+    
+</div>
+
+    </center>
+	</div>
+	
+	<!-- comment -->
+	
+<section id="comment">
+    <h2 class="title">Comments</h2>
+
+    
+</section>
+
+
+	</div> <!-- col-md-9/col-md-12 -->
+		
+	
+	<div id="side_meta">
+		<div class="col-md-3" id="post_meta"> 
+
+	<!-- date -->
+	
+	<div class="meta-widget">
+	<i class="fa fa-clock-o"></i>
+	2022-03-25 
+	</div>
+	
+
+	<!-- categories -->
+    
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#categorys"><i class="fa fa-folder"></i></a>	
+    <ul id="categorys" class="tag_box list-unstyled collapse in">
+          
+  <li>
+    <li><a href="/categories/os/">os<span>8</span></a></li>
+  </li>
+
+    </ul>
+	</div>
+	
+
+	<!-- tags -->
+	
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
+    <ul id="tags" class="tag_box list-unstyled collapse in">	  
+	    
+  <li><a href="/tags/network/">network<span>7</span></a></li>
+    </ul>
+	</div>
+		
+
+	<!-- toc -->
+	<div class="meta-widget">
+	
+	</div>
+	
+    <hr>
+	
+</div><!-- col-md-3 -->
+
+	</div>
+		
+
+</div><!-- row -->
+
+
+
+	</div>
+  </div>
+  <div class="container-narrow">
+  <footer> <p>
+  &copy; 2022 GiddyPoet
+  
+      with help from <a href="http://hexo.io/" target="_blank">Hexo</a>,<a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind</a>,<a href="http://getbootstrap.com/" target="_blank">Twitter Bootstrap</a> and <a href="http://getbootstrap.com/" target="_blank">BOOTSTRA.386</a>. 
+     <br> Theme by <a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind.386</a>.    
+</p>
+ </footer>
+</div> <!-- container-narrow -->
+  
+
+
+  
+<a id="gotop" href="#">   
+  <span>⬆︎TOP</span>
+</a>
+
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/search.js"></script> 
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+
+
+</body>
+   </html>
