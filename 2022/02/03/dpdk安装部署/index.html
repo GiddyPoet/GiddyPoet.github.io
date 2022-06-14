@@ -182,7 +182,22 @@ var _hmt = _hmt || [];
 
 <h3 id="多队列网卡支持"><a href="#多队列网卡支持" class="headerlink" title="多队列网卡支持"></a>多队列网卡支持</h3><p>在原始网卡中一个网卡只能对应一个中断，但是一个中断通常在多核cpu中只能触发一个cpu工作，因此网卡的收发包工作都有一个cpu实现，因此但队列网卡对于cpu的利用率较低。<br>多队列网卡通过在加载网卡驱动获取网卡的硬件queue数量，并结合CPU的数量，最终通过Sum&#x3D;Min的出所要激活的网卡queue数量，并申请Sum个中断号，分配给激活的各个queue，通过多队列网卡，可以将网卡queue的中断和不同的cpu绑定，同时为了避免不同的5元组交给不同的cpu处理，网卡通过hash包头的sip、dip、sport、dport实现将同一条流总是手法到相同的队列。</p>
 <h2 id="常见问题解决"><a href="#常见问题解决" class="headerlink" title="常见问题解决"></a>常见问题解决</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span></span><br><span class="line">yum install numactl-devel</span><br></pre></td></tr></table></figure>
-	  
+
+
+<h2 id="用户程序"><a href="#用户程序" class="headerlink" title="用户程序"></a>用户程序</h2><p>通过meson+ninja编译后，可以将dpdk相关头文件和动态放到指定位置，之后库和头文件都可以通过pkg-config进行管理。</p>
+<h3 id="设置pkgconfig路径"><a href="#设置pkgconfig路径" class="headerlink" title="设置pkgconfig路径"></a>设置pkgconfig路径</h3><ol>
+<li>在centos下编译出来的pkgconfig文件默认放到<code>/usr/lib64/pkgconfig/libdpdk.pc</code></li>
+<li>查询当前pkg-config检索的默认路径<code>pkg-config --variable pc_path pkg-config</code></li>
+<li>将pc文件拷贝到对应路径，或者增加pkg-config检索路径</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet x86_64-native-linuxapp-gcc]# ll /usr/lib64/pkgconfig/libdpdk.pc</span><br><span class="line">-rw-r--r-- 1 root root 3356 Apr 13 17:29 /usr/lib64/pkgconfig/libdpdk.pc</span><br><span class="line"></span><br><span class="line">[root@giddypoet x86_64-native-linuxapp-gcc]# pkg-config --variable pc_path pkg-config</span><br><span class="line">/usr/lib64/pkgconfig:/usr/share/pkgconfig</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="动态库链接路径"><a href="#动态库链接路径" class="headerlink" title="动态库链接路径"></a>动态库链接路径</h3><ol>
+<li>在<code>/etc/ld.conf.d/</code>路径下新增<code>libdpdk</code>相关路径</li>
+<li>ldconfig</li>
+</ol>
+<h3 id="用户Makefile"><a href="#用户Makefile" class="headerlink" title="用户Makefile"></a>用户Makefile</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">PKGCONF = pkg-config</span><br><span class="line">APP = send</span><br><span class="line">SRCS-y = send.c</span><br><span class="line"></span><br><span class="line">CFLAGS += -O0 <span class="variable">$(<span class="built_in">shell</span> <span class="variable">$(PKGCONF)</span> --cflags libdpdk)</span> -g</span><br><span class="line">LDFLAGS += <span class="variable">$(<span class="built_in">shell</span> <span class="variable">$(PKGCONF)</span> --libs libdpdk)</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$(APP)</span>: $(SRCS-y)</span><br><span class="line">        <span class="variable">$(CC)</span> <span class="variable">$(CFLAGS)</span> $(SRCS-y) -o <span class="variable">$@</span> <span class="variable">$(LDFLAGS)</span></span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>: clean</span></span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">        rm -f <span class="variable">$(APP)</span></span><br></pre></td></tr></table></figure>	  
 	</div>
 
 	<div>
@@ -237,7 +252,7 @@ var _hmt = _hmt || [];
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/os/">os<span>8</span></a></li>
+    <li><a href="/categories/os/">os<span>10</span></a></li>
   </li>
 
     </ul>
@@ -250,7 +265,7 @@ var _hmt = _hmt || [];
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/network/">network<span>7</span></a></li> <li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
+  <li><a href="/tags/network/">network<span>9</span></a></li> <li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
     </ul>
 	</div>
 		

@@ -135,6 +135,651 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2022/06/13/ip-range/" >ip_range</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-06-13  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="ip地址范围判断问题"><a href="#ip地址范围判断问题" class="headerlink" title="ip地址范围判断问题"></a>ip地址范围判断问题</h1><p>在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以下场景。</p>
+<ul>
+<li>ip1-ip2</li>
+<li>ip&#x2F;CIDR (ip&#x2F;24)</li>
+<li>ip&#x2F;netmask (ip&#x2F;255.255.255.0)</li>
+</ul>
+<h2 id="ip地址判断"><a href="#ip地址判断" class="headerlink" title="ip地址判断"></a>ip地址判断</h2><h3 id="ip地址格式"><a href="#ip地址格式" class="headerlink" title="ip地址格式"></a>ip地址格式</h3><p>常用的地址格式类型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr</span> &#123;</span></span><br><span class="line">   <span class="keyword">unsigned</span> <span class="keyword">short</span>    sa_family;    <span class="comment">// address family, AF_xxx</span></span><br><span class="line">   <span class="keyword">char</span>              sa_data[<span class="number">14</span>];  <span class="comment">// 14 bytes of protocol address</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">    <span class="keyword">short</span>            sin_family;   <span class="comment">// e.g. AF_INET, AF_INET6</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">short</span>   sin_port;     <span class="comment">// e.g. htons(3490)</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span>   <span class="title">sin_addr</span>;</span>     <span class="comment">// see struct in_addr, below</span></span><br><span class="line">    <span class="keyword">char</span>             sin_zero[<span class="number">8</span>];  <span class="comment">// zero this if you want to</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in6</span> &#123;</span></span><br><span class="line">    <span class="keyword">u_int16_t</span>       sin6_family;   <span class="comment">// address family, AF_INET6</span></span><br><span class="line">    <span class="keyword">u_int16_t</span>       sin6_port;     <span class="comment">// port number, Network Byte Order</span></span><br><span class="line">    <span class="keyword">u_int32_t</span>       sin6_flowinfo; <span class="comment">// IPv6 flow information</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">sin6_addr</span>;</span>     <span class="comment">// IPv6 address</span></span><br><span class="line">    <span class="keyword">u_int32_t</span>       sin6_scope_id; <span class="comment">// Scope ID</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> &#123;</span></span><br><span class="line">    <span class="keyword">sa_family_t</span>  ss_family;     <span class="comment">// address family</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// all this is padding, implementation specific, ignore it:</span></span><br><span class="line">    <span class="keyword">char</span>      __ss_pad1[_SS_PAD1SIZE];</span><br><span class="line">    <span class="keyword">int64_t</span>   __ss_align;</span><br><span class="line">    <span class="keyword">char</span>      __ss_pad2[_SS_PAD2SIZE];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>struct sockaddr</code> 通常不会自己创建，该结构体，一般都是通过<code>struct sockaddr_in</code>和<code>struct sockaddr_in6</code>进行转换，由于历史因素，因此套接字api都只支持<code>struct sockaddr</code>，通过family字段进行判断，同时支持ipv4和ipv6，如果一个ip地址是ipv4,它只会读取其前4个字节，如果是ipv6，则会读取完整的16个字节.s</li>
+<li><code>struct sockaddr_in</code> ipv4地址格式</li>
+<li><code>struct sockaddr_in6</code> ipv6地址格式</li>
+<li><code>struct sockaddr_storage</code> 当你不知道地址类型具体是什么的时候可以使用该结构体，该结构体即支持ipv4也支持ipv6，该地址类型被设计的足够大可以支持<code>struct sockaddr_un</code></li>
+</ul>
+<blockquote>
+<p>对于unix socket需要通过offsetof实现绑定，addrlen &#x3D; offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path); 需要制定具体的长度，上述地址格式一般都是历史遗留问题。</p>
+</blockquote>
+<h3 id="地址格式转换"><a href="#地址格式转换" class="headerlink" title="地址格式转换"></a>地址格式转换</h3><blockquote>
+<p>从文件中读取ip地址，进行判断，通常这种配置都是通过点分形式通知，因此需要将ipstr转换成地址</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">IPSTORAGE</span> &#123;</span></span><br><span class="line">    <span class="keyword">bool</span> is_ipv6;</span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="keyword">in_addr_t</span> ipv4;</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">ipv6</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;IPSTORAGE;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ISIPV6(str) (strchr(str,<span class="meta-string">&#x27;:&#x27;</span>)?true:false)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_legal_ip_addr</span><span class="params">(<span class="keyword">char</span> *str)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[INET6_ADDRSTRLEN];</span><br><span class="line">    <span class="keyword">if</span>(ISIPV6(str)) &#123;</span><br><span class="line">        <span class="keyword">return</span> inet_pton(AF_INET6, str, buf) ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> inet_pton(AF_INET, str, buf) ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">IPSTORAGE <span class="title">str2ipstorage</span><span class="params">(<span class="keyword">char</span> *str)</span> </span>&#123;</span><br><span class="line">    IPSTORAGE is;</span><br><span class="line">    <span class="keyword">if</span>(ISIPV6(str)) &#123;</span><br><span class="line">        is.is_ipv6 = <span class="literal">true</span>; </span><br><span class="line">        inet_pton(AF_INET6, str, &amp;is.ipv6);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        is.is_ipv6 = <span class="literal">false</span>;</span><br><span class="line">        inet_pton(AF_INET, str, &amp;is.ipv4);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE *f = fopen(<span class="string">&quot;./test.txt&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(f == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">127</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">128</span>];</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    <span class="keyword">while</span>(fgets(buf, <span class="keyword">sizeof</span>(buf), f)!= <span class="literal">NULL</span>) &#123;</span><br><span class="line">        buf[<span class="built_in">strlen</span>(buf) - <span class="number">1</span>] = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span>(!is_legal_ip_addr(buf)) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;illegal ip addr %s.\n&quot;</span>, buf);</span><br><span class="line">            <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">            <span class="keyword">continue</span>; </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;ip addr %s\n&quot;</span>,buf);</span><br><span class="line"></span><br><span class="line">        IPSTORAGE is = str2ipstorage(buf);</span><br><span class="line">        <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码就是常见的字符串转ip地址的常用场景，主要说明一下几点：</p>
+<ol>
+<li>为什么要自己定义IPSTORAGE，实际上就是便于处理ipv4和ipv6的兼容性，<code>struct sockaddr_storage</code>也能实现该功能，但是还是要借助<code>struct sockaddr_in</code>和<code>struct sockaddr_in6</code>，用union处理<code>in_addr_t</code>和<code>struct in6_addr</code>处理起来较为方便。</li>
+<li>利用inet_pton检查ip格式的合法性，这个比较常见。</li>
+</ol>
+<h3 id="ip地址范围判定"><a href="#ip地址范围判定" class="headerlink" title="ip地址范围判定"></a>ip地址范围判定</h3><h4 id="ip1-ip2"><a href="#ip1-ip2" class="headerlink" title="ip1-ip2"></a>ip1-ip2</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_lt</span><span class="params">(IPSTORAGE *is1, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="built_in">memcpy</span>(&amp;is1-&gt;ipv6, &amp;is2-&gt;ipv6, <span class="keyword">sizeof</span>(struct in6_addr)) &lt; <span class="number">0</span> ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (is-&gt;ipv4) &lt; (is-&gt;ipv4);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_gt</span><span class="params">(IPSTORAGE *is1, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> !ipstorage_lt(is1,is2);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_between</span><span class="params">(IPSTORAGE *dst, IPSTORAGE *left, IPSTORAGE *right)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(dst-&gt;is_ipv6 != left-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ipstorage_gt(dst, right) || ipstorage_lt(dst, left)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>其实ipv4地址基于网络字节序或者主机字节序做比较都可以，只是由现成将str转换成网络字节序的函数，直接用网络字节序比较方便<br>ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比较。</p>
+</blockquote>
+<h4 id="ip-x2F-CIDR或ip-x2F-netmask"><a href="#ip-x2F-CIDR或ip-x2F-netmask" class="headerlink" title="ip&#x2F;CIDR或ip&#x2F;netmask"></a>ip&#x2F;CIDR或ip&#x2F;netmask</h4><p>先做判断，只要判断”&#x2F;“后是不是地址，就可以区分CIDR或netmask。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_ipv4</span><span class="params">(<span class="keyword">char</span> *ip)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[INET_ADDRSTRLEN];</span><br><span class="line">    <span class="keyword">return</span> inet_pton(AF_INET, ip, buf)? <span class="literal">true</span>: <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 255.255.255.0 = 1111 1111 1111 1111 1111 1111 0000 0000 位运算</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mask2prefix</span><span class="params">(struct in_addr addr)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">uint32_t</span> saddr = ntohl(mask.s_addr);</span><br><span class="line">    <span class="keyword">for</span>(count = <span class="number">0</span>; saddr &gt; <span class="number">0</span>; count++) &#123;</span><br><span class="line">        saddr = saddr &lt;&lt; <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">struct in_addr <span class="title">prefix2mask</span><span class="params">(<span class="keyword">int</span> prefix)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">addr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(prefix) &#123;</span><br><span class="line">        addr.s_addr = htonl(~(<span class="number">1</span> &lt;&lt; (<span class="number">32</span> - preix) <span class="number">-1</span>));</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        addr.s_addr = htonl(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> addr;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_ipv6_host_in_route</span><span class="params">(IPSTORAGE *is1, <span class="keyword">int</span> prefix, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> *<span class="title">route</span> =</span> &amp;is1-&gt;ipv6;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> *<span class="title">host</span> =</span> &amp;is2-&gt;ipv6;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// prefix是8的整数的每个uint8_t 做对比，剩下的不足一个字节的 前bit个位做对比</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> bits = prefix;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; bits &gt;= <span class="number">8</span>; i++, bits -=<span class="number">8</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span>(route-&gt;s6_addr[i] != host-&gt;s6_addr[i]) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(bits == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> mask = <span class="number">0xff</span> &lt;&lt;( <span class="number">8</span> - bits);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((route-&gt;s6_addr[i]&amp;mask) == (host-&gt;s6_addr[i] &amp; mask)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_inside</span><span class="params">(IPSTORAGE *is1, <span class="keyword">int</span> prefix, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6 != is2-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> is_ipv6_host_in_route(is1, prefix, is2);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        struct in_addr in = prefix2mask(prefix);</span><br><span class="line">        <span class="keyword">uint32_t</span> mask = ntohl(in_addr.s_addr);</span><br><span class="line">        <span class="keyword">if</span>((is1-&gt;ipv4 &amp; mask) == (is2-&gt;ipv4 &amp; mask)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(ptr = <span class="built_in">strchr</span>(str, <span class="string">&#x27;/&#x27;</span>)) &#123;</span><br><span class="line">    *ptr++ = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> prefix;</span><br><span class="line">    <span class="keyword">if</span>((is_ipv4(ptr))) &#123;</span><br><span class="line">        <span class="comment">// netmask</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">maskaddr</span>;</span></span><br><span class="line">        maskaddr.s_addr = inet_addr(ptr);</span><br><span class="line">        prefix = mask2prefix(maskaddr);</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="comment">// CIDR</span></span><br><span class="line">        prefix = atoi(ptr);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    IPSTORAGE is1 = str2ipstorage(buf);</span><br><span class="line">    IPSTORAGE is2 = str2ipstorage(dst_ip);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ipstrorage_inside(&amp;is1, prefix, &amp;is2)) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;ip in range.\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>实际上上述的操作都是利用了两个特性</p>
+<ol>
+<li>ipv4地址实际上是一个uint32_t</li>
+<li>ipv6地址实际上是一个uint8_t[16], 这样就不区分主机字节序或网络字节序了</li>
+</ol>
+</blockquote>
+<ol>
+<li>先获取到子网掩码</li>
+<li>如果是ipv4的话就直接通过主机号做判断，地址1 &amp; 子网掩码 &#x3D;&#x3D; 地址2 &amp; 子网掩码</li>
+<li>如果是ipv6的话就每一个字节进行判断，不足一个字节，取高bits，(is1-&gt;s6_addr[i] &amp; bits) &#x3D;&#x3D; (is2-&gt;s6_addr[i] &amp; bits)</li>
+</ol>
+<h5 id="ipv6不区分网络字节序相关验证"><a href="#ipv6不区分网络字节序相关验证" class="headerlink" title="ipv6不区分网络字节序相关验证"></a>ipv6不区分网络字节序相关验证</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *str6 = <span class="string">&quot;fec1::02&quot;</span>;</span><br><span class="line">    <span class="keyword">int</span> prefix = <span class="number">64</span>; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">ipv6</span>;</span></span><br><span class="line"></span><br><span class="line">    inet_pton(AF_INET6, str6, &amp;ipv6); </span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; <span class="number">16</span> ;i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%x &quot;</span>, ipv6.s6_addr[i]);</span><br><span class="line">    &#125;   </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;                                         </span><br></pre></td></tr></table></figure>
+
+
+<h4 id="对于unix-socket的相关操作"><a href="#对于unix-socket的相关操作" class="headerlink" title="对于unix socket的相关操作"></a>对于unix socket的相关操作</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/un.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PATH <span class="meta-string">&quot;/tmp/GiddyPoet&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_un</span> <span class="title">un</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> <span class="title">ss</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">socklen_t</span> len;</span><br><span class="line"></span><br><span class="line">    unlink(PATH);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> fd = socket(AF_UNIX, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;un ,<span class="number">0</span> , <span class="keyword">sizeof</span>(un));</span><br><span class="line">    un.sun_family = AF_UNIX;</span><br><span class="line">    <span class="built_in">strcpy</span>(un.sun_path, PATH);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> addrlen = offsetof(struct sockaddr_un, sun_path) + <span class="built_in">strlen</span>(PATH);</span><br><span class="line"></span><br><span class="line">    bind(fd, (struct sockaddr *)&amp;un, addrlen);</span><br><span class="line"></span><br><span class="line">    listen(fd, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> client_fd = accept(fd, (struct sockaddr *)&amp;ss, &amp;len);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ss.ss_family == AF_UNIX) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;AF_UNIX.\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> offsetof(type, f) ((size_t) \</span></span><br><span class="line"><span class="meta">    ((char *)&amp;((type *)0)-&gt;f - (char *)(type *)0))</span></span><br></pre></td></tr></table></figure>
+
+<p>简单介绍下<code>offsetof</code>，通过将起始地址为0的结构体中的f成员获取，f在结构体中的偏移量，然后转换成<code>char *</code>计算出具体偏移的字节数。</p>
+
+	
+	</div>
+  <a type="button" href="/2022/06/13/ip-range/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/05/20/路由/" >路由</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-05-20  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		
+	
+	</div>
+  <a type="button" href="/2022/05/20/路由/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/04/18/操作系统导论/" >操作系统导论</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-04-18  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="第一章-关于本书的对话"><a href="#第一章-关于本书的对话" class="headerlink" title="第一章 关于本书的对话"></a>第一章 关于本书的对话</h1><p>Operating Systems: Three Easy Pieces：</p>
+<ul>
+<li>虚拟化(virtualization)</li>
+<li>并发(concurrency)</li>
+<li>持久性(persistence)</li>
+</ul>
+<h1 id="第二章-操作系统介绍"><a href="#第二章-操作系统介绍" class="headerlink" title="第二章 操作系统介绍"></a>第二章 操作系统介绍</h1><p>程序运行时会发生什么：(冯诺依曼计算模型)<br>获取指令<code>fecth</code> -&gt; 解码指令<code>decode</code> -&gt; 执行指令<code>execute</code></p>
+<p>操作系统主要利用一种通用的技术，我们称之为虚拟化（virtualization）。也就是说，操作系统将物理（physical）资源（如处理器、内存或磁盘）转换为更通用、更强大且更易于使用的虚拟形式。</p>
+<p>为了让用户可以告诉操作系统做什么，从而利用虚拟机的功能（如运行程序、分配内存或访问文件），操作系统还提供了一些接口（API）。</p>
+<blockquote>
+<p>总的来说操作系统对下屏蔽底层硬件细节，对上提供接口调用底层硬件。让程序运行变得容易（甚至允许你同时运行多个程序），允许程序共享内存，让程序能够与设备交互，以及其他类似的有趣的工作。</p>
+</blockquote>
+<h2 id="虚拟化CPU"><a href="#虚拟化CPU" class="headerlink" title="虚拟化CPU"></a>虚拟化CPU</h2><p>此处主要说明了操作系统对于CPU的虚拟化能力，对单核CPU的串行调度。</p>
+<blockquote>
+<p>这里书中有一个例子展示了虚拟化CPU，操作系统在单CPU设备上调度多个进程。</p>
+</blockquote>
+<h2 id="虚拟化内存"><a href="#虚拟化内存" class="headerlink" title="虚拟化内存"></a>虚拟化内存</h2><p>多进程通过虚拟内存共享物理内存</p>
+<blockquote>
+<p>例子展示了多进程共享相同的内存地址，就好像每个进程都有自己的私有内存。（展示这里例子要关闭进程地址随机化，参数是<code>/proc/sys/kernel/randomize_va_space</code>）</p>
+</blockquote>
+<h2 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h2><p>简单来说就是通过多线程之间的共享变量，会对非原子操作有影响。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../include/common_threads.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// volatile 标志这个变量可能不仅有当前程序改变，也可以被某些编译器未知的因素更改，比如操作系统、硬件或者其它线程等，添加该关键字后编译器将不对该变量优化，每次都是去内存里读</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 其实在这里加不加volatile都可以，主要是加了volatile很容易触发问题</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="keyword">int</span> counter = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">int</span> loops;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> * <span class="title">work</span><span class="params">(<span class="keyword">void</span> * arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt;loops;i++) &#123;</span><br><span class="line">        counter++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(argc &lt; <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;usage: thread &lt;value&gt;\n&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    loops = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_t</span> p1,p2;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Initial value: %d\n&quot;</span>,counter);</span><br><span class="line"></span><br><span class="line">    Pthread_create(&amp;p1,<span class="literal">NULL</span>,work,<span class="literal">NULL</span>);</span><br><span class="line">    Pthread_create(&amp;p2,<span class="literal">NULL</span>,work,<span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    Pthread_join(p1,<span class="literal">NULL</span>);</span><br><span class="line">    Pthread_join(p2,<span class="literal">NULL</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Final value : %d\n&quot;</span>,counter);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h2><p>介绍文件系统，性能优化，驱动等。</p>
+<h2 id="设计目标"><a href="#设计目标" class="headerlink" title="设计目标"></a>设计目标</h2><p>它取得 CPU、内存或磁盘等物理资源（resources），甚对它们进行虚拟化（virtualize）。它处理与甚发（concurrency）有关的麻烦且棘手的问题。它持久地（persistently）存储文件，从而使它们长期随全。</p>
+<ul>
+<li>隔离</li>
+<li>可靠性</li>
+<li>安全性</li>
+<li>移动性</li>
+</ul>
+<h2 id="系统调用"><a href="#系统调用" class="headerlink" title="系统调用"></a>系统调用</h2><p>系统调用和过程调用之间的关键区别在于，系统调用将控制转移（跳转）到 OS 中，同时提高硬件特权级别（hardware privilege level）。用户应用程序以所谓的用户模式（user mode）运行，这意味着硬件限制了应用程序的功能。例如，以用户模式运行的应用程序通常不能发起对磁盘的I&#x2F;O 请求，不能访问任何物理内存页或在网络上发送数据包。在发起系统调用时通常通过一个称为陷阱（trap）的特殊硬件指令，硬件将控制转移到预先指定的陷阱处理程序（trap handler）（即预先设置的操作系统），甚同时将特权级别提升到内核模式（kernel mode）。在内核模式下，操作系统可以完全访问系统的硬件，因此可以执行诸如发起I&#x2F;O 请求或为程序提供更多内存等功能。当操作系统完成请求的服务时，它通过特殊的陷阱返回<br>（return-from-trap）指令将控制权交还给用户，该指令返回到用户模式，同时将控制权交还给应用程序，回到应用离开的地方。</p>
+<hr>
+<blockquote>
+<p>后续简单介绍了操作系统的发展历史，这里就不再赘述了</p>
+</blockquote>
+<h1 id="第三章-关于虚拟化的对话"><a href="#第三章-关于虚拟化的对话" class="headerlink" title="第三章 关于虚拟化的对话"></a>第三章 关于虚拟化的对话</h1><blockquote>
+<p>跳过</p>
+</blockquote>
+<h1 id="第4章-抽象：进程"><a href="#第4章-抽象：进程" class="headerlink" title="第4章 抽象：进程"></a>第4章 抽象：进程</h1><p>通过时分技术实现多进程共享CPU。</p>
+<blockquote>
+<p>操作系统会通过一系列的策略对进程占用时间片进行管理，同时对于硬件资源操作系统也会做相应的统一管理。</p>
+</blockquote>
+<h2 id="抽象：进程"><a href="#抽象：进程" class="headerlink" title="抽象：进程"></a>抽象：进程</h2><p>进程的机器状态：</p>
+<ul>
+<li>内存：指令和读取写入的数据都在内存里。</li>
+<li>寄存器：用于读取存储指令，如程序计数器，栈指针和相关帧指针</li>
+</ul>
+<h2 id="进程API"><a href="#进程API" class="headerlink" title="进程API"></a>进程API</h2><p>操作系统必须以某种形式提供这些API：</p>
+<ul>
+<li>创建(create)</li>
+<li>销毁(destory)</li>
+<li>等待(wait)</li>
+<li>其他控制(miscellaneous control)：除了杀死或等待，可能还要一些其他控制，例如暂停进程</li>
+<li>状态(state)：提供当前进程的状态信息</li>
+</ul>
+<h2 id="进程创建：更多细节"><a href="#进程创建：更多细节" class="headerlink" title="进程创建：更多细节"></a>进程创建：更多细节</h2><p>操作系统是如何运行一个程序：</p>
+<ol>
+<li>将代码和静态数据（例如初始化变量）从硬盘加载到内存中，加载到进程的地址空间中。<br><img src="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/load_process.jpg"><blockquote>
+<p>在早期的操作系统采用的加载方式是将进程一次性的加载到内存中，但是现代操作系统采用的加载方式是惰性加载，其实这里涉及到内存交换，内存虚拟化相应的知识。</p>
+</blockquote>
+</li>
+<li>为程序运行时栈分配一些内存，用来存放局部变量，函数参数和返回值，实际上根据程序操作系统也会为程序的堆分配一些内存。</li>
+<li>其他初始化工作如：I&#x2F;O初始化(Unix默认打开3个文件描述符)。<blockquote>
+<p>这里涉及到I&#x2F;O和文件描述符的知识</p>
+</blockquote>
+</li>
+<li>启动程序，OS将CPU的控制权转移到新创建的进程中</li>
+</ol>
+<h2 id="进程状态"><a href="#进程状态" class="headerlink" title="进程状态"></a>进程状态</h2><ul>
+<li>运行(runing)：进程正在处理器上运行，正在执行指令</li>
+<li>就绪(ready)：就绪状态下，进程已准备好运行，但是由于某种原因操作系统不运行</li>
+<li>阻塞(blocked)：一个进程执行了某种操作，知道发生其他事件才会准备运行，如：I&#x2F;O操作，他会被阻塞，其他进程可以使用CPU</li>
+</ul>
+<p><img src="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/process_state_machine.jpg"></p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p>操作系统通过进程李彪来跟踪当前运行的进程，操作系统还必须以某种方式跟踪被阻塞的进程。</p>
+<p>通过xv6进程数据结构：</p>
+<blockquote>
+<p>实际上xv6最新版本的代码和书上的代码有些出入，和书中一致的提交号为<code>943fd37</code></p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Saved registers for kernel context switches.</span></span><br><span class="line"><span class="comment">// Don&#x27;t need to save all the %fs etc. segment registers,</span></span><br><span class="line"><span class="comment">// because they are constant across kernel contexts.</span></span><br><span class="line"><span class="comment">// Save all the regular registers so we don&#x27;t need to care</span></span><br><span class="line"><span class="comment">// which are caller save, but not the return register %eax.</span></span><br><span class="line"><span class="comment">// (Not saving %eax just simplifies the switching code.)</span></span><br><span class="line"><span class="comment">// The layout of context must match code in swtch.S.</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">context</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> eip;</span><br><span class="line">  <span class="keyword">int</span> esp;</span><br><span class="line">  <span class="keyword">int</span> ebx;</span><br><span class="line">  <span class="keyword">int</span> ecx;</span><br><span class="line">  <span class="keyword">int</span> edx;</span><br><span class="line">  <span class="keyword">int</span> esi;</span><br><span class="line">  <span class="keyword">int</span> edi;</span><br><span class="line">  <span class="keyword">int</span> ebp;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">proc_state</span> &#123;</span> UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE &#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Per-process state</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">proc</span> &#123;</span></span><br><span class="line">  <span class="keyword">char</span> *mem;                <span class="comment">// Start of process memory (kernel address)</span></span><br><span class="line">  uint sz;                  <span class="comment">// Size of process memory (bytes)</span></span><br><span class="line">  <span class="keyword">char</span> *kstack;             <span class="comment">// Bottom of kernel stack for this process</span></span><br><span class="line">  <span class="class"><span class="keyword">enum</span> <span class="title">proc_state</span> <span class="title">state</span>;</span>    <span class="comment">// Process state</span></span><br><span class="line">  <span class="keyword">int</span> pid;                  <span class="comment">// Process ID</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">proc</span> *<span class="title">parent</span>;</span>      <span class="comment">// Parent process</span></span><br><span class="line">  <span class="keyword">void</span> *chan;               <span class="comment">// If non-zero, sleeping on chan</span></span><br><span class="line">  <span class="keyword">int</span> killed;               <span class="comment">// If non-zero, have been killed</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">file</span> *<span class="title">ofile</span>[<span class="title">NOFILE</span>];</span>  <span class="comment">// Open files</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">inode</span> *<span class="title">cwd</span>;</span>        <span class="comment">// Current directory</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">context</span> <span class="title">context</span>;</span>   <span class="comment">// Switch here to run process</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">trapframe</span> *<span class="title">tf</span>;</span>     <span class="comment">// Trap frame for current interrupt</span></span><br><span class="line">  <span class="keyword">char</span> name[<span class="number">16</span>];            <span class="comment">// Process name (debugging)</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Process memory is laid out contiguously, low addresses first:</span></span><br><span class="line"><span class="comment">//   text</span></span><br><span class="line"><span class="comment">//   original data and bss</span></span><br><span class="line"><span class="comment">//   fixed-size stack</span></span><br><span class="line"><span class="comment">//   expandable heap</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Per-CPU state</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cpu</span> &#123;</span></span><br><span class="line">  uchar apicid;               <span class="comment">// Local APIC ID</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">proc</span> *<span class="title">curproc</span>;</span>       <span class="comment">// Process currently running.</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">context</span> <span class="title">context</span>;</span>     <span class="comment">// Switch here to enter scheduler</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">taskstate</span> <span class="title">ts</span>;</span>        <span class="comment">// Used by x86 to find stack for interrupt</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">segdesc</span> <span class="title">gdt</span>[<span class="title">NSEGS</span>];</span>  <span class="comment">// x86 global descriptor table</span></span><br><span class="line">  <span class="keyword">volatile</span> uint booted;        <span class="comment">// Has the CPU started?</span></span><br><span class="line">  <span class="keyword">int</span> ncli;                   <span class="comment">// Depth of pushcli nesting.</span></span><br><span class="line">  <span class="keyword">int</span> intena;                 <span class="comment">// Were interrupts enabled before pushcli? </span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="process-run-py"><a href="#process-run-py" class="headerlink" title="process-run.py"></a><code>process-run.py</code></h2><p>使用模拟器：<code>process-run.py</code><br>主要参数介绍：</p>
+<ul>
+<li>-l：x:y , x为需要执行的指令数，y为是cpu指令的几率，如果是100则是cpu指令，如果是0的话就是I&#x2F;O指令</li>
+<li>-L：I&#x2F;O指令耗时</li>
+<li>-S：进程切换特性，两个参数：SWITCH_ON_IO，SWITCH_ON_END</li>
+<li>-I：I&#x2F;O处理特性，两个参数：IO_RUN_LATER，IO_RUN_IMMEDIATE</li>
+<li>-c：计算答案</li>
+<li>-p：打印数据统计</li>
+</ul>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>通过<code>scheduler.load()</code>载入指令，通过<code>scheduler.run()</code>对指令进行编排</p>
+<blockquote>
+<p>通过对指令排列进行模拟CPU行为</p>
+</blockquote>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><h4 id="进程切换"><a href="#进程切换" class="headerlink" title="进程切换"></a>进程切换</h4><h5 id="SWITH-ON-END"><a href="#SWITH-ON-END" class="headerlink" title="SWITH_ON_END"></a>SWITH_ON_END</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet cpu-intro]# ./process-run.py -l 1:0,4:100 -c -p -S SWITCH_ON_END</span><br><span class="line">Time        PID: 0        PID: 1           CPU           IOs</span><br><span class="line">  1         RUN:io         READY             1          </span><br><span class="line">  2        WAITING         READY                           1</span><br><span class="line">  3        WAITING         READY                           1</span><br><span class="line">  4        WAITING         READY                           1</span><br><span class="line">  5        WAITING         READY                           1</span><br><span class="line">  6        WAITING         READY                           1</span><br><span class="line">  7*   RUN:io_done         READY             1          </span><br><span class="line">  8           DONE       RUN:cpu             1          </span><br><span class="line">  9           DONE       RUN:cpu             1          </span><br><span class="line"> 10           DONE       RUN:cpu             1          </span><br><span class="line"> 11           DONE       RUN:cpu             1          </span><br><span class="line"></span><br><span class="line">Stats: Total Time 11</span><br><span class="line">Stats: CPU Busy 6 (54.55%)</span><br><span class="line">Stats: IO Busy  5 (45.45%)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>执行I&#x2F;O时不切换</p>
+</blockquote>
+<h5 id="SWITCH-ON-IO"><a href="#SWITCH-ON-IO" class="headerlink" title="SWITCH_ON_IO"></a>SWITCH_ON_IO</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet cpu-intro]# ./process-run.py -l 1:0,4:100 -c -p -S SWITCH_ON_IO</span><br><span class="line">Time        PID: 0        PID: 1           CPU           IOs</span><br><span class="line">  1         RUN:io         READY             1          </span><br><span class="line">  2        WAITING       RUN:cpu             1             1</span><br><span class="line">  3        WAITING       RUN:cpu             1             1</span><br><span class="line">  4        WAITING       RUN:cpu             1             1</span><br><span class="line">  5        WAITING       RUN:cpu             1             1</span><br><span class="line">  6        WAITING          DONE                           1</span><br><span class="line">  7*   RUN:io_done          DONE             1          </span><br><span class="line"></span><br><span class="line">Stats: Total Time 7</span><br><span class="line">Stats: CPU Busy 6 (85.71%)</span><br><span class="line">Stats: IO Busy  5 (71.43%)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>执行I&#x2F;O时切换</p>
+</blockquote>
+<h4 id="I-x2F-O切换"><a href="#I-x2F-O切换" class="headerlink" title="I&#x2F;O切换"></a>I&#x2F;O切换</h4><h5 id="IO-RUN-LATER"><a href="#IO-RUN-LATER" class="headerlink" title="IO_RUN_LATER"></a>IO_RUN_LATER</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet cpu-intro]# ./process-run.py -l 2:0,6:100 -c -p -I IO_RUN_LATER</span><br><span class="line">Time        PID: 0        PID: 1           CPU           IOs</span><br><span class="line">  1         RUN:io         READY             1          </span><br><span class="line">  2        WAITING       RUN:cpu             1             1</span><br><span class="line">  3        WAITING       RUN:cpu             1             1</span><br><span class="line">  4        WAITING       RUN:cpu             1             1</span><br><span class="line">  5        WAITING       RUN:cpu             1             1</span><br><span class="line">  6        WAITING       RUN:cpu             1             1</span><br><span class="line">  7*         READY       RUN:cpu             1          </span><br><span class="line">  8    RUN:io_done          DONE             1          </span><br><span class="line">  9         RUN:io          DONE             1          </span><br><span class="line"> 10        WAITING          DONE                           1</span><br><span class="line"> 11        WAITING          DONE                           1</span><br><span class="line"> 12        WAITING          DONE                           1</span><br><span class="line"> 13        WAITING          DONE                           1</span><br><span class="line"> 14        WAITING          DONE                           1</span><br><span class="line"> 15*   RUN:io_done          DONE             1          </span><br><span class="line"></span><br><span class="line">Stats: Total Time 15</span><br><span class="line">Stats: CPU Busy 10 (66.67%)</span><br><span class="line">Stats: IO Busy  10 (66.67%)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>I&#x2F;O操作等待上一个cpu指令完成后才开始</p>
+</blockquote>
+<h5 id="IO-RUN-IMMEDIATE"><a href="#IO-RUN-IMMEDIATE" class="headerlink" title="IO_RUN_IMMEDIATE"></a>IO_RUN_IMMEDIATE</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet cpu-intro]# ./process-run.py -l 2:0,6:100 -c -p -I IO_RUN_IMMEDIATE</span><br><span class="line">Time        PID: 0        PID: 1           CPU           IOs</span><br><span class="line">  1         RUN:io         READY             1          </span><br><span class="line">  2        WAITING       RUN:cpu             1             1</span><br><span class="line">  3        WAITING       RUN:cpu             1             1</span><br><span class="line">  4        WAITING       RUN:cpu             1             1</span><br><span class="line">  5        WAITING       RUN:cpu             1             1</span><br><span class="line">  6        WAITING       RUN:cpu             1             1</span><br><span class="line">  7*   RUN:io_done         READY             1          </span><br><span class="line">  8         RUN:io         READY             1          </span><br><span class="line">  9        WAITING       RUN:cpu             1             1</span><br><span class="line"> 10        WAITING          DONE                           1</span><br><span class="line"> 11        WAITING          DONE                           1</span><br><span class="line"> 12        WAITING          DONE                           1</span><br><span class="line"> 13        WAITING          DONE                           1</span><br><span class="line"> 14*   RUN:io_done          DONE             1          </span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>I&#x2F;O指令立即开始，中断正在运行的cpu指令</p>
+</blockquote>
+<blockquote>
+<p>两者的区别在于I&#x2F;O操作执行完是CPU先接受下一个I&#x2F;O请求，还是运行进程指令。由于采用默认模式SWITCH_ON_IO，CPU执行指令与I&#x2F;O操作同时进行，因而 IO_RUN_IMMEDIATE快一个单位时间。</p>
+</blockquote>
+<h2 id="第五章-插叙：进程API"><a href="#第五章-插叙：进程API" class="headerlink" title="第五章 插叙：进程API"></a>第五章 插叙：进程API</h2><h3 id="fork"><a href="#fork" class="headerlink" title="fork"></a>fork</h3><h3 id="wait"><a href="#wait" class="headerlink" title="wait"></a>wait</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line"></span><br><span class="line">    pid = fork();</span><br><span class="line">    <span class="keyword">if</span>(pid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;fork error\n&quot;</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(pid == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Hello from child %d\n&quot;</span>,getpid());</span><br><span class="line">        <span class="comment">//exit(0);</span></span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> status;</span><br><span class="line">        pid = wait(&amp;status);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;parent status %d (wait status %d),parent pid %d\n&quot;</span>, pid , status, getpid());</span><br><span class="line">        <span class="keyword">if</span>(WIFEXITED(status)) </span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;exit code %d\n&quot;</span>, WEXITSTATUS(status));</span><br><span class="line">        <span class="keyword">if</span>(WIFSIGNALED(status))</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;signal exit %d\n&quot;</span>, WSTOPSIG(status));</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;                                        </span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>实际上发现如果子进程没有指定退出时的返回值时，我当前环境返回的exit code不定</p>
+</blockquote>
+<blockquote>
+<p>wait返回的是进程id，子进程调用wait后会立马返回，由于子进程没有子进程因此返回值为-1</p>
+</blockquote>
+<h3 id="exec系统调用"><a href="#exec系统调用" class="headerlink" title="exec系统调用"></a>exec系统调用</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> **environ;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execl</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *path, <span class="keyword">const</span> <span class="keyword">char</span> *arg, ...)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execlp</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *file, <span class="keyword">const</span> <span class="keyword">char</span> *arg, ...)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execle</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *path, <span class="keyword">const</span> <span class="keyword">char</span> *arg,</span></span></span><br><span class="line"><span class="params"><span class="function">           ..., <span class="keyword">char</span> * <span class="keyword">const</span> envp[])</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execv</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *path, <span class="keyword">char</span> *<span class="keyword">const</span> argv[])</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execvp</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *file, <span class="keyword">char</span> *<span class="keyword">const</span> argv[])</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">execvpe</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *file, <span class="keyword">char</span> *<span class="keyword">const</span> argv[],</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">char</span> *<span class="keyword">const</span> envp[])</span></span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>查找方式：带p的，表示可以通过环境变量查找响应的命令，可以只给出文件名，而不用给出完整的路径，不带p的则需要添加完整的路径</li>
+<li>参数传递方式：带l表示逐个列举的形式，带v表示可以将所有参数构造成一个指针数组传递，首地址当做参数传递，数组中的最后一个指针要求是NULL</li>
+<li>环境变量：exec函数族默认使用了系统默认的环境变量，也可以传入指定的环境变量，以e结尾的两个函数就可以在envp[]中指定当前进程使用的环境变量替换掉该进程所继承的所有环境变量</li>
+</ul>
+<p><img src="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/exec_faimly.jpg"></p>
+<blockquote>
+<p>实际上操作系统真正的系统调用只有execve，其他5个都是库函数，它们最终都会调用evecve这个系统调用<br>同时由于exec函数族替换了当前进程的堆栈信息，并替换成不同的程序，因此在exec函数族之后执行的代码通常不会执行，除非exec函数族执行失败。</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line"></span><br><span class="line">    pid = fork();</span><br><span class="line">    <span class="keyword">if</span>(pid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;fork error\n&quot;</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(pid == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果此时没有换行符，当前操作系统又是行缓冲，则有可能不会输出任何信息</span></span><br><span class="line">        <span class="comment">// printf(&quot;fork child \n&quot;);</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;fork child \n&quot;</span>);</span><br><span class="line">        <span class="comment">// fflush(stdout);</span></span><br><span class="line">        close(STDOUT_FILENO);</span><br><span class="line">        open(<span class="string">&quot;./output.txt&quot;</span>,O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">char</span> * myargs[<span class="number">3</span>];</span><br><span class="line">        myargs[<span class="number">0</span>] = <span class="string">&quot;wc&quot;</span>;</span><br><span class="line">        myargs[<span class="number">1</span>] = <span class="string">&quot;wait.c&quot;</span>;</span><br><span class="line">        myargs[<span class="number">2</span>] = <span class="literal">NULL</span>;</span><br><span class="line">        execvp(myargs[<span class="number">0</span>],myargs);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> status;</span><br><span class="line">        wait(&amp;status);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;parent\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    <span class="keyword">char</span> *myargs[<span class="number">3</span>];</span><br><span class="line">    myargs[<span class="number">0</span>] = <span class="string">&quot;/bin/ls&quot;</span>;</span><br><span class="line">    myargs[<span class="number">1</span>] = <span class="string">&quot;./&quot;</span>;</span><br><span class="line">    myargs[<span class="number">2</span>] = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    pid = fork();</span><br><span class="line">    <span class="keyword">if</span>(pid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;fork error.\n&quot;</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(pid == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// no.1</span></span><br><span class="line">        <span class="comment">// execl(&quot;/bin/ls&quot;,&quot;ls&quot;, &quot;./&quot;);</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// no.2</span></span><br><span class="line">        <span class="comment">// execv(myargs[0],myargs);</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// no.3</span></span><br><span class="line">        <span class="comment">// execlp(&quot;ls&quot;,&quot;ls&quot;,&quot;./&quot;);</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// no.4</span></span><br><span class="line">        <span class="comment">// execvp(myargs[0],myargs);</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// no.5</span></span><br><span class="line">        <span class="comment">// execle(&quot;/bin/ls&quot;,&quot;ls&quot;,&quot;./&quot;,NULL);</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// no.6</span></span><br><span class="line">        execve(myargs[<span class="number">0</span>],myargs,<span class="literal">NULL</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> status;</span><br><span class="line">        wait(&amp;status);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="vfork"><a href="#vfork" class="headerlink" title="vfork"></a>vfork</h3><p>vfork和fork之间的区别：</p>
+<ul>
+<li>fork本身父子进程的执行顺序不确定，但是vfork保证子进程先运行，再它调用exec或exit后父进程才能被调度。</li>
+<li>同时fork创建的子进程是父进程的一个复制品，而vfork创建的子进程共享父进程的地址空间</li>
+</ul>
+<h3 id="习题"><a href="#习题" class="headerlink" title="习题"></a>习题</h3><blockquote>
+<p>注意习题8中dup和pipe相关的函数</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// dup是将oldfd复制给最小的未被使用的文件描述符</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup</span><span class="params">(<span class="keyword">int</span> oldfd)</span></span>;</span><br><span class="line"><span class="comment">// dup2是将oldfd复制给newfd文件描述符，如果newfd存在，则将newfd先关闭，如果不存在直接复制</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup2</span><span class="params">(<span class="keyword">int</span> oldfd, <span class="keyword">int</span> newfd)</span></span>;</span><br><span class="line"><span class="comment">// pipe pipefd[0] read pipefd[1] write</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pipe</span><span class="params">(<span class="keyword">int</span> pipefd[<span class="number">2</span>])</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将管道连在一起的操作</span></span><br><span class="line">pipe(pipefd);</span><br><span class="line"><span class="comment">// clild fork 1</span></span><br><span class="line">dup2(pipefd[<span class="number">1</span>], STDOUT_FILENO);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;xxxx&quot;</span>);</span><br><span class="line"><span class="comment">// child fork 2</span></span><br><span class="line">dup2(pipefd[<span class="number">0</span>], STDIN_FILENO);</span><br><span class="line">gets(buf);</span><br><span class="line"><span class="built_in">puts</span>(buf);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h2 id="第6章-机制：受限直接执行"><a href="#第6章-机制：受限直接执行" class="headerlink" title="第6章 机制：受限直接执行"></a>第6章 机制：受限直接执行</h2><p>虚拟化CPU支持多任务共享物理CPU，通过时分共享CPU，实现CPU虚拟化，因此引入了如下问题：</p>
+<ul>
+<li>性能，如何不增加系统开销实现虚拟化</li>
+<li>控制权，有效地运行进程，同时保留对CPU的控制</li>
+</ul>
+<blockquote>
+<p>简单来说就是如何高效、可控地虚拟化CPU</p>
+</blockquote>
+<p>为了限制进程的操作，演化出了用户模式和内核模式：</p>
+<ul>
+<li>用户模式，代码受限，不能直接访问I&#x2F;O</li>
+<li>内核模式，代码可以执行它喜欢做的事，包括特权操作</li>
+</ul>
+<p>简单来说就是通过trap和return from trap实现的系统返回。</p>
+<p>用户态内核切换：</p>
+<ul>
+<li>系统调用</li>
+<li>Page fault， 运算时除以0的错误</li>
+<li>一个设备触发了中断使得当前程序运行需要响应内核设备驱动</li>
+</ul>
+<blockquote>
+<p>上述切换中，只有1和2涉及到trap的范畴，而3是一个中断的典型例子</p>
+</blockquote>
+<h3 id="trap"><a href="#trap" class="headerlink" title="trap"></a>trap</h3><p>在遇到trap时，操作系统通常会执行如下操作：</p>
+<ol>
+<li>先保护现场，保存当前32个用户寄存器，保存pc，用于从内核态返回后，继续执行用户态程序（这些寄存器设计多种功能，有为保存用户进程状态，有为trap提供工作基础等）</li>
+<li>进入内核态，从user mode修改为supervisor mode，将SATP指向内核对应的页表</li>
+</ol>
+<blockquote>
+<p>trap table以及userrecv等相关信息需要后续学习</p>
+</blockquote>
+<h3 id="在进程间切换"><a href="#在进程间切换" class="headerlink" title="在进程间切换"></a>在进程间切换</h3><h4 id="协作方式：等待系统调用"><a href="#协作方式：等待系统调用" class="headerlink" title="协作方式：等待系统调用"></a>协作方式：等待系统调用</h4><p>在这种模式下操作系统认为系统进程会合理的运行，运行时间过长的进程被假定会定期放弃CPU，以便操作系统能够决定运行其他任务。</p>
+<ul>
+<li>通过系统调用或者触发非法操作，将CPU的控制权交给操作系统。</li>
+</ul>
+<blockquote>
+<p>实际上这个方式已经被遗弃，如果某个进程进入无线循环，并且从来不进行调用，会导致操作系统不能获取到CPU的控制权</p>
+</blockquote>
+<h4 id="非协作方式"><a href="#非协作方式" class="headerlink" title="非协作方式"></a>非协作方式</h4><p>没有硬件的额外帮助下，在上述方式下无法打断一个从来不进行系统调用的无限循环进程，因此需要借助外部设备来实现操作系统重新获取CPU控制权。</p>
+<ul>
+<li>利用时钟中断重新获取控制权，操作系统通过预先配置的时钟中断程序，重新获取CPU的控制权，来进行进程间的切换。</li>
+</ul>
+<h4 id="恢复和保存上下文"><a href="#恢复和保存上下文" class="headerlink" title="恢复和保存上下文"></a>恢复和保存上下文</h4><p>操作系统进程调度机制是有调度程序(scheduler)做出的，它是操作系统的一部分。</p>
+<p>如果决定进行切换，OS就会执行一些底层代码，即所谓的上下文切换，上下文切换做的操作：</p>
+<ul>
+<li>操作系统为当前正在执行的进程保存一些寄存器的值，到它的内核栈中</li>
+<li>同时将要执行的进程恢复一些寄存器的值</li>
+</ul>
+<blockquote>
+<p>实际上操作系统会执行一些底层的汇编代码来保存和恢复通用寄存器、程序计数器，完成这一系列的操作后从陷阱返回指令时，就会将执行的进程变成当前进行的进程。</p>
+</blockquote>
+<h3 id="作业测量"><a href="#作业测量" class="headerlink" title="作业测量"></a>作业测量</h3><blockquote>
+<p>通过sched_setaffinity实现将进程绑定到cpu核上，测试进程间切换，通过管道时间进程间的通信，用通信时间差值算出上下文切换花费的时间</p>
+</blockquote>
+<h2 id="第7章-进程调度：介绍"><a href="#第7章-进程调度：介绍" class="headerlink" title="第7章 进程调度：介绍"></a>第7章 进程调度：介绍</h2><h3 id="FIFO"><a href="#FIFO" class="headerlink" title="FIFO"></a>FIFO</h3><p>优势：<br>简单易于实现，在进程工作大致相同的时间是，可以完成。</p>
+<p>劣势：<br>当某一个进程执行时间过长，导致系统的平均周转时间过长。</p>
+<h3 id="SJF（最短任务优先）"><a href="#SJF（最短任务优先）" class="headerlink" title="SJF（最短任务优先）"></a>SJF（最短任务优先）</h3><p>在非抢占式模式下，实际上无法解决护航问题，同时最短任务只在理论上可信，实际工程场景中无法区分最短任务。</p>
+<h3 id="STCF（最短完成时间优先）"><a href="#STCF（最短完成时间优先）" class="headerlink" title="STCF（最短完成时间优先）"></a>STCF（最短完成时间优先）</h3><p>在SJF上叠加抢占，称为最短完成时间优先。每当新的工作进入系统时，它就会确定剩余工作和新工作中，谁的剩余时间更少，然后调度该工作。</p>
+<h3 id="新度量指标：响应时间"><a href="#新度量指标：响应时间" class="headerlink" title="新度量指标：响应时间"></a>新度量指标：响应时间</h3><p>首次运行时间 - 到达时间 &#x3D; 响应时间</p>
+<h3 id="轮转"><a href="#轮转" class="headerlink" title="轮转"></a>轮转</h3><p>为程序分配不同的时间片，在不同的时间片运行不同的工作。</p>
+<p>系统设计者需要权衡时间片长度，通过将时间片分给不同的工作，使其足够长，以便摊销上下文切换成本，并且不会使系统不及时响应。</p>
+<blockquote>
+<p>实际上要减少上下文切换在进程执行中所占用的时间，需要对时间片的长度进行考量<br>同时上下文件切换将带来大量的性能成本，CPU高速缓存、TLB、分支预测和其他片上硬件建立大量的状态，切换后导致明显的性能成本。</p>
+</blockquote>
+<h3 id="结合I-x2F-O"><a href="#结合I-x2F-O" class="headerlink" title="结合I&#x2F;O"></a>结合I&#x2F;O</h3><blockquote>
+<p>简单来说在执行I&#x2F;O的时候CPU由其他工作抢占，等I&#x2F;O完成后，触发中断，CPU回到之前的工作。</p>
+</blockquote>
+<h2 id="第8章-调度：多级反馈队列"><a href="#第8章-调度：多级反馈队列" class="headerlink" title="第8章 调度：多级反馈队列"></a>第8章 调度：多级反馈队列</h2><h3 id="MLFQ：基本规则"><a href="#MLFQ：基本规则" class="headerlink" title="MLFQ：基本规则"></a>MLFQ：基本规则</h3><ul>
+<li>通过多个队列区分不同的优先级，任何时刻一个工作只能存在一个队列中，MLFQ总是优先执行较高优先级的工作。</li>
+<li>每个队列中可能有多个工作，同样的优先级下，对这些队列采用轮转调度</li>
+</ul>
+<blockquote>
+<p>MLFQ核心问题在于如何设置优先级，MLFQ会根据进程行为学习其行为，预测动态调整其优先级</p>
+</blockquote>
+<h3 id="如何改变优先级"><a href="#如何改变优先级" class="headerlink" title="如何改变优先级"></a>如何改变优先级</h3>
+	
+	</div>
+  <a type="button" href="/2022/04/18/操作系统导论/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/04/12/计算机是怎样跑起来的/" >计算机是怎样跑起来的</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-04-12  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<blockquote>
+<p>&lt;&lt;计算机是怎么跑起来的&gt;&gt; 读书笔记</p>
+</blockquote>
+<h1 id="计算机三大原则"><a href="#计算机三大原则" class="headerlink" title="计算机三大原则"></a>计算机三大原则</h1><h2 id="计算机的三个根本性基础"><a href="#计算机的三个根本性基础" class="headerlink" title="计算机的三个根本性基础"></a>计算机的三个根本性基础</h2><ol>
+<li>计算机是执行输入、运算、输出的机器</li>
+<li>程序是指令和数据的集合</li>
+<li>计算机的处理方式与人们的思维习惯不同</li>
+</ol>
+<h2 id="输入、运算、输出是硬件的基础"><a href="#输入、运算、输出是硬件的基础" class="headerlink" title="输入、运算、输出是硬件的基础"></a>输入、运算、输出是硬件的基础</h2><p>计算机是执行输入、运算、输出三种操作的机器。IC电路引脚也是围绕这个点进行设计的。</p>
+<h2 id="软件是指令和数据的集合"><a href="#软件是指令和数据的集合" class="headerlink" title="软件是指令和数据的集合"></a>软件是指令和数据的集合</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">objdump xxx</span><br></pre></td></tr></table></figure>
+
+<h2 id="对计算机来说什么都是数字"><a href="#对计算机来说什么都是数字" class="headerlink" title="对计算机来说什么都是数字"></a>对计算机来说什么都是数字</h2><blockquote>
+<p>这一章围绕作者提出的计算机的三个根本性基础，举例阐述佐证了作者的观点。</p>
+</blockquote>
+<h1 id="试着制造一台计算机吧"><a href="#试着制造一台计算机吧" class="headerlink" title="试着制造一台计算机吧"></a>试着制造一台计算机吧</h1><h2 id="制作微型计算机所必需的元件"><a href="#制作微型计算机所必需的元件" class="headerlink" title="制作微型计算机所必需的元件"></a>制作微型计算机所必需的元件</h2><p>基础元件：</p>
+<ol>
+<li>cpu：解释、执行程序（文中采用的是Z80 CPU）</li>
+<li>内存：存储程序和数据（文中采用的是TC5517）</li>
+<li>I&#x2F;O：连接外部设备（文中采用的是Z80 PIO）</li>
+</ol>
+<p>为了驱动CPU运转，时钟信号必不可少，通过高低电平切换，驱动CPU操作。简单来说时钟信号用于同步操作。</p>
+<blockquote>
+<p>下述其实是D触发器，当CLK为高电平的时候，当clk是1的时候，D的值就会被写进去，然后clk&#x3D;0的时候，Q就会一直是之前那个D，clk是0的时候，D的值再变，Q也不会变。为什么需要clk呢，因为你的设计里面，这个寄存器在等上一个寄存器的数据，你不知道上一个寄存器的数据存好了没，是新的还是旧的，你要写进去的数据写好了没。如果每个寄存器都用不同的clk，这样设计很容易不同步async，就是我想同时写几个register，但是这个register已经写完了，那个我不知道他存好了没，全局的clk能帮助解决很多这类问题。这个clk很大程度上左右了设计里面很多东西的读写速度。</p>
+</blockquote>
+<blockquote>
+<p>当然，实际上的设计一般clk还会AND 一个叫enable的输入，那么当enable是0的时候，clk那边就一直是0，你要写进去这个flipflop，就需要enable&#x3D;1，clk&#x3D;1，这时候D就被存进去了。</p>
+</blockquote>
+<p><img src="/2022/04/12/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/register.png"></p>
+<p>输入程序的装置也是必不可少的，通过拨动指拨开关来输入程序，8个开关作为输入元件，输出元件是8个LED。</p>
+<p>同时还有DMA，将输入输出直接写入内存当中。</p>
+<blockquote>
+<p>此章节主要介绍了计算机的组成，设计到一些嵌入式单片机的知识，未做详细的描述，将其略过。</p>
+</blockquote>
+<h1 id="体验一次手工汇编"><a href="#体验一次手工汇编" class="headerlink" title="体验一次手工汇编"></a>体验一次手工汇编</h1><p>实际上通过上述计算机输入的二进制序列，实现汇编指令，驱动CPU实现指令。</p>
+<blockquote>
+<p>这里不再赘述</p>
+</blockquote>
+<h1 id="程序像河水一样流动着"><a href="#程序像河水一样流动着" class="headerlink" title="程序像河水一样流动着"></a>程序像河水一样流动着</h1><h2 id="程序的流程分为三种"><a href="#程序的流程分为三种" class="headerlink" title="程序的流程分为三种"></a>程序的流程分为三种</h2><p>计算机的硬件系统由CPU、I&#x2F;O和内存三部分构成。内存中存储这程序，也就是指令和数据。CPU配合着时钟发生器的时钟信号，从内存中读出指令，然后再依次对其进行解释和执行。</p>
+<p>CPU中有各种各样的各司其职的寄存器。其中有一个被称为PC（Program Counter，程序计数器）的寄存器，负责存储内存地址，该地址指向下一条即将执行的指令，每解释执行完一条指令，PC寄存器的值就会自动被更新为下一条指令的地址。</p>
+<p><img src="/2022/04/12/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/pc_register.jpg"></p>
+<p>实际上程序的流程总共有三种，由PC控制器控制：</p>
+<ol>
+<li>顺序执行</li>
+<li>条件分支</li>
+<li>循环</li>
+</ol>
+<h2 id="特殊的程序流程–中断处理"><a href="#特殊的程序流程–中断处理" class="headerlink" title="特殊的程序流程–中断处理"></a>特殊的程序流程–中断处理</h2><p>处理中断</p>
+<hr>
+<blockquote>
+<p>该书后续的介绍都较为浅显，偏入门的知识介绍，暂时不在阅读</p>
+</blockquote>
+
+	
+	</div>
+  <a type="button" href="/2022/04/12/计算机是怎样跑起来的/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/04/10/dpdk深入浅出/" >dpdk深入浅出</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-04-10  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="第一章-认识DPDK"><a href="#第一章-认识DPDK" class="headerlink" title="第一章 认识DPDK"></a>第一章 认识DPDK</h1><h2 id="主流包处理硬件平台"><a href="#主流包处理硬件平台" class="headerlink" title="主流包处理硬件平台"></a>主流包处理硬件平台</h2><p>简单介绍了当前从互联网面临的挑战：<code>从计算密集型设备转换为IO密集型设备</code>，同时介绍了当前主流包处理的硬件平台，并对其在不同领域的优缺点做了阐述：</p>
+<ol>
+<li>硬件加速器：适用于功能固化，功能具有高性能低成本的特点</li>
+<li>网络处理器：提供了包处理逻辑软件可编程的能力，在获得灵活性的同事兼顾了高性能的硬件包处理</li>
+<li>多核处理器：更为复杂多变的高层包处理上拥有优势</li>
+</ol>
+<h3 id="硬件加速器"><a href="#硬件加速器" class="headerlink" title="硬件加速器"></a>硬件加速器</h3><p>ASIC和FPGA。</p>
+<blockquote>
+<p>涉及集成电路和嵌入式设备，这里不再赘述。</p>
+</blockquote>
+<h3 id="网络处理器"><a href="#网络处理器" class="headerlink" title="网络处理器"></a>网络处理器</h3><p>网络处理器(Network  Processer  Unit，NPU)是专门为处理数据包而设计的可编程通用处理器，采用多内核并行处理结构，其常被应用于通信领域的各种任务，比如包处理、协议分析、路由查找、声音&#x2F;数据<br>的汇聚、防火墙、QoS等。</p>
+<h3 id="多核处理器"><a href="#多核处理器" class="headerlink" title="多核处理器"></a>多核处理器</h3><p>由当前CPU性能的扩展方式引入了SOC，同时简单介绍了当前主流厂商的多核处理器的SOC平台。</p>
+<h2 id="初识DPDK"><a href="#初识DPDK" class="headerlink" title="初识DPDK"></a>初识DPDK</h2><h3 id="IA-intel-architecture-不适合进行数据包处理吗"><a href="#IA-intel-architecture-不适合进行数据包处理吗" class="headerlink" title="IA(intel architecture)不适合进行数据包处理吗"></a>IA(intel architecture)不适合进行数据包处理吗</h3><p>传统linux包处理流程:</p>
+<ol>
+<li>数据包到达网卡</li>
+<li>网卡设备依据配置进行DMA操作，简单来说就是将网卡中的数据直接拷贝到内存中，避免cpu浪费大量的时间片用于数据拷贝。（其实总线上有一个总的DMA控制器用于做DMA操作，不仅网卡，同时硬盘等其他IO设备都要使用DMA控制器）</li>
+<li>网卡发送中断，通知CPU。（此处还涉及多队列网卡，网卡不同的队列中断号不一样）</li>
+<li>驱动软件填充读写缓冲区数据结构。</li>
+<li>数据报文到达内核协议栈，进行高层处理。</li>
+<li>如果最终应用在用户态，数据将从内核拷贝至用户态。（涉及零拷贝知识，mmap，sendfile等）</li>
+<li>如果最终应用在内核态，在内核继续进行。</li>
+</ol>
+<p>影响收包性能的主要因素：</p>
+<ol>
+<li>cpu中断，频繁的上下文切换，导致性能低下</li>
+<li>数据拷贝，从网卡拷贝到内核，从内核拷贝到用户态</li>
+<li>操作系统调度线程切换，导致cache替换，线程在不同核之间频繁切换，核减线程导致cache miss和cache write back造成大量的性能损失。</li>
+<li>内存页表查询，大量的IO操作会剧烈的增加内存的查找，导致性能下降。</li>
+</ol>
+<blockquote>
+<p>上述流程会引发一个问题，即便通过DMA的形式，在IO密集型的设备上，依然会因为触发大量的中断引起大量的开销，导致系统无法承受，因此引入了NAPI机制，其策略是设定中断阈值，当网卡上的中断未超过阈值，则采用中断模式，如果中断超过阈值，则系统被中断唤醒后，尽量使用轮询的方式一次性处理多个数据包，直到网络再次空闲重新传入中断等待。</p>
+</blockquote>
+<blockquote>
+<p>其实，在上述过程中，发现除了网卡频繁触发中断，影响包处理性能，同时在内核态和用户态之间频繁发生数据拷贝也会大大的影响包处理性能。</p>
+</blockquote>
+<blockquote>
+<p>netmap内存映射网卡的<code>packet buffer</code>到用户态，实现了自己的收发报文的<code>circular ring</code>来对应网卡的<code>ring</code>。越过内核态。</p>
+</blockquote>
+<blockquote>
+<p>cpu亲和性，通过CPU亲和性，将线程绑定到cpu单个核上执行，cache miss和cache write back问题。</p>
+</blockquote>
+<p>DPDK通过以下技术解决了上述问题：</p>
+<ol>
+<li>轮询替换中断，避免中断上下文切换的开销</li>
+<li>用户态驱动，在这种工作方式中，规避了不必要的内存拷贝，又避免了系统调用。</li>
+<li>亲和性与独占，dpdk工作在用户态，利用线程的CPU亲和绑定的方式，特定任务值在某个核上工作。好处是可避免线程在不同核间频繁切换，核间线程切换容易导致因cache miss和cache write back造成的大量性能损失。</li>
+<li>降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。</li>
+</ol>
+<h3 id="DPDK框架简介"><a href="#DPDK框架简介" class="headerlink" title="DPDK框架简介"></a>DPDK框架简介</h3><p><img src="/2022/04/10/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk_arch.png"></p>
+<ul>
+<li>核心库<code>Core Libs</code>：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件</li>
+<li>PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡</li>
+<li>Classify库：支持精确匹配(Exact Match)、最长匹配(LPM)和通配符匹配(ACL)，提供常用的包处理的查表操作</li>
+<li>Qos库：提供网络服务质量相关组件，如限速(Meter)和调度(Sched)</li>
+</ul>
+<blockquote>
+<p>上述是DPDK主要的库，其实还提供了一些对于运行频率调整(Power)，与<code>Linux Kernel Stack</code>建立快速通道的(KNI Kernel Network Interface)。而<code>Packet FrameWrok</code>和<code>DISTRIB</code>是为了搭建更为复杂的多核流水线处理模型提供了基础组件。</p>
+</blockquote>
+<h2 id="解读数据包处理能力"><a href="#解读数据包处理能力" class="headerlink" title="解读数据包处理能力"></a>解读数据包处理能力</h2><p>实际上以太网帧数据最小是64个字节，其中包括46个字节的数据部分，2个字节的协议类型，12个字节的目的mac地址和源mac地址，以及4个字节的校验和。每个以太网帧默认帧间距为12个字节，同时每个帧还有7个字节的前导，和一个自己的帧首定界，因此一个最小以太网帧为<code>46+2+12+4+12+7+1=84</code>个字节，672个bit。</p>
+<p>因此10Gbit&#x2F;s的网卡最大理论帧转发率为<code>10*1000/640=14.88Mpps</code>，14.88兆个包每秒。</p>
+<h2 id="探索IA处理器上最艰巨的任务"><a href="#探索IA处理器上最艰巨的任务" class="headerlink" title="探索IA处理器上最艰巨的任务"></a>探索IA处理器上最艰巨的任务</h2><p>DPDK通过一系列软件优化方法（大页利用，cache对齐，线程绑定，NUMA感知，内存通道交叉访问，无锁化数据结构，预取，SIMD指令利用等）利用IA平台硬件特性，提供完整的底层开发支持库。使得单核三层转发可以轻松地突破小包30Mpps，随着CPU封装的核数越来越多，支持的PCIe通道数越来越多，整系统的三层转发吞吐在2路CPU的Xeon E5-2658v3上可以达到300Mpps。</p>
+<h2 id="软件包处理的潜力"><a href="#软件包处理的潜力" class="headerlink" title="软件包处理的潜力"></a>软件包处理的潜力</h2><p>主要介绍了DPDK的使用场景：</p>
+<ol>
+<li>加速网络节点，支持虚拟化部署</li>
+<li>加速计算节点</li>
+<li>加速存储节点</li>
+</ol>
+<blockquote>
+<p>后续还介绍了一堆DPDK适用的场景，一大堆就不在此赘述了</p>
+</blockquote>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><ol>
+<li>helloworld</li>
+<li>skeleton</li>
+<li>l3fwd</li>
+</ol>
+<h3 id="helloworld"><a href="#helloworld" class="headerlink" title="helloworld"></a>helloworld</h3><blockquote>
+<p>ret &#x3D; runtime enviroment<br>eal &#x3D; enviroment abstraction layer<br>DPDK区分了主线程和从线程</p>
+</blockquote>
+<p>对调用函数进行简单的介绍</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rte_eal_init</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>该函数主要是对DPDK基础运行环境进行设置，具体内容如下：</p>
+<ol>
+<li>配置初始化</li>
+<li>内存初始化</li>
+<li>内存池初始化</li>
+<li>队列初始化</li>
+<li>告警初始化</li>
+<li>中断初始化</li>
+<li>PCI初始化</li>
+<li>定时器初始化</li>
+<li>检测内存本地化(NUMA)</li>
+<li>插件初始化</li>
+<li>主线程初始化</li>
+<li>轮询设备初始化</li>
+<li>建立主从线程通道(通过管道)</li>
+<li>将从线程设置在等待模式(<code>_mm_pause()</code>等待主线程分发任务)</li>
+<li>PCI设备的探测和初始化</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RTE_LCORE_FOREACH_SLAVE(i)					\</span></span><br><span class="line"><span class="meta">	for (i = rte_get_next_lcore(-1, 1, 0);				\</span></span><br><span class="line"><span class="meta">	     i&lt;RTE_MAX_LCORE;						\</span></span><br><span class="line"><span class="meta">	     i = rte_get_next_lcore(i, 1, 0))</span></span><br></pre></td></tr></table></figure>
+
+<p>遍历从线程，即逻辑线程。（逻辑核就是cpu当前的核数）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rte_eal_remote_launch</span><span class="params">(<span class="keyword">lcore_function_t</span> *f, <span class="keyword">void</span> *arg, <span class="keyword">unsigned</span> slave_id)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>主线程通过管道向从线程分发任务，将f作为函数指针传递给从线程，arg作为执行参数，在slave_id的逻辑线程上执行该函数。</p>
+<blockquote>
+<p>通过<code>lcore_config[RTE_MAX_LCORE]</code>数组和逻辑线程id确定管段，通过管道启动任务。</p>
+</blockquote>
+<p>后续任务就是简单的执行相关函数。</p>
+<h3 id="Skeleton"><a href="#Skeleton" class="headerlink" title="Skeleton"></a>Skeleton</h3><p>这个示例简单说就是一个单核的转发程序，设计初衷是实现一个最简单的报文转发程序，对报文不做任何改动。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span></span></span><br><span class="line"><span class="function"><span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rte_mempool</span> *<span class="title">mbuf_pool</span>;</span></span><br><span class="line">	<span class="keyword">unsigned</span> nb_ports;</span><br><span class="line">	<span class="keyword">uint16_t</span> portid;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize the Environment Abstraction Layer (EAL). */</span></span><br><span class="line">	<span class="keyword">int</span> ret = rte_eal_init(argc, argv);</span><br><span class="line">	<span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">		rte_exit(EXIT_FAILURE, <span class="string">&quot;Error with EAL initialization\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	argc -= ret;</span><br><span class="line">	argv += ret;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Check that there is an even number of ports to send/receive on. */</span></span><br><span class="line">	nb_ports = rte_eth_dev_count_avail();</span><br><span class="line">	<span class="keyword">if</span> (nb_ports &lt; <span class="number">2</span> || (nb_ports &amp; <span class="number">1</span>))</span><br><span class="line">		rte_exit(EXIT_FAILURE, <span class="string">&quot;Error: number of ports must be even\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Creates a new mempool in memory to hold the mbufs. */</span></span><br><span class="line">	mbuf_pool = rte_pktmbuf_pool_create(<span class="string">&quot;MBUF_POOL&quot;</span>, NUM_MBUFS * nb_ports,</span><br><span class="line">		MBUF_CACHE_SIZE, <span class="number">0</span>, RTE_MBUF_DEFAULT_BUF_SIZE, rte_socket_id());</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (mbuf_pool == <span class="literal">NULL</span>)</span><br><span class="line">		rte_exit(EXIT_FAILURE, <span class="string">&quot;Cannot create mbuf pool\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize all ports. */</span></span><br><span class="line">	RTE_ETH_FOREACH_DEV(portid)</span><br><span class="line">		<span class="keyword">if</span> (port_init(portid, mbuf_pool) != <span class="number">0</span>)</span><br><span class="line">			rte_exit(EXIT_FAILURE, <span class="string">&quot;Cannot init port %&quot;</span>PRIu16 <span class="string">&quot;\n&quot;</span>,</span><br><span class="line">					portid);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (rte_lcore_count() &gt; <span class="number">1</span>)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;\nWARNING: Too many lcores enabled. Only 1 used.\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Call lcore_main on the master core only. */</span></span><br><span class="line">	lcore_main();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* clean up the EAL */</span></span><br><span class="line">	rte_eal_cleanup();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意其中采用了基于分支预测的&#96;likely和unlikely相关函数，这是一个性能优化的小技巧。要求编译的时候使用-O2的选项，否则优化不起作用。简单来说会将可能执行的机器码放在前面，提高cpu执行效率。</p>
+</blockquote>
+<ol>
+<li>调用<code>rte_eal_init</code>初始化运行环境</li>
+<li>分配内存池<code>rte_pktmbuf_pool_create</code>，此处调用了<code>rte_socket_id</code>保证访问的内存是近端的</li>
+<li><code>port_init</code>初始化网口配置</li>
+<li><code>lcore_main</code>进行主处理流程</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct rte_mempool *</span></span><br><span class="line"><span class="function"><span class="title">rte_pktmbuf_pool_create</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">unsigned</span> <span class="keyword">int</span> n,</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="keyword">unsigned</span> <span class="keyword">int</span> cache_size, <span class="keyword">uint16_t</span> priv_size, <span class="keyword">uint16_t</span> data_room_size,</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="keyword">int</span> socket_id)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>内存池，这个mbuf pool主要是给网卡接收数据包提供mbuf的，当网卡通过DMA收到数据需要把数据包通过DMA传送到一块内存，正是这个mbuf pool中的内存。</p>
+<ul>
+<li>name：内存池名</li>
+<li>n：mp里面obj的数量，在这里表示mbuf的数量，如果你的代码缓存mbuf比较多，这里就需要设置大一些，防止不够用</li>
+<li>cache_size：mp里面cache的数量</li>
+<li>priv_size：每一个mbuf私有数据空间的大小，不需要直接设置为0即可</li>
+<li>data_room_size：mbuf的数据报文的大小，理论上需要加上room head的大小，建议使用默认值，默认2048+128 RTE_MBUF_DEFAULT_BUF_SIZE</li>
+<li>socket_id：申请内存的socket，不清楚设置那个的直接使用rte_socket_id()即可</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span></span></span><br><span class="line"><span class="function"><span class="title">rte_eth_dev_configure</span><span class="params">(<span class="keyword">uint16_t</span> port_id, <span class="keyword">uint16_t</span> nb_rx_q, <span class="keyword">uint16_t</span> nb_tx_q,</span></span></span><br><span class="line"><span class="params"><span class="function">		      <span class="keyword">const</span> struct rte_eth_conf *dev_conf)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>port_id：设备的port_id</li>
+<li>nb_rx_q：收队列数</li>
+<li>nb_tx_q：发送队列数</li>
+<li>dev_conf：设备相关信息，如收发模式和速率等</li>
+</ul>
+<blockquote>
+<p>配置网卡，包括网卡收包大小，网卡队列，端口和队列关联</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span></span></span><br><span class="line"><span class="function"><span class="title">rte_eth_rx_queue_setup</span><span class="params">(<span class="keyword">uint16_t</span> port_id, <span class="keyword">uint16_t</span> rx_queue_id,</span></span></span><br><span class="line"><span class="params"><span class="function">		       <span class="keyword">uint16_t</span> nb_rx_desc, <span class="keyword">unsigned</span> <span class="keyword">int</span> socket_id,</span></span></span><br><span class="line"><span class="params"><span class="function">		       <span class="keyword">const</span> struct rte_eth_rxconf *rx_conf,</span></span></span><br><span class="line"><span class="params"><span class="function">		       struct rte_mempool *mp)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>port_id：设备的port_id</li>
+<li>rx_queue_id：队列号，存在多个队列要每个都设置</li>
+<li>nb_rx_desc：设置队列的接收描述符(desc)的个数，也决定这接收队列的大小</li>
+<li>socket_id：numa架构下的socket id</li>
+<li>rx_conf：接收配置文件，如释放和回写的阈值等，为NULL就采用默认配置文件。</li>
+<li>rte_mempool：指向内存池的指针，从中分配网络内存缓冲区以填充接收环的每个描述符。</li>
+</ul>
+<blockquote>
+<p>发送和接收一致</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">uint16_t</span></span></span><br><span class="line"><span class="function"><span class="title">rte_eth_rx_burst</span><span class="params">(<span class="keyword">uint16_t</span> port_id, <span class="keyword">uint16_t</span> queue_id,</span></span></span><br><span class="line"><span class="params"><span class="function">		 struct rte_mbuf **rx_pkts, <span class="keyword">const</span> <span class="keyword">uint16_t</span> nb_pkts)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">uint16_t</span></span></span><br><span class="line"><span class="function"><span class="title">rte_eth_tx_burst</span><span class="params">(<span class="keyword">uint16_t</span> port_id, <span class="keyword">uint16_t</span> queue_id,</span></span></span><br><span class="line"><span class="params"><span class="function">		 struct rte_mbuf **tx_pkts, <span class="keyword">const</span> <span class="keyword">uint16_t</span> nb_pkts)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>port_id：设备的port_id</li>
+<li>queue_id：队列号</li>
+<li>rx_pkts：指针数组的地址，指向包的地址,必须大于nb_pkts</li>
+<li>nb_pkts：取回的数据包最大个数。该值必须可分解为8的倍数，以便与任何驱动程序合作。</li>
+</ul>
+<h3 id="l3fwd"><a href="#l3fwd" class="headerlink" title="l3fwd"></a>l3fwd</h3><h1 id="Cache和内存"><a href="#Cache和内存" class="headerlink" title="Cache和内存"></a>Cache和内存</h1><h2 id="存储系统简介"><a href="#存储系统简介" class="headerlink" title="存储系统简介"></a>存储系统简介</h2><p>存储系统：磁盘、磁带、光盘存储器、内存和CPU内部的Cache。</p>
+<h3 id="系统架构演进"><a href="#系统架构演进" class="headerlink" title="系统架构演进"></a>系统架构演进</h3><p>早期的计算机，内存控制器还没有整合进 CPU，所有的内存访问都需要经过北桥芯片来完成。如下图所示，CPU 通过前端总线（FSB，Front Side Bus）连接到北桥芯片，然后北桥芯片连接到内存——内存控制器集成在北桥芯片里面。</p>
+<p><img src="/2022/04/10/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/cpu_fsb.jpg"></p>
+<blockquote>
+<p>这种架构下cpu无论访问内存，设备，同时处理器之间的交换都要通过北桥，北桥成为系统瓶颈</p>
+</blockquote>
+<p>实际上现在架构中，CPU中涵盖了内存控制器，因此CPU和内存就是直连的。</p>
+<blockquote>
+<p>CPU直连的设备通常有: PCIE、DRAM、QPI(numa架构下访问远端内存需要的，实际上QPI是FSB的一种替代方案，提供了更快的传输速率)</p>
+</blockquote>
+<p>但是这种架构不同cpu逻辑核访问的都是同一块内存，因此称为UMA(一致性内存访问)，总线模型保证了所有内存访问的都是一致的，不必考虑不同内存地址之间的差距。</p>
+<blockquote>
+<p>在这种场景下，提升性能的方案就是，提升CPU频率，DRAM频率，和”FSB”(QPI)总线的传输速率。实际上CPU主频已经存在物理瓶颈，无法再通过提升主频提升效率，后面就是开始堆核，然后开始多CPU插槽</p>
+</blockquote>
+<blockquote>
+<p>作者注：dpdk涉及的知识体系庞大，深入理解dpdk的原理目前欠缺的知识体系较多，基础不牢地动山摇，只能一点点去补基础知识：1、计算机组成原理 （）2、操作系统 3、计算机系统基础 </p>
+</blockquote>
+
+	
+	</div>
+  <a type="button" href="/2022/04/10/dpdk深入浅出/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2022/03/25/mtu/" >mtu</a>
 		</h3>
 		</div>
@@ -506,415 +1151,6 @@ var _hmt = _hmt || [];
 </div>
 
 		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/03/一次内存异常问题排查经历/" >一次内存异常问题排查经历</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-03  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h2 id="内存异常现象"><a href="#内存异常现象" class="headerlink" title="内存异常现象"></a>内存异常现象</h2><p>在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。</p>
-<h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="使用free-mh查看系统内存占用情况"><a href="#使用free-mh查看系统内存占用情况" class="headerlink" title="使用free -mh查看系统内存占用情况"></a>使用<code>free -mh</code>查看系统内存占用情况</h3><p>发现buff&#x2F;cache占用大量的内存</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存</span></span><br><span class="line">[root@TAC ~]# free -mh</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            62G        6.8G         8G         80M        49G         8G</span><br><span class="line">Swap:           31G          0B         31G</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>大致介绍一下<code>free</code>命令输出的含义</p>
-<ul>
-<li>mem 内存使用情况<ul>
-<li>total 总共</li>
-<li>used 已用</li>
-<li>free 空闲</li>
-<li>shared 共享使用 tmpfs所用的内存</li>
-<li>buff&#x2F;cache <ul>
-<li>buff 内核缓存区所用内存</li>
-<li>cache 页面缓存和slab使用的内存（kmalloc）</li>
-</ul>
-</li>
-<li>available 预估启动新进程可用内存，不包含交换空间</li>
-</ul>
-</li>
-<li>swap 交换空间使用情况<ul>
-<li>total</li>
-<li>used</li>
-<li>free</li>
-</ul>
-</li>
-</ul>
-<h4 id="swap"><a href="#swap" class="headerlink" title="swap"></a>swap</h4><p>swap space 是磁盘上的一块区域，可以是一个分区，也可以是一个文件。所以具体的实现可以是 swap 分区也可以是 swap 文件。当系统物理内存吃紧时，Linux 会将内存中不常访问的数据保存到 swap 上，这样系统就有更多的物理内存为各个进程服务，而当系统需要访问 swap 上存储的内容时，再将 swap 上的数据加载到内存中，这就是常说的换出和换入。交换空间可以在一定程度上缓解内存不足的情况，但是它需要读写磁盘数据，所以性能不是很高。</p>
-<p>现在的机器一般都不太缺内存，如果系统默认还是使用了 swap 是不是会拖累系统的性能？理论上是的，但实际上可能性并不是很大。并且内核提供了一个叫做 swappiness 的参数，用于配置需要将内存中不常用的数据移到 swap 中去的紧迫程度。这个参数的取值范围是 0～100，0 告诉内核尽可能的不要将内存数据移到 swap 中，也即只有在迫不得已的情况下才这么做，而 100 告诉内核只要有可能，尽量的将内存中不常访问的数据移到 swap 中。</p>
-<p>内核参数位置<code>/proc/sys/vm/swappiness</code></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC ~]# cat /proc/sys/vm/swappiness </span><br><span class="line">60</span><br></pre></td></tr></table></figure>
-
-<h4 id="shared"><a href="#shared" class="headerlink" title="shared"></a>shared</h4><p>主要是只tmpfs系统所占用的内存，该文件系统是挂载到内存当中的</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 如下tmpfs所占用的的空间，该空间在重启后数据将丢失，内存文件系统</span></span><br><span class="line">[root@TAC tmpfiles.d]# df -h</span><br><span class="line">Filesystem      Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/sda4       3.6T   84G  3.3T   3% /</span><br><span class="line">devtmpfs         32G     0   32G   0% /dev</span><br><span class="line">tmpfs            32G   28K   32G   1% /dev/shm</span><br><span class="line">tmpfs            32G   58M   32G   1% /run</span><br><span class="line">tmpfs            32G     0   32G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2       976M  145M  765M  16% /boot</span><br><span class="line">tmpfs           6.3G     0  6.3G   0% /run/user/0</span><br></pre></td></tr></table></figure>
-<p>内核会动态分配tmpfs的大小</p>
-<h4 id="buff-x2F-cache"><a href="#buff-x2F-cache" class="headerlink" title="buff&#x2F;cache"></a>buff&#x2F;cache</h4><p>buffer和cache是两个在计算机技术中被用滥的名词，放在不通语境下会有不同的意义。在Linux的内存管理中，这里的buffer指Linux内存的：Buffer cache。这里的cache指Linux内存中的：Page cache。翻译成中文可以叫做缓冲区缓存和页面缓存。在历史上，它们一个（buffer）被用来当成对io设备写的缓存，而另一个（cache）被用来当作对io设备的读缓存，这里的io设备，主要指的是块设备文件和文件系统上的普通文件。但是现在，它们的意义已经不一样了。在当前的内核中，page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。当然，不是所有的内存都是以页（page）进行管理的，也有很多是针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（从这个角度出发，是不是buffer cache改名叫做block cache更好？）然而，也不是所有块（block）都有固定长度，系统上块的长度主要是根据所使用的块设备决定的，而页长度在X86上无论是32位还是64位都是4k。</p>
-<ul>
-<li>buff: block buff针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（不正确的理解，用来读）</li>
-<li>cache: page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。（不正确的理解，用来写）</li>
-</ul>
-<h3 id="查看-proc-sys-meminfo"><a href="#查看-proc-sys-meminfo" class="headerlink" title="查看/proc/sys/meminfo"></a>查看<code>/proc/sys/meminfo</code></h3><p>发现buff&#x2F;cache占用大量内存，则就应该跟进查看具体buff&#x2F;cache哪个部分占用更为大量的内存<br>根据meminfo发现大量slab占用内存，将近42个g</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC tmpfiles.d]# cat /proc/meminfo </span><br><span class="line">MemTotal:       65430552 kB</span><br><span class="line">MemFree:        56802616 kB</span><br><span class="line">MemAvailable:   57562116 kB</span><br><span class="line">Buffers:          259960 kB</span><br><span class="line">Cached:           978228 kB</span><br><span class="line">SwapCached:            0 kB</span><br><span class="line">Active:          7181820 kB</span><br><span class="line">Inactive:         501588 kB</span><br><span class="line">Active(anon):    6445436 kB</span><br><span class="line">Inactive(anon):    98936 kB</span><br><span class="line">Active(file):     736384 kB</span><br><span class="line">Inactive(file):   402652 kB</span><br><span class="line">Unevictable:           0 kB</span><br><span class="line">Mlocked:               0 kB</span><br><span class="line">SwapTotal:      32834556 kB</span><br><span class="line">SwapFree:       32834556 kB</span><br><span class="line">Dirty:               288 kB</span><br><span class="line">Writeback:             0 kB</span><br><span class="line">AnonPages:       6445280 kB</span><br><span class="line">Mapped:           220768 kB</span><br><span class="line">Shmem:             99160 kB</span><br><span class="line">Slab:             244800 kB</span><br><span class="line">SReclaimable:     143828 kB</span><br><span class="line">SUnreclaim:       100972 kB</span><br><span class="line">KernelStack:       23776 kB</span><br><span class="line">PageTables:        56356 kB</span><br><span class="line">NFS_Unstable:          0 kB</span><br><span class="line">Bounce:                0 kB</span><br><span class="line">WritebackTmp:          0 kB</span><br><span class="line">CommitLimit:    65549832 kB</span><br><span class="line">Committed_AS:   47565480 kB</span><br><span class="line">VmallocTotal:   34359738367 kB</span><br><span class="line">VmallocUsed:      469040 kB</span><br><span class="line">VmallocChunk:   34358892540 kB</span><br><span class="line">HardwareCorrupted:     0 kB</span><br><span class="line">AnonHugePages:   5654528 kB</span><br><span class="line">HugePages_Total:       0</span><br><span class="line">HugePages_Free:        0</span><br><span class="line">HugePages_Rsvd:        0</span><br><span class="line">HugePages_Surp:        0</span><br><span class="line">Hugepagesize:       2048 kB</span><br><span class="line">DirectMap4k:      257584 kB</span><br><span class="line">DirectMap2M:     7776256 kB</span><br><span class="line">DirectMap1G:    60817408 kB</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>MemTotal: 所有内存(RAM)大小,减去一些预留空间和内核的大小。</li>
-<li>MemFree: 完全没有用到的物理内存，lowFree+highFree</li>
-<li>MemAvailable: 在不使用交换空间的情况下，启动一个新的应用最大可用内存的大小，计算方式：MemFree+Active(file)+Inactive(file)-(watermark+min(watermark,Active(file)+Inactive(file)&#x2F;2))</li>
-<li>Buffers: 块设备所占用的缓存页，包括：直接读写块设备以及文件系统元数据(metadata)，比如superblock使用的缓存页。</li>
-<li>Cached: 表示普通文件数据所占用的缓存页。</li>
-<li>SwapCached: swap cache中包含的是被确定要swapping换页，但是尚未写入物理交换区的匿名内存页。那些匿名内存页，比如用户进程malloc申请的内存页是没有关联任何文件的，如果发生swapping换页，这类内存会被写入到交换区。</li>
-<li>Active: active包含active anon和active file</li>
-<li>Inactive: inactive包含inactive anon和inactive file</li>
-<li>Active(anon): anonymous pages（匿名页），用户进程的内存页分为两种：与文件关联的内存页(比如程序文件,数据文件对应的内存页)和与内存无关的内存页（比如进程的堆栈，用malloc申请的内存），前者称为file pages或mapped pages,后者称为匿名页。</li>
-<li>Inactive(anon): 见上</li>
-<li>Active(file): 见上</li>
-<li>Inactive(file): 见上</li>
-<li>SwapTotal: 可用的swap空间的总的大小(swap分区在物理内存不够的情况下，把硬盘空间的一部分释放出来，以供当前程序使用)</li>
-<li>SwapFree: 当前剩余的swap的大小</li>
-<li>Dirty: 需要写入磁盘的内存去的大小</li>
-<li>Writeback: 正在被写回的内存区的大小</li>
-<li>AnonPages: 未映射页的内存的大小</li>
-<li>Mapped: 设备和文件等映射的大小</li>
-<li>Slab: 内核数据结构slab的大小</li>
-<li>SReclaimable: 可回收的slab的大小</li>
-<li>SUnreclaim: 不可回收的slab的大小</li>
-<li>PageTables: 管理内存页页面的大小</li>
-<li>NFS_Unstable: 不稳定页表的大小</li>
-<li>VmallocTotal: Vmalloc内存区的大小</li>
-<li>VmallocUsed: 已用Vmalloc内存区的大小</li>
-<li>VmallocChunk: vmalloc区可用的连续最大快的大小</li>
-</ul>
-<h3 id="slabtop查看为什么slab占用大量内存"><a href="#slabtop查看为什么slab占用大量内存" class="headerlink" title="slabtop查看为什么slab占用大量内存"></a>slabtop查看为什么slab占用大量内存</h3><p>根据slabtop现场发现，大量kmalloc-2048占用大量内存，大概率是由于内核新加的一个驱动程序异常导致内存被大量占用，卸载后恢复正常</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">[root@TAC tmpfiles.d]# slabtop </span><br><span class="line">Active / Total Objects (% used)    : 972765 / 979478 (99.3%)</span><br><span class="line">Active / Total Slabs (% used)      : 21676 / 21676 (100.0%)</span><br><span class="line">Active / Total Caches (% used)     : 77 / 110 (70.0%)</span><br><span class="line">Active / Total Size (% used)       : 238632.48K / 242106.66K (98.6%)</span><br><span class="line">Minimum / Average / Maximum Object : 0.01K / 0.25K / 12.62K</span><br><span class="line"></span><br><span class="line">OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   </span><br><span class="line">224532 224197  99%    0.19K   5346	 42     42768K dentry</span><br><span class="line">159393 159393 100%    0.10K   4087	 39     16348K buffer_head</span><br><span class="line">65052  65052 100%    0.11K   1807	 36	 7228K kernfs_node_cache</span><br><span class="line">58432  56763  97%    0.06K    913	 64	 3652K kmalloc-64</span><br><span class="line">51119  51119 100%    1.01K   1649	 31     52768K ext4_inode_cache</span><br><span class="line">42587  42587 100%    0.21K   1151	 37	 9208K vm_area_struct</span><br><span class="line">32946  32946 100%    0.04K    323	102	 1292K ext4_extent_status</span><br><span class="line">32538  32538 100%    0.04K    319	102	 1276K selinux_inode_security</span><br><span class="line">29580  29580 100%    0.13K    493	 60	 3944K ext4_groupinfo_4k</span><br><span class="line">26880  26880 100%    0.19K    640	 42	 5120K kmalloc-192</span><br><span class="line">24320  23098  94%    0.25K    380	 64	 6080K kmalloc-256</span><br><span class="line">23856  23856 100%    0.07K    426	 56	 1704K Acpi-ParseExt</span><br><span class="line">21930  21291  97%    0.08K    430	 51	 1720K anon_vma</span><br><span class="line">21824  21824 100%    0.50K    341	 64     10912K kmalloc-512</span><br><span class="line">17920  17920 100%    0.01K     35	512	  140K kmalloc-8</span><br><span class="line">16640  16640 100%    0.02K     65	256	  260K kmalloc-16</span><br><span class="line">14847  14528  97%    0.64K    303	 49	 9696K proc_inode_cache</span><br><span class="line">13200  11762  89%    0.58K    240	 55	 7680K inode_cache</span><br><span class="line">9912   9912 100%    0.57K    177	 56	 5664K radix_tree_node</span><br><span class="line">9088   9088 100%    0.03K     71	128	  284K kmalloc-32</span><br><span class="line">8896   8708  97%    1.00K    278	 32	 8896K kmalloc-1024</span><br><span class="line">7308   7308 100%    0.09K    174	 42	  696K kmalloc-96</span><br><span class="line">5952   5952 100%    0.12K     93	 64	  744K kmalloc-128</span><br><span class="line">4672   4672 100%    0.06K     73	 64	  292K ext4_free_data</span><br><span class="line">4590   4590 100%    0.05K     54	 85	  216K shared_policy_node</span><br><span class="line">3468   3468 100%    0.62K     68	 51	 2176K sock_inode_cache</span><br></pre></td></tr></table></figure>
-
-	
-	</div>
-  <a type="button" href="/2022/02/03/一次内存异常问题排查经历/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/03/dpdk安装部署/" >dpdk安装部署</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-03  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
-<h2 id="UMA架构"><a href="#UMA架构" class="headerlink" title="UMA架构"></a>UMA架构</h2><p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp"></p>
-<p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
-<h2 id="NUMA架构"><a href="#NUMA架构" class="headerlink" title="NUMA架构"></a>NUMA架构</h2><p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp"></p>
-<p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote&#x2F;local）之别，而且实验分析来看，这个差别非常明显。</p>
-<h2 id="查看架构"><a href="#查看架构" class="headerlink" title="查看架构"></a>查看架构</h2><p>可以通过numactl查看或者通过查看cpu设备信息。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@GiddyPoet ~]# numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</span><br><span class="line">node 0 size: 65189 MB</span><br><span class="line">node 0 free: 56946 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0 </span><br><span class="line">  0:  10 </span><br><span class="line"></span><br><span class="line">[root@GiddyPoet node]# ls /sys/devices/system/node/</span><br><span class="line">has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent</span><br></pre></td></tr></table></figure>
-
-<p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
-<h2 id="pps算法（包转发率）"><a href="#pps算法（包转发率）" class="headerlink" title="pps算法（包转发率）"></a>pps算法（包转发率）</h2><p>pps: package per sesond</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp"></p>
-<p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
-<p>一个最短以太帧实际长度为：<br>$(12+7+1+6+6+2+46+4)*8&#x3D;672bit$</p>
-<p>通常按照万兆光计算下64个字节的包转发率。</p>
-<p>$10*1000&#x2F;672≈14.88Mpps$</p>
-<h2 id="UIO-用户空间IO"><a href="#UIO-用户空间IO" class="headerlink" title="UIO:用户空间IO"></a>UIO:用户空间IO</h2><p>小的内核模块，用于将设备内存映射到用户空间，并注册中断。<br>uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe uio_pci_generic 加载。<br>但是其不支持虚拟功能，DPDK提供一个替代模块igb_uio模块。</p>
-<h2 id="VFIO-后续补充"><a href="#VFIO-后续补充" class="headerlink" title="VFIO(后续补充)"></a>VFIO(后续补充)</h2><p>使用vfio不仅需要驱动支持，内核和bios都要支持，并配置IO虚拟化（如Intel VT-d)</p>
-<h2 id="大页内存"><a href="#大页内存" class="headerlink" title="大页内存"></a>大页内存</h2><p>通过grub进行修改</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 修改/etc/default/grub，在GRUB_CMDLINE_LINUX后新增大页内存配置，同时支持iommu，对于iommu</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 需要再虚拟机cpu里也做相应的修改</span></span><br><span class="line">default_hugepagesz=2m hugepagesz=2m hugepages=256 iommu=pt intel_iommu=on</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改后重新生成grub文件</span></span><br><span class="line">grub2-mkconfig -o /boot/grub2/grub.cfg</span><br></pre></td></tr></table></figure>
-
-<p>修改&#x2F;etc&#x2F;fstab开机挂载打页内存</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nodev /mnt/huge hugetlbfs defaults 0 0</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h1 id="虚拟机环境配置"><a href="#虚拟机环境配置" class="headerlink" title="虚拟机环境配置"></a>虚拟机环境配置</h1><p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
-<p><img src="/2022/02/03/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg"></p>
-<blockquote>
-<p>注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。</p>
-</blockquote>
-<pre><code>修改igb_uio驱动检测方法：
-</code></pre>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> RTE_INTR_MODE_LEGACY:</span><br><span class="line">          <span class="comment">// 添加true，保证能通过检测</span></span><br><span class="line">          <span class="keyword">if</span> (pci_intx_mask_supported(udev-&gt;pdev)||<span class="literal">true</span>) &#123;                                             </span><br><span class="line">              dev_dbg(&amp;udev-&gt;pdev-&gt;dev, <span class="string">&quot;using INTX&quot;</span>);</span><br><span class="line">              udev-&gt;info.irq_flags = IRQF_SHARED | IRQF_NO_THREAD;</span><br><span class="line">              udev-&gt;info.irq = udev-&gt;pdev-&gt;irq;</span><br><span class="line">              udev-&gt;mode = RTE_INTR_MODE_LEGACY;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">          &#125;   </span><br></pre></td></tr></table></figure>
-
-<h1 id="编译安装dpdk"><a href="#编译安装dpdk" class="headerlink" title="编译安装dpdk"></a>编译安装dpdk</h1><p>dpdk的版本选择很重要，由于centos通常是趋于稳定版的版本，所以编译器等环境都是较为老旧的版本，根据官方的相关建议，选用dpdk-18.11.11-stable版本做为测试。</p>
-<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">export RTE_SDK=/root/dpdk-stable-18.11.11/</span><br><span class="line">export RTE_TARGET=x86_64-native-linuxapp-gcc</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 如果需要对相关代码进行调试可以添加</span></span><br><span class="line">export RTE_CFLAGS=&quot;-O0 -g&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="编译dpdk"><a href="#编译dpdk" class="headerlink" title="编译dpdk"></a>编译dpdk</h2><p>Makefile层层嵌套，入口为<code>GNUmakefile</code>，指定平台为<code>x86_64-native-linuxapp-gcc</code></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在dpdk-stable-18.11.11/config中实现</span></span><br><span class="line">make install T=x86_64-native-linuxapp-gcc</span><br></pre></td></tr></table></figure>
-
-<p>编译后的目录结构</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet x86_64-native-linuxapp-gcc]# tree -aL 1</span><br><span class="line">.</span><br><span class="line">├── app  # 测试用二进制文件</span><br><span class="line">├── build #</span><br><span class="line">├── .config # config文件</span><br><span class="line">├── .config.orig</span><br><span class="line">├── include # 头文件</span><br><span class="line">├── kmod # 驱动文件</span><br><span class="line">├── lib # 库文件</span><br><span class="line">└── Makefile</span><br></pre></td></tr></table></figure>
-
-<h2 id="配置dpdk"><a href="#配置dpdk" class="headerlink" title="配置dpdk"></a>配置dpdk</h2><h3 id="uio驱动"><a href="#uio驱动" class="headerlink" title="uio驱动"></a>uio驱动</h3><p>内核自带了<code>uio_pci_generic</code>驱动可以实现uio功能，dpdk提供了一个<code>igb_uio</code>模块，对于不支持传统中断的设置，例如虚拟功能设备，必须使用<code>igb_uio</code>来替代<code>uio_pci_generi</code>模块。</p>
-<h3 id="调用网卡使用uio驱动"><a href="#调用网卡使用uio驱动" class="headerlink" title="调用网卡使用uio驱动"></a>调用网卡使用uio驱动</h3><p>首先要将网卡下线（原因在于网卡默认使用的是uio驱动）</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ip link set xxx down</span><br><span class="line">./dpdk-devbind.py --bind=gib_uio eth0</span><br></pre></td></tr></table></figure>
-
-<h3 id="多队列网卡支持"><a href="#多队列网卡支持" class="headerlink" title="多队列网卡支持"></a>多队列网卡支持</h3><p>在原始网卡中一个网卡只能对应一个中断，但是一个中断通常在多核cpu中只能触发一个cpu工作，因此网卡的收发包工作都有一个cpu实现，因此但队列网卡对于cpu的利用率较低。<br>多队列网卡通过在加载网卡驱动获取网卡的硬件queue数量，并结合CPU的数量，最终通过Sum&#x3D;Min的出所要激活的网卡queue数量，并申请Sum个中断号，分配给激活的各个queue，通过多队列网卡，可以将网卡queue的中断和不同的cpu绑定，同时为了避免不同的5元组交给不同的cpu处理，网卡通过hash包头的sip、dip、sport、dport实现将同一条流总是手法到相同的队列。</p>
-<h2 id="常见问题解决"><a href="#常见问题解决" class="headerlink" title="常见问题解决"></a>常见问题解决</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span></span><br><span class="line">yum install numactl-devel</span><br></pre></td></tr></table></figure>
-
-	
-	</div>
-  <a type="button" href="/2022/02/03/dpdk安装部署/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/03/虚拟网络设备/" >虚拟网络设备</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-03  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h1 id="虚拟网络设备"><a href="#虚拟网络设备" class="headerlink" title="虚拟网络设备"></a>虚拟网络设备</h1><p>本文将从基础的虚拟网络设备进行介绍，开启linux网络虚拟化的学习之路。</p>
-<h2 id="tun-x2F-tap"><a href="#tun-x2F-tap" class="headerlink" title="tun&#x2F;tap"></a>tun&#x2F;tap</h2><p>tap&#x2F;tun是linux内核实现的一对虚拟网络设备，TAP工作在二层，tun工作在三层，linux内核通过TAP&#x2F;TUN设备向绑定该设备的用户空间应用发送数据。反之，用户空间也可以像操作网络硬件设备那样，通过TAP&#x2F;TUN设备发送数据。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if_tun.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/if.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">create_tun</span><span class="params">(<span class="keyword">char</span> *devname,<span class="keyword">int</span> flags)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ifreq</span> <span class="title">ifr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((fd = open(<span class="string">&quot;/dev/net/tun&quot;</span>,O_RDWR))&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;open&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;ifr,<span class="number">0</span>,<span class="keyword">sizeof</span>(ifr));</span><br><span class="line">    <span class="comment">// IFF_NO_PI，package info，tun/tap会默认在网卡包包信息，信息内容如下</span></span><br><span class="line">    <span class="comment">// struct tun_pi &#123;</span></span><br><span class="line">    <span class="comment">//     unsigned short flags;</span></span><br><span class="line">    <span class="comment">//     unsigned short proto;</span></span><br><span class="line">    <span class="comment">// &#125;;</span></span><br><span class="line">    ifr.ifr_flags = flags;</span><br><span class="line">    <span class="built_in">strcpy</span>(ifr.ifr_name,devname); </span><br><span class="line">    <span class="keyword">if</span>(ioctl(fd,TUNSETIFF,(<span class="keyword">void</span>*)&amp;ifr)&lt;<span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;ioctl&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ERROR;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/tun_tap%E4%BC%A0%E8%BE%93.jpg"></p>
-<h2 id="Linux-Bridge"><a href="#Linux-Bridge" class="headerlink" title="Linux Bridge"></a>Linux Bridge</h2><p>Linux Bridge（网桥）是工作在二层的虚拟网络设备，功能类似于物理的交换机。</p>
-<p>对于普通的网络设备来说，只有两端，从一端进来的数据会从另一端出去，如物理网卡从外面物理<br>网络收到的数据会转发给内核协议栈，而从内核协议栈过来的数据会转发到外面的物理网络中。而<br>Bridge 不同，Bridge 有多个端口，数据可以从任何端口进来，进来之后从哪个端口出去要看MAC地址，<br>和物理交换机的原理类似。</p>
-<p>Bridge有以下特定：</p>
-<ul>
-<li>Bridge是二层设备，仅用来处理二层的通讯</li>
-<li>Bridge使用mac地址表来决定怎么转发帧</li>
-<li>Bridge会从host之间的数据通讯包中学习MAC地址，Bridge能做二层转发的原因。</li>
-<li>可以是硬件或者纯软件实现（纯软件实现会降低性能，纯用cpu实现）</li>
-</ul>
-<blockquote>
-<p>注：Bridge可能出现二层广播风暴，可以通过开启STP来防止出现环路。</p>
-</blockquote>
-<h3 id="二层广播风暴"><a href="#二层广播风暴" class="headerlink" title="二层广播风暴"></a>二层广播风暴</h3><h4 id="二层交换机转发机制（bridge）"><a href="#二层交换机转发机制（bridge）" class="headerlink" title="二层交换机转发机制（bridge）"></a>二层交换机转发机制（bridge）</h4><p>交换机对于从一个port N 上incoming frame，学习其source mac x，生成mac address table如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mac x &lt;-----&gt; port n</span><br></pre></td></tr></table></figure>
-
-<p>这样就生成了mac地址和port的映射表，如果交换机收到一个frame，就会查询frame的destination mac和mac address table进行匹配，匹配到了就从对应的port发去。</p>
-<p>如果没有匹配到，就认为是 unknown Unicast 或 broadcast，没有办法只好把它从所有Port( 除了接收到Frame的接口）发送出去，到了另外一台交换机也是这么处理，于是这个Frame就一直在封闭的环路里无限的循环。</p>
-<p>网桥处理包遵循以下几条原则：</p>
-<ol>
-<li><p>在一个接口上接收的包不会再在那个接口上发送这个数据包；</p>
-</li>
-<li><p>每个接收到的数据包都要学习其源地址；</p>
-</li>
-<li><p>如果数据包是多播或广播包，则要在同一个网段中除了接收端口外的其他所有端口发送这个数据包，如果上层协议栈对多播包感兴趣，则需要把数据包提交给上层协议栈；</p>
-</li>
-<li><p>如果数据包的目的MAC地址不能再CAM表中找到，则要在同一个网段中除了接收端口外的其他所有端口发送这个数据包；</p>
-</li>
-<li><p>如果能够在CAM表中查询到目的MAC地址，则在特定的端口上发送这个数据包，如果发送端口和接收端口是同一端口则不发送。</p>
-</li>
-</ol>
-<h4 id="STP协议"><a href="#STP协议" class="headerlink" title="STP协议"></a>STP协议</h4><p>STP（Spanning Tree Protocol）生成树协议，是运行在交换机上的二层破环协议，环路会导致广播风暴、MAC地址表震荡(交换机在学习mac地址时产生广播风暴导致的)等后果，STP的主要目的就是确保在网络中存在冗余路径时，不会产生环路。</p>
-<p>通过生成树的选举机制，将优先级高的交换机节点选为根节点，至于从根到下游端口是畅通还是阻断，取决于到根的路径成本cost，谁更接近根，谁就畅通。</p>
-<h3 id="Bridge搭建虚拟化环境"><a href="#Bridge搭建虚拟化环境" class="headerlink" title="Bridge搭建虚拟化环境"></a>Bridge搭建虚拟化环境</h3><p>传统虚拟机通过<code>Bridge</code>和<code>tun/tap</code>、<code>veth-pair</code>实现虚拟机的组网。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/bridge_veth.jpg"></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">  +-------------------------------------+------------------------------+----------------------------+</span><br><span class="line">  |                                     |                              |                            |</span><br><span class="line">  |                HOST                 |               VM             |             VM             |</span><br><span class="line">  |                                     |                              |                            |</span><br><span class="line">  |    +--------------------------+     |  +------------------------+  | +------------------------+ |</span><br><span class="line">  |    |  NETWORK PROTOCOL STACK  |     |  | NETWORK PROTOCOL STACK |  | | NETWORK PROTOCOL STACK | |</span><br><span class="line">  |    +--------------------------+     |  +------------------------+  | +------------------------+ |</span><br><span class="line">  +-------------------------------------------------------------------------------------------------+</span><br><span class="line">  |                                     |                              |                            |</span><br><span class="line">  |                                     |                              |                            |</span><br><span class="line">  |             +---------+             |          +---------+         |         +---------+        |</span><br><span class="line">  |             |    .1   |             |          |   .2    |         |         |    .3   |        |</span><br><span class="line">  | +-----+     +---------+     +-----+ |          +---------+         |         +---------+        |</span><br><span class="line">  | | eth0| &lt;-&gt; |   br0   | &lt;-&gt; | tap | |          |   eth0  |         |         |   eth0  |        |</span><br><span class="line">  | +--+--+     +---------+     +--+--+ |          +----+----+         |         +----+----+        |</span><br><span class="line">  |    |                           ^    |               ^              |              ^             |</span><br><span class="line">  |    |             ^             |    |               |              |              |             |</span><br><span class="line">  |    |             |             +--------------------+              |              |             |</span><br><span class="line">  |    |             v                  |                              |              |             |</span><br><span class="line">  |    |                                |                              |              |             |</span><br><span class="line">  |    |        +---------+             |                              |              |             |</span><br><span class="line">  |    |        |   tap   | &lt;---------------------------------------------------------+             |</span><br><span class="line">  |    |        +---------+             |                              |                            |</span><br><span class="line">  +-------------------------------------+------------------------------+----------------------------+</span><br><span class="line">       |</span><br><span class="line">       v</span><br><span class="line">Physical Network</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/bridge_tap.jpg"></p>
-<h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><ul>
-<li>当在同一台宿主机上需要连接多个虚拟机或容器时。</li>
-<li>对于拥有多个网桥的混合环境。</li>
-<li>需要应用高级流量控制，FDB的维护。</li>
-</ul>
-<h2 id="MACVLAN"><a href="#MACVLAN" class="headerlink" title="MACVLAN"></a>MACVLAN</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Macvlan 允许你在主机的一个网络接口上配置多个虚拟的网络接口，这些网络 interface 有自己独立的 MAC 地址，也可以配置上 IP 地址进行通信。Macvlan 下的虚拟机或者容器网络和主机在同一个网段中，共享同一个广播域。</p>
-<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>同一 VLAN 间数据传输是通过二层互访，即 MAC 地址实现的，不需要使用路由。不同 VLAN 的用户单播默认不能直接通信，如果想要通信，还需要三层设备做路由，Macvlan 也是如此。用 Macvlan 技术虚拟出来的虚拟网卡，在逻辑上和物理网卡是对等的。物理网卡也就相当于一个交换机，记录着对应的虚拟网卡和 MAC 地址，当物理网卡收到数据包后，会根据目的 MAC 地址判断这个包属于哪一个虚拟网卡。这也就意味着，只要是从 Macvlan 子接口发来的数据包（或者是发往 Macvlan 子接口的数据包），物理网卡只接收数据包，不处理数据包。</p>
-<blockquote>
-<p>macvlan的子接口无法ping通自己的父接口</p>
-</blockquote>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_theory.jpg"></p>
-<h3 id="macvlan特点"><a href="#macvlan特点" class="headerlink" title="macvlan特点"></a>macvlan特点</h3><ol>
-<li>一张实体网卡上设定多个MAC地址</li>
-<li>带有上述设定的mac地址的网卡称为子接口；而实体网卡则称为父接口</li>
-<li>父接口可以是一个物理接口，也可以是一个802.1q（vlan）的子接口，也可以是bonding接口。</li>
-<li>子接口无法直接与父接口通讯</li>
-<li>若需要子接口和主机通信，则需要额外建立一个子接口提供给主机使用。</li>
-</ol>
-<h3 id="macvlan的工作模式"><a href="#macvlan的工作模式" class="headerlink" title="macvlan的工作模式"></a>macvlan的工作模式</h3><h4 id="vepa-virtual-ethernet-port-aggregator"><a href="#vepa-virtual-ethernet-port-aggregator" class="headerlink" title="vepa(virtual ethernet port aggregator)"></a>vepa(virtual ethernet port aggregator)</h4><p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_vepa.jpg"><br>在 VEPA 模式下，所有从 Macvlan 接口发出的流量，不管目的地全部都发送给父接口，即使流量的目的地是共享同一个父接口的其它 Macvlan 接口。在二层网络场景下，由于生成树协议的原因，两个 Macvlan 接口之间的通讯会被阻塞，这时需要上层路由器上为其添加路由（需要外部交换机配置 Hairpin 支持，即需要兼容 802.1Qbg 的交换机支持，其可以把源和目的地址都是本地 Macvlan 接口地址的流量发回给相应的接口）。此模式下从父接口收到的广播包，会泛洪给 VEPA 模式的所有子接口。</p>
-<blockquote>
-<p>在这种模式下交换机必须要支持hairpin协议才能使得交换机实现源地址和目的地址都是本地macvlan地址的包发给响应接口。<br>由于现有交换机设备通常不支持hairpin协议，因此可以在本地通过bridge实现hairpin协议，将流量从一个子接口转发到另一个子接口。</p>
-</blockquote>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_vepa_bridge.jpg"></p>
-<blockquote>
-<p>VEPA 和 Passthru 模式下，两个 Macvlan 接口之间的通信会经过主接口两次：第一次是发出的时候，第二次是返回的时候。这样会影响物理接口的宽带，也限制了不同 Macvlan 接口之间通信的速度。如果多个 Macvlan 接口之间通信比较频繁，对于性能的影响会比较明显。</p>
-</blockquote>
-<h4 id="bridge"><a href="#bridge" class="headerlink" title="bridge"></a>bridge</h4><p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_bridge.jpg"><br>此种模式类似 Linux 的 Bridge，拥有相同父接口的两块 Macvlan 虚拟网卡是可以直接通讯的，不需要把流量通过父网卡发送到外部网络，广播帧将会被泛洪到连接在”网桥”上的所有其他子接口和物理接口。这比较适用于让共享同一个父接口的 Macvlan 网卡进行直接通讯的场景。</p>
-<blockquote>
-<p>Bridge 模式有个缺点：如果父接口 down 掉，所有的 Macvlan 子接口也会全部 down 掉，同时子接口之间也将无法进行通讯。</p>
-</blockquote>
-<h4 id="private"><a href="#private" class="headerlink" title="private"></a>private</h4><p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_private.jpg"></p>
-<p>此种模式相当于 VEPA 模式的增强模式，其完全阻止共享同一父接口的 Macvlan 虚拟网卡之间的通讯，即使配置了 Hairpin 让从父接口发出的流量返回到宿主机，相应的通讯流量依然被丢弃。具体实现方式是丢弃广播&#x2F;多播数据，这就意味着以太网地址解析 arp 将不可运行，除非手工探测 MAC 地址，否则通信将无法在同一宿主机下的多个 Macvlan 网卡间展开。</p>
-<h4 id="passthru"><a href="#passthru" class="headerlink" title="passthru"></a>passthru</h4><p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/macvlan_passthru.jpg"></p>
-<p>此种模式会直接把父接口和相应的MacVLAN接口捆绑在一起，这种模式每个父接口只能和一个 Macvlan 虚拟网卡接口进行捆绑，并且 Macvlan 虚拟网卡接口继承父接口的 MAC 地址。</p>
-<h3 id="使用场景-1"><a href="#使用场景-1" class="headerlink" title="使用场景"></a>使用场景</h3><ul>
-<li>仅仅需要为虚拟机或容器提供访问外部物理网络的连接。</li>
-<li>Macvlan 占用较少的 CPU，同时提供较高的吞吐量。</li>
-<li>当使用 Macvlan 时，宿主机无法和 VM 或容器直接进行通讯。</li>
-</ul>
-<h3 id="局限性"><a href="#局限性" class="headerlink" title="局限性"></a>局限性</h3><p>部分NIC和无限网卡上对于MAC地址有相应的限制。</p>
-<h3 id="验证测试"><a href="#验证测试" class="headerlink" title="验证测试"></a>验证测试</h3><h4 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet ~]# cat /etc/system-release</span><br><span class="line">CentOS Linux release 7.4.1708 (Core) </span><br><span class="line">[root@giddypoet ~]# uname -a</span><br><span class="line">Linux giddypoet 3.10.0-693.el7.x86_64 #1 SMP Tue Aug 22 21:09:27 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux</span><br></pre></td></tr></table></figure>
-
-<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@giddypoet ~]# modprobe macvlan</span><br><span class="line">[root@giddypoet ~]# lsmod |grep macvlan</span><br><span class="line">macvlan                19239  0 </span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 mac0 type macvlan mode bridge</span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 mac1 type macvlan mode bridge</span><br><span class="line">[root@giddypoet ~]# ip -d link show mac1 </span><br><span class="line">14: mac1@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 1000</span><br><span class="line">    link/ether 3a:ce:df:da:3d:8c brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvlan  mode bridge addrgenmode eui64 </span><br><span class="line">[root@giddypoet ~]# ip -d link show mac0 </span><br><span class="line">13: mac0@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 1000</span><br><span class="line">    link/ether 72:e1:da:bd:3f:82 brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvlan  mode bridge addrgenmode eui64 </span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 创建netns，由于内核规则通常会存在禁止内部转发以ip_forward相关策略，通常通过netns来验证转发功能，以减少对内核配置的修改</span></span><br><span class="line">[root@giddypoet ~]# ip netns add ns0</span><br><span class="line">[root@giddypoet ~]# ip netns add ns1</span><br><span class="line">[root@giddypoet ~]# ip link set mac0 netns ns0</span><br><span class="line">[root@giddypoet ~]# ip link set mac1 netns ns1</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns0 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 10.92.3.2/24 dev mac0</span><br><span class="line">[root@giddypoet ~]# ip link set mac0 up</span><br><span class="line">[root@giddypoet ~]# exit</span><br><span class="line">exit</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns1 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 10.92.3.3/24 dev mac1</span><br><span class="line">[root@giddypoet ~]# ip link set mac1 up</span><br></pre></td></tr></table></figure>
-
-<p>上述准备完成后，可以发现通过macvlan能够ping通对端，如果需要连接网络，则需要在ns0和ns1上配置默认路由，后面相应的步骤就不做展示了。</p>
-<blockquote>
-<p>通过在父接口上抓包能够抓到ping包</p>
-</blockquote>
-<h2 id="MACVTAP"><a href="#MACVTAP" class="headerlink" title="MACVTAP"></a>MACVTAP</h2><p>传统使用tap+bridge实现网络虚拟化的技术存在以下缺点：</p>
-<ol>
-<li>每台宿主机内都存在Bridge会使网络拓扑变得复杂，相当于增加了交换机的级联层数</li>
-<li>同一宿主机上虚拟机之间的流量直接在Bridge完成交换，使流量监控、监管变得困难。</li>
-<li>Bridge是软件实现的二层交换技术，会增加服务器的负担。</li>
-</ol>
-<p>其实技术上的演进路线如下：<br>tap+bridge -&gt; macvlan -&gt; macvtap</p>
-<p>技术标准主要有两个：<br>802.1qbg 和 802.1qbh(这个是思科提出的标准，思科还在此标准上进行了多次演进)。</p>
-<p>和TAP设备一样，每一个MACVTAP设备都拥有一个对应和Linux字符设备，因此能直接KVM&#x2F;QEMU使用，方便完成网络数据交换工作。</p>
-<p>实际上mactap只是将收到的流量转发给&#x2F;dev&#x2F;net&#x2F;tap，直接和用户态交互，虚拟机做相关操作。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/mactap.jpg"></p>
-<h3 id="工作模式"><a href="#工作模式" class="headerlink" title="工作模式"></a>工作模式</h3><p>其实这三种工作模式都是继承于MACVLAN的工作模式。</p>
-<ul>
-<li>VEPA</li>
-<li>BRIDGE</li>
-<li>PRIVATE</li>
-</ul>
-<h3 id="测试验证"><a href="#测试验证" class="headerlink" title="测试验证"></a>测试验证</h3><p>测试环境基于centos7.4，与上述macvlan测试环境一致。</p>
-<h4 id="测试-1"><a href="#测试-1" class="headerlink" title="测试"></a>测试</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> macvtap依赖于macvlan的驱动，从这里也可以看出macvtap继承于macvlan</span></span><br><span class="line">[root@giddypoet ~]# modprobe macvtap</span><br><span class="line">[root@giddypoet ~]# lsmod |grep macvtap</span><br><span class="line">macvtap                22497  0 </span><br><span class="line">macvlan                19239  1 macvtap</span><br><span class="line">[root@giddypoet ~]# rmmod macvlan</span><br><span class="line">rmmod: ERROR: Module macvlan is in use by: macvtap</span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 tap0 type macvtap mode bridge</span><br><span class="line">[root@giddypoet ~]# ip link add link ens39 tap1 type macvtap mode bridge</span><br><span class="line">[root@giddypoet ~]# ip -d link show tap0</span><br><span class="line">15: tap0@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 500</span><br><span class="line">    link/ether 3a:56:f6:88:05:01 brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvtap  mode bridge addrgenmode eui64 </span><br><span class="line">[root@giddypoet ~]# ip -d link show tap1</span><br><span class="line">16: tap1@ens39: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT qlen 500</span><br><span class="line">    link/ether 76:b2:9f:9e:1f:9a brd ff:ff:ff:ff:ff:ff promiscuity 0 </span><br><span class="line">    macvtap  mode bridge addrgenmode eui64 </span><br><span class="line">[root@giddypoet ~]# ip link set tap0 netns ns0</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 netns ns1</span><br><span class="line">[root@giddypoet ~]# ip link set tap0 netns ns0</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 netns ns1</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns0 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 192.168.3.2/24 dev tap0</span><br><span class="line">[root@giddypoet ~]# ip link set tap0 up</span><br><span class="line">[root@giddypoet ~]# exit</span><br><span class="line">exit</span><br><span class="line">[root@giddypoet ~]# ip netns exec ns1 bash</span><br><span class="line">[root@giddypoet ~]# ip a a 192.168.3.3/24 dev tap1</span><br><span class="line">[root@giddypoet ~]# ip link set tap1 up</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>完成上述配置后，macvtap两两就可以ping通了</p>
-</blockquote>
-<h2 id="IPVLAN"><a href="#IPVLAN" class="headerlink" title="IPVLAN"></a>IPVLAN</h2><p>IPVLAN其实原理上和MACVLAN一致，唯一区别在于IPVLAN虚拟出来的子接口和父接口mac地址一致。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan.jpg"></p>
-<h3 id="工作模式-1"><a href="#工作模式-1" class="headerlink" title="工作模式"></a>工作模式</h3><h4 id="L2"><a href="#L2" class="headerlink" title="L2"></a>L2</h4><p>和macvlan一样，父接口更像一个网桥和二层交换机。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan_l2.jpg"></p>
-<h4 id="L3"><a href="#L3" class="headerlink" title="L3"></a>L3</h4><p>在l3模式下，父接口像一个三层交换机一样，用于转发流量，提供了更强的伸缩性。</p>
-<p><img src="/2022/02/03/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/ipvlan_l3.jpg"></p>
-<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>其实个人觉得，大部分ipvlan的场景和macvlan相似，核心在于ipvlan共用父接口的mac地址，在特殊的场景下有着特殊的应用价值：</p>
-<ol>
-<li>设备对网卡上的mac地址有数量限制时</li>
-<li>在802.11协议下（无线协议）对于终端的mac地址有要求</li>
-<li>大量mac地址对性能会对主机产生影响</li>
-</ol>
-<h3 id="测试-2"><a href="#测试-2" class="headerlink" title="测试"></a>测试</h3><p>由于试用的linux内核版本目前不支持ipvlan，同时基本原理和macvlan一致，暂时未对其做相关测试。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实linux上还存在其他虚拟设备如：</p>
-<ul>
-<li>bond</li>
-<li>vcan</li>
-<li>vxcan</li>
-<li>……</li>
-</ul>
-<p>上述设备的用途通常不在于云原生场景中，后续再对其他虚拟设备进行介绍。</p>
-
-	
-	</div>
-  <a type="button" href="/2022/02/03/虚拟网络设备/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/03/nic收发包/" >nic网卡收包</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-03  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h2 id="网卡收发包"><a href="#网卡收发包" class="headerlink" title="网卡收发包"></a>网卡收发包</h2><h3 id="程序控制I-x2F-O"><a href="#程序控制I-x2F-O" class="headerlink" title="程序控制I&#x2F;O"></a>程序控制I&#x2F;O</h3><p>这是最简单的一种 I&#x2F;O 模式，也叫忙等待或者轮询：用户通过发起一个系统调用，陷入内核态，内核将系统调用翻译成一个对应设备驱动程序的过程调用，接着设备驱动程序会启动 I&#x2F;O 不断循环去检查该设备，看看是否已经就绪，一般通过返回码来表示，I&#x2F;O 结束之后，设备驱动程序会把数据送到指定的地方并返回，切回用户态。</p>
-<blockquote>
-<p>cpu一直处于忙轮询状态，调用驱动程序检查设备状态</p>
-</blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/roundrobin_io.png"></p>
-<h3 id="中断I-x2F-O"><a href="#中断I-x2F-O" class="headerlink" title="中断I&#x2F;O"></a>中断I&#x2F;O</h3><ol>
-<li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据；</li>
-<li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里；</li>
-<li>完成拷贝之后磁盘控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而磁盘控制器会在后面持续发送中断信号直至中断控制器受理；</li>
-<li>中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个磁盘设备的编号，表示这次中断需要关注的设备是磁盘；</li>
-<li>中断控制器向 CPU 置起一个磁盘中断信号；</li>
-<li>CPU 收到中断信号之后停止当前的工作，把当前的 PC&#x2F;PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行磁盘中断服务，把数据从磁盘控制器的缓冲区拷贝到主存里的内核缓冲区；</li>
-<li>最后 CPU 再把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。</li>
-</ol>
-<blockquote>
-<p>内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。</p>
-</blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.png"></p>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.webp"></p>
-<h3 id="DMA-I-x2F-O"><a href="#DMA-I-x2F-O" class="headerlink" title="DMA I&#x2F;O"></a>DMA I&#x2F;O</h3><p>在上述中断I&#x2F;O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。</p>
-<p>DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。</p>
-<ol>
-<li>用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设置 DMA 控制器的寄存器对它进行编程：把内核缓冲区和磁盘文件的地址分别写入 MAR 和 ADR 寄存器，然后把期望读取的字节数写入 WC 寄存器，启动 DMA 控制器；</li>
-<li>DMA 控制器根据 ADR 寄存器里的信息知道这次 I&#x2F;O 需要读取的外设是磁盘的某个地址，便向磁盘控制器发出一个命令，通知它从磁盘读取数据到其内部的缓冲区里；</li>
-<li>磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里，并对缓冲区内数据的校验和进行检验，如果数据是有效的，那么 DMA 就可以开始了；</li>
-<li>DMA 控制器通过总线向磁盘控制器发出一个读请求信号从而发起 DMA 传输，这个信号和前面的中断驱动 I&#x2F;O 小节里 CPU 发给磁盘控制器的读请求是一样的，它并不知道或者并不关心这个读请求是来自 CPU 还是 DMA 控制器；</li>
-<li>紧接着 DMA 控制器将引导磁盘控制器将数据传输到 MAR 寄存器里的地址，也就是内核缓冲区；</li>
-<li>数据传输完成之后，返回一个 ack 给 DMA 控制器，WC 寄存器里的值会减去相应的数据长度，如果 WC 还不为 0，则重复第 4 步到第 6 步，一直到 WC 里的字节数等于 0；</li>
-<li>收到 ack 信号的 DMA 控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而 DMA 控制器会在后面持续发送中断信号直至中断控制器受理；</li>
-<li>中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个主存设备的编号，表示这次中断需要关注的设备是主存；</li>
-<li>中断控制器向 CPU 置起一个 DMA 中断的信号；</li>
-<li>CPU 收到中断信号之后停止当前的工作，把当前的 PC&#x2F;PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行 DMA 中断服务，把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。</li>
-</ol>
-<blockquote>
-<p>简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。</p>
-</blockquote>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.png"></p>
-<p><img src="/2022/02/03/nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.webp"></p>
-<h3 id="napi-I-x2F-O"><a href="#napi-I-x2F-O" class="headerlink" title="napi I&#x2F;O"></a>napi I&#x2F;O</h3><p>napi并不是基于硬件实现的，实际上napi是一种新的linux网卡数据处理API，简单来说其杂合中断和轮询的技术。</p>
-<p>中断的好处是响应及时，如果数据量较小，则不会占用太多的CPU时间；缺点是数据量大时，会产生过多中断，频繁上下文切换，同时中断也会大量消耗大量的CPU时间。</p>
-<p>轮询方式与中断方式相反，它更适合处理大量数据，因为每次轮询不需要消耗过多的CPU时间；缺点是即使只接收很少数据或不接收数据时，也要占用CPU时间。</p>
-<p>实际上就是通过驱动本身的poll函数，实现一次中断收多个包。</p>
-<h3 id="硬中断和软中断"><a href="#硬中断和软中断" class="headerlink" title="硬中断和软中断"></a>硬中断和软中断</h3><p>NAPI：数据包到来，第一个数据包产生硬件中断，中断处理程序将设备的napi_struct结构挂在当前cpu的待收包设备链表softnet_data-&gt;poll_list中，并触发软中断，软中断执行过程中，遍历softnet_data-&gt;poll_list中的所有设备，依次调用其收包函数napi_sturct-&gt;poll，处理收包过程；</p>
-<p>非NAPI：每个数据包到来，都会产生硬件中断，中断处理程序将收到的包放入当前cpu的收包队列softnet_data-&gt;input_pkt_queue中，并且将非napi设备对应的虚拟设备napi结构softnet-&gt;backlog结构挂在当前cpu的待收包设备链表softnet_data-&gt;poll_list中，并触发软中断，软中断处理过程中，会调用backlog的回调处理函数process_backlog，将收包队列input_pkt_queue合并到softdata-&gt;process_queue后面，并依次处理该队列中的数据包；</p>
-
-	
-	</div>
-  <a type="button" href="/2022/02/03/nic收发包/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
 
 		</div>
 
@@ -924,6 +1160,16 @@ var _hmt = _hmt || [];
 		<div class="pagination">
 
    
+    
+           <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+        
+
+        <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+ 
+       <a href="/page/2/" type="button" class="btn btn-default ">Next<i class="fa fa-arrow-circle-o-right"></i></a>     
+        
+
+  
 </div>
 
   		</center>
@@ -952,7 +1198,11 @@ var _hmt = _hmt || [];
 		<h4>Categories</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/os/">os<span>8</span></a></li>
+			<li><a href="/categories/computer/">computer<span>1</span></a></li>
+		
+			<li><a href="/categories/dpdk/">dpdk<span>1</span></a></li>
+		
+			<li><a href="/categories/os/">os<span>10</span></a></li>
 		
 		</ul>
 	</div>
@@ -963,11 +1213,15 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/network/">network<span>7</span></a></li>
+			<li><a href="/tags/computer/">computer<span>1</span></a></li>
+		
+			<li><a href="/tags/network/">network<span>9</span></a></li>
+		
+			<li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
 		
 			<li><a href="/tags/memory/">memory<span>1</span></a></li>
 		
-			<li><a href="/tags/dpdk/">dpdk<span>1</span></a></li>
+			<li><a href="/tags/os/">os<span>1</span></a></li>
 		
 		 
 		</ul>
@@ -981,23 +1235,23 @@ var _hmt = _hmt || [];
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2022/03/25/mtu/" ><i class="fa fa-file-o"></i>mtu</a>
+        <a href="/2022/06/13/ip-range/" ><i class="fa fa-file-o"></i>ip_range</a>
       </li>
     
       <li>
-        <a href="/2022/03/16/linux-start-process/" ><i class="fa fa-file-o"></i>linux_start_process</a>
+        <a href="/2022/05/20/路由/" ><i class="fa fa-file-o"></i>路由</a>
       </li>
     
       <li>
-        <a href="/2022/03/15/tcp-cookies/" ><i class="fa fa-file-o"></i>tcp_syncookies</a>
+        <a href="/2022/04/18/操作系统导论/" ><i class="fa fa-file-o"></i>操作系统导论</a>
       </li>
     
       <li>
-        <a href="/2022/02/22/killcx/" ><i class="fa fa-file-o"></i>killcx</a>
+        <a href="/2022/04/12/计算机是怎样跑起来的/" ><i class="fa fa-file-o"></i>计算机是怎样跑起来的</a>
       </li>
     
       <li>
-        <a href="/2022/02/08/linux网卡聚合及bond模式原理/" ><i class="fa fa-file-o"></i>linux网卡聚合及bond模式原理</a>
+        <a href="/2022/04/10/dpdk深入浅出/" ><i class="fa fa-file-o"></i>dpdk深入浅出</a>
       </li>
     
   </ul>

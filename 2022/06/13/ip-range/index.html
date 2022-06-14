@@ -1,0 +1,318 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  
+  <title>ip_range | GiddyPoet</title>
+  <meta name="author" content="GiddyPoet">
+  
+  <meta name="description" content="ip地址范围判断问题在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以下场景。
+
+ip1-ip2
+ip&amp;#x2F;CIDR (ip&amp;#x2F;24)
+ip&amp;#x2F;netmask (ip&amp;#x2F;255.255.255.0)
+">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="ip_range"/>
+  <meta property="og:site_name" content="GiddyPoet"/>
+
+  
+    <meta property="og:image" content=""/>
+  
+
+  
+  
+    <link href="/favicon.png" rel="icon">
+  
+  
+  <link rel="stylesheet" href="/css/bootstrap.min.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/font-awesome.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/responsive.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/highlight.css" media="screen" type="text/css">
+  <link rel="stylesheet" href="/css/google-fonts.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
+  <script src="/js/jquery-2.0.3.min.js"></script>
+
+  <!-- analytics -->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-70812759-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?cb5448498d7169c668b07c2b255d62c1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+ <body>  
+  <nav id="main-nav" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+      <button type="button" class="navbar-header navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		<span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+	  <a class="navbar-brand" href="/">GiddyPoet</a>
+      <div class="collapse navbar-collapse nav-menu">
+		<ul class="nav navbar-nav">
+		  
+		  <li>
+			<a href="/archives" title="All the articles.">
+			  <i class=""></i>Archives
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/categories" title="All the categories.">
+			  <i class=""></i>Categories
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/tags" title="All the tags.">
+			  <i class=""></i>Tags
+			</a>
+		  </li>
+		  
+		  <li>
+			<a href="/about" title="About me.">
+			  <i class=""></i>About
+			</a>
+		  </li>
+		  
+		</ul>
+      </div>
+    </div> <!-- container -->
+</nav>
+<div class="clearfix"></div>
+
+  <div class="container">
+  	<div class="content">
+    	 
+
+
+	
+		<div class="page-header">
+			<h1> ip_range</h1>
+		</div>
+	
+
+
+
+<div class="row post">
+	<!-- cols -->
+	
+	<div id="top_meta"></div>
+	<div class="col-md-9">
+	
+
+	<!-- content -->
+	<div class="mypage">		
+	  		
+
+	  <h1 id="ip地址范围判断问题"><a href="#ip地址范围判断问题" class="headerlink" title="ip地址范围判断问题"></a>ip地址范围判断问题</h1><p>在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以下场景。</p>
+<ul>
+<li>ip1-ip2</li>
+<li>ip&#x2F;CIDR (ip&#x2F;24)</li>
+<li>ip&#x2F;netmask (ip&#x2F;255.255.255.0)</li>
+</ul>
+<h2 id="ip地址判断"><a href="#ip地址判断" class="headerlink" title="ip地址判断"></a>ip地址判断</h2><h3 id="ip地址格式"><a href="#ip地址格式" class="headerlink" title="ip地址格式"></a>ip地址格式</h3><p>常用的地址格式类型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr</span> &#123;</span></span><br><span class="line">   <span class="keyword">unsigned</span> <span class="keyword">short</span>    sa_family;    <span class="comment">// address family, AF_xxx</span></span><br><span class="line">   <span class="keyword">char</span>              sa_data[<span class="number">14</span>];  <span class="comment">// 14 bytes of protocol address</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">    <span class="keyword">short</span>            sin_family;   <span class="comment">// e.g. AF_INET, AF_INET6</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">short</span>   sin_port;     <span class="comment">// e.g. htons(3490)</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span>   <span class="title">sin_addr</span>;</span>     <span class="comment">// see struct in_addr, below</span></span><br><span class="line">    <span class="keyword">char</span>             sin_zero[<span class="number">8</span>];  <span class="comment">// zero this if you want to</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in6</span> &#123;</span></span><br><span class="line">    <span class="keyword">u_int16_t</span>       sin6_family;   <span class="comment">// address family, AF_INET6</span></span><br><span class="line">    <span class="keyword">u_int16_t</span>       sin6_port;     <span class="comment">// port number, Network Byte Order</span></span><br><span class="line">    <span class="keyword">u_int32_t</span>       sin6_flowinfo; <span class="comment">// IPv6 flow information</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">sin6_addr</span>;</span>     <span class="comment">// IPv6 address</span></span><br><span class="line">    <span class="keyword">u_int32_t</span>       sin6_scope_id; <span class="comment">// Scope ID</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> &#123;</span></span><br><span class="line">    <span class="keyword">sa_family_t</span>  ss_family;     <span class="comment">// address family</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// all this is padding, implementation specific, ignore it:</span></span><br><span class="line">    <span class="keyword">char</span>      __ss_pad1[_SS_PAD1SIZE];</span><br><span class="line">    <span class="keyword">int64_t</span>   __ss_align;</span><br><span class="line">    <span class="keyword">char</span>      __ss_pad2[_SS_PAD2SIZE];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>struct sockaddr</code> 通常不会自己创建，该结构体，一般都是通过<code>struct sockaddr_in</code>和<code>struct sockaddr_in6</code>进行转换，由于历史因素，因此套接字api都只支持<code>struct sockaddr</code>，通过family字段进行判断，同时支持ipv4和ipv6，如果一个ip地址是ipv4,它只会读取其前4个字节，如果是ipv6，则会读取完整的16个字节.s</li>
+<li><code>struct sockaddr_in</code> ipv4地址格式</li>
+<li><code>struct sockaddr_in6</code> ipv6地址格式</li>
+<li><code>struct sockaddr_storage</code> 当你不知道地址类型具体是什么的时候可以使用该结构体，该结构体即支持ipv4也支持ipv6，该地址类型被设计的足够大可以支持<code>struct sockaddr_un</code></li>
+</ul>
+<blockquote>
+<p>对于unix socket需要通过offsetof实现绑定，addrlen &#x3D; offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path); 需要制定具体的长度，上述地址格式一般都是历史遗留问题。</p>
+</blockquote>
+<h3 id="地址格式转换"><a href="#地址格式转换" class="headerlink" title="地址格式转换"></a>地址格式转换</h3><blockquote>
+<p>从文件中读取ip地址，进行判断，通常这种配置都是通过点分形式通知，因此需要将ipstr转换成地址</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">IPSTORAGE</span> &#123;</span></span><br><span class="line">    <span class="keyword">bool</span> is_ipv6;</span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="keyword">in_addr_t</span> ipv4;</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">ipv6</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;IPSTORAGE;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ISIPV6(str) (strchr(str,<span class="meta-string">&#x27;:&#x27;</span>)?true:false)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_legal_ip_addr</span><span class="params">(<span class="keyword">char</span> *str)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[INET6_ADDRSTRLEN];</span><br><span class="line">    <span class="keyword">if</span>(ISIPV6(str)) &#123;</span><br><span class="line">        <span class="keyword">return</span> inet_pton(AF_INET6, str, buf) ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> inet_pton(AF_INET, str, buf) ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">IPSTORAGE <span class="title">str2ipstorage</span><span class="params">(<span class="keyword">char</span> *str)</span> </span>&#123;</span><br><span class="line">    IPSTORAGE is;</span><br><span class="line">    <span class="keyword">if</span>(ISIPV6(str)) &#123;</span><br><span class="line">        is.is_ipv6 = <span class="literal">true</span>; </span><br><span class="line">        inet_pton(AF_INET6, str, &amp;is.ipv6);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        is.is_ipv6 = <span class="literal">false</span>;</span><br><span class="line">        inet_pton(AF_INET, str, &amp;is.ipv4);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE *f = fopen(<span class="string">&quot;./test.txt&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(f == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">127</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">128</span>];</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    <span class="keyword">while</span>(fgets(buf, <span class="keyword">sizeof</span>(buf), f)!= <span class="literal">NULL</span>) &#123;</span><br><span class="line">        buf[<span class="built_in">strlen</span>(buf) - <span class="number">1</span>] = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span>(!is_legal_ip_addr(buf)) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;illegal ip addr %s.\n&quot;</span>, buf);</span><br><span class="line">            <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">            <span class="keyword">continue</span>; </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;ip addr %s\n&quot;</span>,buf);</span><br><span class="line"></span><br><span class="line">        IPSTORAGE is = str2ipstorage(buf);</span><br><span class="line">        <span class="built_in">memset</span>(buf, <span class="number">0</span>, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码就是常见的字符串转ip地址的常用场景，主要说明一下几点：</p>
+<ol>
+<li>为什么要自己定义IPSTORAGE，实际上就是便于处理ipv4和ipv6的兼容性，<code>struct sockaddr_storage</code>也能实现该功能，但是还是要借助<code>struct sockaddr_in</code>和<code>struct sockaddr_in6</code>，用union处理<code>in_addr_t</code>和<code>struct in6_addr</code>处理起来较为方便。</li>
+<li>利用inet_pton检查ip格式的合法性，这个比较常见。</li>
+</ol>
+<h3 id="ip地址范围判定"><a href="#ip地址范围判定" class="headerlink" title="ip地址范围判定"></a>ip地址范围判定</h3><h4 id="ip1-ip2"><a href="#ip1-ip2" class="headerlink" title="ip1-ip2"></a>ip1-ip2</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_lt</span><span class="params">(IPSTORAGE *is1, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="built_in">memcpy</span>(&amp;is1-&gt;ipv6, &amp;is2-&gt;ipv6, <span class="keyword">sizeof</span>(struct in6_addr)) &lt; <span class="number">0</span> ? <span class="literal">true</span> : <span class="literal">false</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (is-&gt;ipv4) &lt; (is-&gt;ipv4);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_gt</span><span class="params">(IPSTORAGE *is1, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> !ipstorage_lt(is1,is2);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_between</span><span class="params">(IPSTORAGE *dst, IPSTORAGE *left, IPSTORAGE *right)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(dst-&gt;is_ipv6 != left-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ipstorage_gt(dst, right) || ipstorage_lt(dst, left)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>其实ipv4地址基于网络字节序或者主机字节序做比较都可以，只是由现成将str转换成网络字节序的函数，直接用网络字节序比较方便<br>ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比较。</p>
+</blockquote>
+<h4 id="ip-x2F-CIDR或ip-x2F-netmask"><a href="#ip-x2F-CIDR或ip-x2F-netmask" class="headerlink" title="ip&#x2F;CIDR或ip&#x2F;netmask"></a>ip&#x2F;CIDR或ip&#x2F;netmask</h4><p>先做判断，只要判断”&#x2F;“后是不是地址，就可以区分CIDR或netmask。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_ipv4</span><span class="params">(<span class="keyword">char</span> *ip)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[INET_ADDRSTRLEN];</span><br><span class="line">    <span class="keyword">return</span> inet_pton(AF_INET, ip, buf)? <span class="literal">true</span>: <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 255.255.255.0 = 1111 1111 1111 1111 1111 1111 0000 0000 位运算</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mask2prefix</span><span class="params">(struct in_addr addr)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">uint32_t</span> saddr = ntohl(mask.s_addr);</span><br><span class="line">    <span class="keyword">for</span>(count = <span class="number">0</span>; saddr &gt; <span class="number">0</span>; count++) &#123;</span><br><span class="line">        saddr = saddr &lt;&lt; <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">struct in_addr <span class="title">prefix2mask</span><span class="params">(<span class="keyword">int</span> prefix)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">addr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(prefix) &#123;</span><br><span class="line">        addr.s_addr = htonl(~(<span class="number">1</span> &lt;&lt; (<span class="number">32</span> - preix) <span class="number">-1</span>));</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        addr.s_addr = htonl(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> addr;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_ipv6_host_in_route</span><span class="params">(IPSTORAGE *is1, <span class="keyword">int</span> prefix, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> *<span class="title">route</span> =</span> &amp;is1-&gt;ipv6;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> *<span class="title">host</span> =</span> &amp;is2-&gt;ipv6;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// prefix是8的整数的每个uint8_t 做对比，剩下的不足一个字节的 前bit个位做对比</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> bits = prefix;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; bits &gt;= <span class="number">8</span>; i++, bits -=<span class="number">8</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span>(route-&gt;s6_addr[i] != host-&gt;s6_addr[i]) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(bits == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> mask = <span class="number">0xff</span> &lt;&lt;( <span class="number">8</span> - bits);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>((route-&gt;s6_addr[i]&amp;mask) == (host-&gt;s6_addr[i] &amp; mask)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ipstorage_inside</span><span class="params">(IPSTORAGE *is1, <span class="keyword">int</span> prefix, IPSTORAGE *is2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6 != is2-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(is1-&gt;is_ipv6) &#123;</span><br><span class="line">        <span class="keyword">return</span> is_ipv6_host_in_route(is1, prefix, is2);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        struct in_addr in = prefix2mask(prefix);</span><br><span class="line">        <span class="keyword">uint32_t</span> mask = ntohl(in_addr.s_addr);</span><br><span class="line">        <span class="keyword">if</span>((is1-&gt;ipv4 &amp; mask) == (is2-&gt;ipv4 &amp; mask)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(ptr = <span class="built_in">strchr</span>(str, <span class="string">&#x27;/&#x27;</span>)) &#123;</span><br><span class="line">    *ptr++ = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> prefix;</span><br><span class="line">    <span class="keyword">if</span>((is_ipv4(ptr))) &#123;</span><br><span class="line">        <span class="comment">// netmask</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">maskaddr</span>;</span></span><br><span class="line">        maskaddr.s_addr = inet_addr(ptr);</span><br><span class="line">        prefix = mask2prefix(maskaddr);</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="comment">// CIDR</span></span><br><span class="line">        prefix = atoi(ptr);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    IPSTORAGE is1 = str2ipstorage(buf);</span><br><span class="line">    IPSTORAGE is2 = str2ipstorage(dst_ip);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ipstrorage_inside(&amp;is1, prefix, &amp;is2)) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;ip in range.\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>实际上上述的操作都是利用了两个特性</p>
+<ol>
+<li>ipv4地址实际上是一个uint32_t</li>
+<li>ipv6地址实际上是一个uint8_t[16], 这样就不区分主机字节序或网络字节序了</li>
+</ol>
+</blockquote>
+<ol>
+<li>先获取到子网掩码</li>
+<li>如果是ipv4的话就直接通过主机号做判断，地址1 &amp; 子网掩码 &#x3D;&#x3D; 地址2 &amp; 子网掩码</li>
+<li>如果是ipv6的话就每一个字节进行判断，不足一个字节，取高bits，(is1-&gt;s6_addr[i] &amp; bits) &#x3D;&#x3D; (is2-&gt;s6_addr[i] &amp; bits)</li>
+</ol>
+<h5 id="ipv6不区分网络字节序相关验证"><a href="#ipv6不区分网络字节序相关验证" class="headerlink" title="ipv6不区分网络字节序相关验证"></a>ipv6不区分网络字节序相关验证</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *str6 = <span class="string">&quot;fec1::02&quot;</span>;</span><br><span class="line">    <span class="keyword">int</span> prefix = <span class="number">64</span>; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">ipv6</span>;</span></span><br><span class="line"></span><br><span class="line">    inet_pton(AF_INET6, str6, &amp;ipv6); </span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; <span class="number">16</span> ;i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%x &quot;</span>, ipv6.s6_addr[i]);</span><br><span class="line">    &#125;   </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;                                         </span><br></pre></td></tr></table></figure>
+
+
+<h4 id="对于unix-socket的相关操作"><a href="#对于unix-socket的相关操作" class="headerlink" title="对于unix socket的相关操作"></a>对于unix socket的相关操作</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/un.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PATH <span class="meta-string">&quot;/tmp/GiddyPoet&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_un</span> <span class="title">un</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> <span class="title">ss</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">socklen_t</span> len;</span><br><span class="line"></span><br><span class="line">    unlink(PATH);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> fd = socket(AF_UNIX, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;un ,<span class="number">0</span> , <span class="keyword">sizeof</span>(un));</span><br><span class="line">    un.sun_family = AF_UNIX;</span><br><span class="line">    <span class="built_in">strcpy</span>(un.sun_path, PATH);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> addrlen = offsetof(struct sockaddr_un, sun_path) + <span class="built_in">strlen</span>(PATH);</span><br><span class="line"></span><br><span class="line">    bind(fd, (struct sockaddr *)&amp;un, addrlen);</span><br><span class="line"></span><br><span class="line">    listen(fd, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> client_fd = accept(fd, (struct sockaddr *)&amp;ss, &amp;len);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ss.ss_family == AF_UNIX) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;AF_UNIX.\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> offsetof(type, f) ((size_t) \</span></span><br><span class="line"><span class="meta">    ((char *)&amp;((type *)0)-&gt;f - (char *)(type *)0))</span></span><br></pre></td></tr></table></figure>
+
+<p>简单介绍下<code>offsetof</code>，通过将起始地址为0的结构体中的f成员获取，f在结构体中的偏移量，然后转换成<code>char *</code>计算出具体偏移的字节数。</p>
+	  
+	</div>
+
+	<div>
+  	<center>
+	<div class="pagination">
+
+    
+    
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+    
+
+    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+    
+    <a href="/2022/05/20/路由/" type="button" class="btn btn-default ">Next<i
+                class="fa fa-arrow-circle-o-right"></i></a>
+    
+
+    
+</div>
+
+    </center>
+	</div>
+	
+	<!-- comment -->
+	
+<section id="comment">
+    <h2 class="title">Comments</h2>
+
+    
+</section>
+
+
+	</div> <!-- col-md-9/col-md-12 -->
+		
+	
+	<div id="side_meta">
+		<div class="col-md-3" id="post_meta"> 
+
+	<!-- date -->
+	
+	<div class="meta-widget">
+	<i class="fa fa-clock-o"></i>
+	2022-06-13 
+	</div>
+	
+
+	<!-- categories -->
+    
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#categorys"><i class="fa fa-folder"></i></a>	
+    <ul id="categorys" class="tag_box list-unstyled collapse in">
+          
+  <li>
+    <li><a href="/categories/os/">os<span>10</span></a></li>
+  </li>
+
+    </ul>
+	</div>
+	
+
+	<!-- tags -->
+	
+	<div class="meta-widget">
+	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
+    <ul id="tags" class="tag_box list-unstyled collapse in">	  
+	    
+  <li><a href="/tags/network/">network<span>9</span></a></li>
+    </ul>
+	</div>
+		
+
+	<!-- toc -->
+	<div class="meta-widget">
+	
+	</div>
+	
+    <hr>
+	
+</div><!-- col-md-3 -->
+
+	</div>
+		
+
+</div><!-- row -->
+
+
+
+	</div>
+  </div>
+  <div class="container-narrow">
+  <footer> <p>
+  &copy; 2022 GiddyPoet
+  
+      with help from <a href="http://hexo.io/" target="_blank">Hexo</a>,<a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind</a>,<a href="http://getbootstrap.com/" target="_blank">Twitter Bootstrap</a> and <a href="http://getbootstrap.com/" target="_blank">BOOTSTRA.386</a>. 
+     <br> Theme by <a target="_blank" rel="noopener" href="http://github.com/wzpan/hexo-theme-freemind/">Freemind.386</a>.    
+</p>
+ </footer>
+</div> <!-- container-narrow -->
+  
+
+
+  
+<a id="gotop" href="#">   
+  <span>⬆︎TOP</span>
+</a>
+
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/search.js"></script> 
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+
+
+</body>
+   </html>
