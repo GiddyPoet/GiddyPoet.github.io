@@ -135,6 +135,289 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2022/07/19/wireguard/" >wireguard</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-07-19  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="WireGuard"><a href="#WireGuard" class="headerlink" title="WireGuard"></a>WireGuard</h1><p><code>WireGuard</code>是由<code>Jason Donenfeld</code>等大佬用<code>C</code>语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如<code>IPSec</code>、<code>Openvpn</code>等技术的痛点。<br><code>WireGuard</code>是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 <code>IPsec</code>更快，更简单，更精简，更易用，同时避免大规模配置<code>IPsec</code>的麻烦事。同时<code>WireGuard</code>也打算比<code>OpenVPN</code>更高效。</p>
+<p><img src="/2022/07/19/wireguard/wireguard_performance.jpg"></p>
+<h2 id="配置使用"><a href="#配置使用" class="headerlink" title="配置使用"></a>配置使用</h2><h3 id="WireGuard相关定义"><a href="#WireGuard相关定义" class="headerlink" title="WireGuard相关定义"></a>WireGuard相关定义</h3><ul>
+<li>Peer：节点，对于<code>WireGuard</code>来说所有节点之间都是对等的，每一个启动<code>WireGuard</code>实例的节点都是一个peer</li>
+<li>Bounce Server(中继服务器)：类似内网穿透的原理，当设备在NAT内，需要进行通信，则可以通过中继服务器实现两个节点之间的通信，中继服务作为一个Peer，充当消息的中介。</li>
+<li>私钥：<code>WireGuard</code>所用的私钥，通过<code>wg genkey</code>生成</li>
+<li>公钥：<code>WireGuard</code>所用的公钥，通过<code>wg genkey privatekey</code>生成公钥，公钥在与邻居节点建立连接关系的时候使用</li>
+<li>IP漫游：<code>WireGuard</code>由于是无连接的，因此如果双方地址发生变动，通过协议可以记录其新地址</li>
+</ul>
+<h3 id="WireGuard工作模式"><a href="#WireGuard工作模式" class="headerlink" title="WireGuard工作模式"></a>WireGuard工作模式</h3><ul>
+<li>Direct Node-to-Node：点对点模式，节点在同一局域网或者都在公网</li>
+<li>Node behind local NAT to Public node：一个在内网通过NAT访问公网节点，配置PerisistentKeepalived，实现连接保持，维护NAT设备上的连接信息</li>
+<li>Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接</li>
+<li>Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞</li>
+</ul>
+<p><img src="/2022/07/19/wireguard/nat.jpg"></p>
+<h3 id="WireGuard配置"><a href="#WireGuard配置" class="headerlink" title="WireGuard配置"></a>WireGuard配置</h3><blockquote>
+<p>本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。</p>
+</blockquote>
+<p>本地节点配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- node1 --&gt;</span><br><span class="line">[Interface]</span><br><span class="line">Address = 172.16.1.11/24</span><br><span class="line">ListenPort = 8001</span><br><span class="line">PrivateKey = 6JNM0s6crFOAleXhL+rt6kJTyyFrXWrVql97ZnvTmUQ=</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = 94jlm8+3rr5KtFMJqHubgDgRa87/Fb0Xc9ql2LUp2RA=</span><br><span class="line">AllowedIPs = 0.0.0.0/0,::/0</span><br><span class="line">Endpoint = 192.168.74.151:8001</span><br><span class="line">PersistentKeepalive = 25</span><br></pre></td></tr></table></figure>
+
+<p>对端节点配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- node2 --&gt;</span><br><span class="line">[Interface]</span><br><span class="line">Address = 172.16.1.12/24</span><br><span class="line">ListenPort = 8002</span><br><span class="line">PrivateKey = qDRJf3UodsOrBdt78Hce9eSYLpynCA2CQGyzXY5BS2w=</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = rtdDoG02qkydY6sOBlfC9+IGqZXxhunLRVLPPNZKKAQ=</span><br><span class="line">AllowedIPs = 0.0.0.0/0,::/0</span><br><span class="line">Endpoint = 192.168.74.150:8001</span><br><span class="line">PersistentKeepalive = 25</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置文件解析"><a href="#配置文件解析" class="headerlink" title="配置文件解析"></a>配置文件解析</h4><p><code>WireGuard</code>使用INI语法作为其配置文件格式。默认路径是<code>/etc/wireguard/wg0.conf</code>.</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Interface]</span></span><br><span class="line"><span class="comment"># Name = phone.example-vpn.dev</span></span><br><span class="line"><span class="attr">Address</span> = <span class="number">192.0</span>.<span class="number">2.5</span>/<span class="number">32</span></span><br><span class="line"><span class="attr">PrivateKey</span> = &lt;private key for phone.example-vpn.dev&gt;</span><br><span class="line"></span><br><span class="line"><span class="section">[Peer]</span></span><br><span class="line"><span class="comment"># Name = home-server.example-vpn.dev</span></span><br><span class="line"><span class="attr">Endpoint</span> = home-server.example-vpn.dev:<span class="number">51820</span></span><br><span class="line"><span class="attr">PublicKey</span> = &lt;public key for home-server.example-vpn.dev&gt;</span><br><span class="line"><span class="attr">AllowedIPs</span> = <span class="number">192.0</span>.<span class="number">2.3</span>/<span class="number">32</span></span><br><span class="line"><span class="attr">PersistentKeepalive</span> = <span class="number">25</span></span><br></pre></td></tr></table></figure>
+<h5 id="Interface"><a href="#Interface" class="headerlink" title="Interface"></a>Interface</h5><ul>
+<li>Address：定义本地节点应该对哪个地址范围进行路由。如果是常规的客户端，则将其设置为节点本身的单个 IP（使用 CIDR 指定，例如 192.0.2.3&#x2F;32）；如果是中继服务器，则将其设置为可路由的子网范围。<ul>
+<li>常规客户端，只路由自身的流量</li>
+<li>中继服务器，可以将流量转发到其他对等节点，路由网段的流量</li>
+</ul>
+</li>
+<li>ListenPort：如果是中继服务时，需要通过该参数指定端口来监听传入VPN连接，默认端口号是51820</li>
+<li>PrivateKey：本地节点私钥，通过<code>wg genkey</code>生成</li>
+<li>DNS：处理vpn的DNS请求</li>
+<li>Table：子网使用的路由表<ul>
+<li>off：默认不创建</li>
+<li>auto，将路由添加到系统的默认table中，并启用对默认路由的特殊处理。</li>
+</ul>
+</li>
+<li>MTU：虚拟网卡的MTU设置</li>
+<li>PreUp：启动vpn接口之前运行的命令</li>
+<li>PostUp：启动vpn接口之后运行的命令</li>
+<li>PreDown：停止接口前运行的命令</li>
+<li>PostDown：停止接口后运行的命令</li>
+</ul>
+<h5 id="Peer"><a href="#Peer" class="headerlink" title="Peer"></a>Peer</h5><ul>
+<li>EndPoint：指定对端节点的公网地址</li>
+<li>AllowedIPs：允许该对等节点（peer）发送过来的 VPN 流量中的源地址范围。同时这个字段也会作为本机路由表中 wg0 绑定的 IP 地址范围。如果对等节点（peer）是常规的客户端，则将其设置为节点本身的单个 IP；如果对等节点（peer）是中继服务器，则将其设置为可路由的子网范围。可以使用 , 来指定多个 IP 或子网范围。</li>
+<li>PublicKey：对等节点（peer）的公钥，所有节点（包括中继服务器）都必须设置。可与其他对等节点（peer）共用同一个公钥。</li>
+<li>PersistentKeepalive：如果连接是从一个位于 NAT 后面的对等节点（peer）到一个公网可达的对等节点（peer），那么 NAT 后面的对等节点（peer）必须定期发送一个出站 ping 包来检查连通性，如果 IP 有变化，就会自动更新Endpoint。<ul>
+<li>本地节点与对等节点（peer）可直连：该字段不需要指定，因为不需要连接检查。</li>
+<li>对等节点（peer）位于 NAT 后面：该字段不需要指定，因为维持连接是客户端（连接的发起方）的责任。</li>
+<li>本地节点位于 NAT 后面，对等节点（peer）公网可达：需要指定该字段 PersistentKeepalive &#x3D; 25，表示每隔 25 秒发送一次 ping 来检查连接。</li>
+</ul>
+</li>
+</ul>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>其实<code>Wireguard</code>的原理有点类似<code>Openvpn</code>的<code>tun</code>模式，通过构建虚拟网卡，配置地址以及路由信息，实现导流。</p>
+<blockquote>
+<p>实际上wireguard只负责在节点之间传输加密后的数据，当节点之间的数据被解密后，会写到虚拟网卡上，会根据操作系统的路由进行转发。</p>
+</blockquote>
+<h3 id="中继服务器的原理"><a href="#中继服务器的原理" class="headerlink" title="中继服务器的原理"></a>中继服务器的原理</h3><p>简单介绍一下中继服务器的原理：<strong>实际上就是将从一个peer收到的流量直接转发到正确的peer上，具体怎么转发wireguard并不关心，中继服务器只需要维护一个映射关系，然后将ip包后转发到正确的peer上即可</strong></p>
+<h3 id="源码解析"><a href="#源码解析" class="headerlink" title="源码解析"></a>源码解析</h3><blockquote>
+<p>later~</p>
+</blockquote>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>其实这些P2P通信都无法规避一个问题：NAT问题，如果不想利用中继服务器，必须要解决NAT问题，业内常见的方案是UDP打洞的方式。</p>
+<blockquote>
+<p>基础NAT不在讨论范围内，只讨论NAPT</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="center">本地nat方式</th>
+<th align="center">对端nat方式</th>
+<th align="center">能否打洞</th>
+<th align="center">打洞方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">全锥型</td>
+<td align="center">全锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">全锥型</td>
+<td align="center">受限制锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">全锥型</td>
+<td align="center">端口受限制锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">全锥型</td>
+<td align="center">对称型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">受限锥型</td>
+<td align="center">受限锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">受限锥型</td>
+<td align="center">端口受限锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">受限锥型</td>
+<td align="center">对称型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">端口受限锥型</td>
+<td align="center">端口受限锥型</td>
+<td align="center">能</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">端口受限锥型</td>
+<td align="center">对称型</td>
+<td align="center">否</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">对称型</td>
+<td align="center">对称型</td>
+<td align="center">否</td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+
+	
+	</div>
+  <a type="button" href="/2022/07/19/wireguard/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/07/08/raw-socket/" >raw_socket</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-07-08  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="RAW-SOCKET"><a href="#RAW-SOCKET" class="headerlink" title="RAW_SOCKET"></a>RAW_SOCKET</h1><p>我们常用的套接字类型主要就是：</p>
+<ul>
+<li>TCP</li>
+<li>UDP<br>原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力：</li>
+<li>读写ICMPv4、IGMPv4和IGMPv6等分组</li>
+<li>有了原始套接字，进程可以读取内核不处理的IP type类型</li>
+<li>有了原始套接字，进程可以使用<code>IP_HDRINCL</code>套接字选项构造TCP或UDP分组</li>
+</ul>
+<h2 id="原始套接字创建"><a href="#原始套接字创建" class="headerlink" title="原始套接字创建"></a>原始套接字创建</h2><p>原始套接字协议类型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// netinet/in.h</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    IPPROTO_IP = <span class="number">0</span>,	   <span class="comment">/* Dummy protocol for TCP.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_IP		IPPROTO_IP</span></span><br><span class="line">    IPPROTO_ICMP = <span class="number">1</span>,	   <span class="comment">/* Internet Control Message Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_ICMP		IPPROTO_ICMP</span></span><br><span class="line">    IPPROTO_IGMP = <span class="number">2</span>,	   <span class="comment">/* Internet Group Management Protocol. */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_IGMP		IPPROTO_IGMP</span></span><br><span class="line">    IPPROTO_IPIP = <span class="number">4</span>,	   <span class="comment">/* IPIP tunnels (older KA9Q tunnels use 94).  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_IPIP		IPPROTO_IPIP</span></span><br><span class="line">    IPPROTO_TCP = <span class="number">6</span>,	   <span class="comment">/* Transmission Control Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_TCP		IPPROTO_TCP</span></span><br><span class="line">    IPPROTO_EGP = <span class="number">8</span>,	   <span class="comment">/* Exterior Gateway Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_EGP		IPPROTO_EGP</span></span><br><span class="line">    IPPROTO_PUP = <span class="number">12</span>,	   <span class="comment">/* PUP protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_PUP		IPPROTO_PUP</span></span><br><span class="line">    IPPROTO_UDP = <span class="number">17</span>,	   <span class="comment">/* User Datagram Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_UDP		IPPROTO_UDP</span></span><br><span class="line">    IPPROTO_IDP = <span class="number">22</span>,	   <span class="comment">/* XNS IDP protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_IDP		IPPROTO_IDP</span></span><br><span class="line">    IPPROTO_TP = <span class="number">29</span>,	   <span class="comment">/* SO Transport Protocol Class 4.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_TP		IPPROTO_TP</span></span><br><span class="line">    IPPROTO_DCCP = <span class="number">33</span>,	   <span class="comment">/* Datagram Congestion Control Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_DCCP		IPPROTO_DCCP</span></span><br><span class="line">    IPPROTO_IPV6 = <span class="number">41</span>,     <span class="comment">/* IPv6 header.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_IPV6		IPPROTO_IPV6</span></span><br><span class="line">    IPPROTO_RSVP = <span class="number">46</span>,	   <span class="comment">/* Reservation Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_RSVP		IPPROTO_RSVP</span></span><br><span class="line">    IPPROTO_GRE = <span class="number">47</span>,	   <span class="comment">/* General Routing Encapsulation.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_GRE		IPPROTO_GRE</span></span><br><span class="line">    IPPROTO_ESP = <span class="number">50</span>,      <span class="comment">/* encapsulating security payload.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_ESP		IPPROTO_ESP</span></span><br><span class="line">    IPPROTO_AH = <span class="number">51</span>,       <span class="comment">/* authentication header.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_AH		IPPROTO_AH</span></span><br><span class="line">    IPPROTO_MTP = <span class="number">92</span>,	   <span class="comment">/* Multicast Transport Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_MTP		IPPROTO_MTP</span></span><br><span class="line">    IPPROTO_BEETPH = <span class="number">94</span>,   <span class="comment">/* IP option pseudo header for BEET.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_BEETPH		IPPROTO_BEETPH</span></span><br><span class="line">    IPPROTO_ENCAP = <span class="number">98</span>,	   <span class="comment">/* Encapsulation Header.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_ENCAP		IPPROTO_ENCAP</span></span><br><span class="line">    IPPROTO_PIM = <span class="number">103</span>,	   <span class="comment">/* Protocol Independent Multicast.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_PIM		IPPROTO_PIM</span></span><br><span class="line">    IPPROTO_COMP = <span class="number">108</span>,	   <span class="comment">/* Compression Header Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_COMP		IPPROTO_COMP</span></span><br><span class="line">    IPPROTO_SCTP = <span class="number">132</span>,	   <span class="comment">/* Stream Control Transmission Protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_SCTP		IPPROTO_SCTP</span></span><br><span class="line">    IPPROTO_UDPLITE = <span class="number">136</span>, <span class="comment">/* UDP-Lite protocol.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_UDPLITE		IPPROTO_UDPLITE</span></span><br><span class="line">    IPPROTO_MPLS = <span class="number">137</span>,    <span class="comment">/* MPLS in IP.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_MPLS           IPPROTO_MPLS</span></span><br><span class="line">    IPPROTO_RAW = <span class="number">255</span>,	   <span class="comment">/* Raw IP packets.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPPROTO_RAW		IPPROTO_RAW</span></span><br><span class="line">    IPPROTO_MAX</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>实际上头文件包含了该协议类型，但是内核协议栈不一定支持该协议类型</p>
+</blockquote>
+<p>创建<code>RAW SOCKET</code>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// protocol 根据协议指定</span></span><br><span class="line">    fd = socket(AF_INET, SOCK_RAW, protocol);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> on = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 如果设置了IP_HDRINCL，则由程序构造IP包头，否则内核根据路由决定源IP是</span></span><br><span class="line">    <span class="keyword">if</span>(setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &amp;on, <span class="keyword">sizeof</span>(on)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// error handler </span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在不设置IP_HDRINCL时，根据bind选择源IP，否则失效</span></span><br><span class="line">    <span class="comment">// struct sockaddr_in addr;</span></span><br><span class="line">    <span class="comment">// memset(&amp;addr, 0, sizeof(addr));</span></span><br><span class="line">    <span class="comment">// addr.sin_family = AF_INET;</span></span><br><span class="line">    <span class="comment">// addr.sin_port = htons(80);</span></span><br><span class="line">    <span class="comment">// addr.sin_addr.s_addr = inet_addr(&quot;1.1.1.1&quot;);</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// bind(fd, (struct sockaddr *) &amp;addr, sizeof(addr));</span></span><br><span class="line">    <span class="comment">// connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr));</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<blockquote>
+<p>bind实际上就是绑定源端口，在IP_HDRINCL设置的情况下，应该使用iphdr设置源地址，由于RAW_SOCKET不存在端口的概念，因此设置端口本身是无效的。<br>connect用于设置外部地址，同样目的端口无效，调用之后可以用write或者send调用，指定目的地址，如果没有调用connect也可以直接使用sendto指定目的地址。</p>
+</blockquote>
+<h2 id="原始套接字输出"><a href="#原始套接字输出" class="headerlink" title="原始套接字输出"></a>原始套接字输出</h2><p>输出调用：</p>
+<ul>
+<li>sendto, sendmsg: 指定目的IP地址完成</li>
+<li>write，writev，send：通过connect之后可以发送</li>
+</ul>
+<p>是否开启IP_HDRINCL：</p>
+<ul>
+<li>未开启：内核填充IP包头</li>
+<li>开启：输出函数缓冲区必须包含IP首部</li>
+</ul>
+<blockquote>
+<p>对于自己构造的IP包，可以将标识字段置0，让内核控制该选项，即便是自定义IP头，首部校验和也是有内核计算存储，同时ipv4选项字段是可选字段。</p>
+</blockquote>
+<p><img src="/2022/07/08/raw-socket/iphdr.jpg"></p>
+
+	
+	</div>
+  <a type="button" href="/2022/07/08/raw-socket/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/06/24/ebpf/" >ebpf</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-06-24  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="ebpf"><a href="#ebpf" class="headerlink" title="ebpf"></a>ebpf</h1><h2 id="ebpf的发展历史"><a href="#ebpf的发展历史" class="headerlink" title="ebpf的发展历史"></a>ebpf的发展历史</h2>
+	
+	</div>
+  <a type="button" href="/2022/06/24/ebpf/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2022/06/24/xdp/" >xdp</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2022-06-24  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		
+	
+	</div>
+  <a type="button" href="/2022/06/24/xdp/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2022/06/13/ip-range/" >ip_range</a>
 		</h3>
 		</div>
@@ -212,33 +495,6 @@ var _hmt = _hmt || [];
 	
 	</div>
   <a type="button" href="/2022/06/13/ip-range/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/05/20/路由/" >路由</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-05-20  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		
-	
-	</div>
-  <a type="button" href="/2022/05/20/路由/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -865,295 +1121,6 @@ var _hmt = _hmt || [];
 </div>
 
 		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/03/15/tcp-cookies/" >tcp_syncookies</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-03-15  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h1 id="tcp-syncookies"><a href="#tcp-syncookies" class="headerlink" title="tcp_syncookies"></a>tcp_syncookies</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>需要对设备进行synflood测试，验证syn_cookies功能是否正常。</p>
-<h2 id="syncookies原理"><a href="#syncookies原理" class="headerlink" title="syncookies原理"></a>syncookies原理</h2><p>SYN Cookie是对TCP服务器端的三次握手做一些修改，专门用来防范SYN Flood攻击的一种手段。它的原理是，在TCP服务器接收到TCP SYN包并返回TCP SYN + ACK包时，不分配一个专门的数据区，而是根据这个SYN包计算出一个cookie值。这个cookie作为将要返回的SYN ACK包的初始序列号。</p>
-<blockquote>
-<p>syncookies复用seqnum字段，前5个bits是简易版本的时间戳，中间3个bits是mss值，后面24个是散列值。</p>
-</blockquote>
-<p>seqnum的构造</p>
-<ul>
-<li>设t为一个缓慢增长的时间戳，前5个bits</li>
-<li>设m为客户端发送的syn报文中的mss值，3个bits</li>
-<li>设s是连接的元组信息（源IP，目的IP，源端口，目的端口）和t的hash值，即&#96;s&#x3D;hash(sip,dip,sport,dport,t)，s取低24位</li>
-</ul>
-<p>当客户端收到携带这个seqnum的值，则会恢复ack报文，且报文中ack&#x3D;n+1，那么在服务器收到它时，将ack-1即可拿到原始序列号，通过这种方式保存了syn报文的信息。</p>
-<p>对ack报文检查</p>
-<ul>
-<li>高5位表示的t与当前时间比较，看是否在时间范围内</li>
-<li>将t和连接元组重新计算s，看是否和低24位一直，若不一致则说明报文被伪造</li>
-<li>解析出其中的mss信息</li>
-</ul>
-<h3 id="syncookies的缺点"><a href="#syncookies的缺点" class="headerlink" title="syncookies的缺点"></a>syncookies的缺点</h3><ol>
-<li>mss的编码只有3位，因此最多只有8种mss值</li>
-<li>丢失大部分syn option（这里如果服务器和客户端都开起了时间戳ts，可以通过这ts里携带syn option，携带wscale，sack，ecn）</li>
-<li>增加了hash运算的开销</li>
-</ol>
-<h3 id="syncookies的实现"><a href="#syncookies的实现" class="headerlink" title="syncookies的实现"></a>syncookies的实现</h3><p>linux内核实现syncookies的算法如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">seq = hash(saddr, daddr, sport, dport, <span class="number">0</span>, <span class="number">0</span>) + req.th.seq + t &lt;&lt; <span class="number">24</span> + (hash(saddr, daddr, sport, dport, t, <span class="number">1</span>) + mss_ind) &amp; <span class="number">0x00FFFFFF</span></span><br></pre></td></tr></table></figure>
-
-
-<h2 id="内核相关配置"><a href="#内核相关配置" class="headerlink" title="内核相关配置"></a>内核相关配置</h2><p>开启syncookies的条件是，设置了syncookies，并且在服务器的accept_queue满载时才会启用。</p>
-<blockquote>
-<p>简单来说即便开启了syncookies，当accept_queue不满载的时候也不触发</p>
-</blockquote>
-<p>那么这个accept_queue这个阈值是多少呢？这就涉及到linux的内核设计，linux将tcp连接分为两种：</p>
-<ul>
-<li>全连接，ESTABLISHED的连接属于全连接，在全连接队列中</li>
-<li>半连接，接收到syn包进入syn-recv状态后，即加入半连接队列</li>
-</ul>
-<p>accept_queue即半连接队列。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 半连接队列大小</span></span><br><span class="line">[root@version ~]# cat /proc/sys/net/ipv4/tcp_max_syn_backlog </span><br><span class="line">128</span><br><span class="line"><span class="meta">#</span><span class="bash"> syncookies开关</span></span><br><span class="line">[root@version ~]# cat /proc/sys/net/ipv4/tcp_syncookies </span><br><span class="line">1</span><br></pre></td></tr></table></figure>
-
-	
-	</div>
-  <a type="button" href="/2022/03/15/tcp-cookies/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/22/killcx/" >killcx</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-22  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h1 id="killcx"><a href="#killcx" class="headerlink" title="killcx"></a>killcx</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>今天在逛博客的时候发现一个有意思的问题：</p>
-<pre><code>如何在不是同一个进程的情况下，关闭一个TCP连接？
-</code></pre>
-<p>通常我们可以想到的关闭一个连接的方法如下：</p>
-<ol>
-<li>进程内close（通用文件描述符关闭方法）</li>
-<li>进程内shutdown（可以半关闭socket，专门为socket定制）</li>
-<li>回RST报文</li>
-<li>内核回调？等奇技淫巧这里就不讨论了</li>
-</ol>
-<p>但是1和2的方式都必须在同一个进程内实现，因此不满足问题的要求，所以应该就是回RST报文，实际上这也是防火墙或者一些旁路设备常的事情，有些VPN也会构造类似的请求，来阻止不合法的连接。</p>
-<p>那么既然我们知道需要怎么做，那怎么构造一个合法的RST报文就是一个问题。</p>
-<h2 id="合法的RST报文"><a href="#合法的RST报文" class="headerlink" title="合法的RST报文"></a>合法的RST报文</h2><p>合法的RST报文需要的条件：</p>
-<ol>
-<li>四元组</li>
-<li>正确的序列号</li>
-</ol>
-<!-- 正确的时间戳（这个需要开启/proc/sys/net/ipv4/tcp_timestamps） 这个需要确认下源码是否对时间戳进行了检查-->
-
-<p>上述信息通常可以由旁路设备获得（旁路设备通过侦听链路上的报文就可以获得），VPN防火墙也可以通过连接获得，那么第三方进程如何构造正确的RST报文呢？</p>
-<p>可以通过challenge ACK实现，原理如下：</p>
-<blockquote>
-<p>处于 establish 状态的服务端如果收到了客户端的 SYN 报文（注意此时的 SYN 报文其实是乱序的，因为 SYN 报文的初始化序列号其实是一个随机数），会回复一个携带了正确序列号和确认号的 ACK 报文，这个 ACK 被称之为 Challenge ACK。</p>
-</blockquote>
-<blockquote>
-<p>实际上部分防火墙和nat设备并不支持challenge ACK</p>
-</blockquote>
-<p>那么我们就可以通过raw socket进行构造乱序的SYN包，再通过服务端回的正确的ACK获取到序列号，再回复RST报文。</p>
-<p><img src="/2022/02/22/killcx/challenge_ack.jpg"></p>
-<p>其实有现成的工具就可以实现上述功能，killcx是一款基于perl实现的脚本工具，下面将对killcx进行简单的分析。</p>
-<h2 id="killcx分析"><a href="#killcx分析" class="headerlink" title="killcx分析"></a>killcx分析</h2><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> strict; </span><br><span class="line"><span class="keyword">use</span> Socket; </span><br><span class="line"><span class="keyword">use</span> Net::RawIP;</span><br><span class="line"><span class="keyword">use</span> Net::Pcap;</span><br><span class="line"><span class="keyword">use</span> NetPacket::Ethernet <span class="string">qw(:strip)</span>;</span><br><span class="line"><span class="keyword">use</span> NetPacket::IP <span class="string">qw(:strip)</span>;</span><br><span class="line"><span class="keyword">use</span> NetPacket::TCP;</span><br><span class="line"><span class="keyword">use</span> POSIX <span class="string">qw(setsid)</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> $appname = <span class="string">&#x27;killcx&#x27;</span>;</span><br><span class="line"><span class="keyword">my</span> $version = <span class="string">&#x27;v1.0.3&#x27;</span>;</span><br><span class="line"><span class="keyword">my</span> $copyright = <span class="string">&#x27;(c)2009-2011 Jerome Bruandet - http://killcx.sourceforge.net/&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;$appname $version - $copyright\n\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $&gt; ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;\t[ERROR] : you must be root\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125; <span class="keyword">elsif</span> ( $^O <span class="keyword">ne</span> <span class="string">&#x27;linux&#x27;</span> )&#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;\t[ERROR] : that script is for Linux only, not $^O\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125;</span><br><span class="line">$SIG<span class="string">&#123;USR1&#125;</span> = \&amp;check_res;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> ( $dest_ip, $dest_port ) =</span><br><span class="line">   $ARGV[<span class="number">0</span>] =~ <span class="regexp">/^(\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;):(\d+)$/</span>;</span><br><span class="line"><span class="keyword">my</span> $interface = $ARGV[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( ( ! $dest_ip ) || ( ! $dest_port ) ) &#123;</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;- syntax   : $appname &lt;destip:destport&gt; &lt;interface&gt;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">  destip               : remote IP</span></span><br><span class="line"><span class="string">  destport             : remote port</span></span><br><span class="line"><span class="string">  interface (optional) : network interface (eth0, lo etc). Note that</span></span><br><span class="line"><span class="string">                         in many cases, using &#x27;lo&#x27; (loopback) will give</span></span><br><span class="line"><span class="string">                         better results, specially when a connection</span></span><br><span class="line"><span class="string">                         is not yet or no longer in the ESTABLISHED state</span></span><br><span class="line"><span class="string">                         (SYN_RECV, TIME_WAIT etc).</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- example  : $appname 10.11.12.13:1234</span></span><br><span class="line"><span class="string">             $appname 10.11.12.13:1234 eth0</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- doc      :  http://killcx.sourceforge.net/</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> $pid = $$;</span><br><span class="line"></span><br><span class="line"><span class="keyword">my</span> %TCP_STATES = (</span><br><span class="line"><span class="string">&#x27;01&#x27;</span> =&gt; <span class="string">&#x27;ESTABLISHED&#x27;</span>, <span class="string">&#x27;02&#x27;</span> =&gt; <span class="string">&#x27;SYN_SENT&#x27;</span>,  <span class="string">&#x27;03&#x27;</span> =&gt; <span class="string">&#x27;SYN_RECV&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;04&#x27;</span> =&gt; <span class="string">&#x27;FIN_WAIT1&#x27;</span>,   <span class="string">&#x27;05&#x27;</span> =&gt; <span class="string">&#x27;FIN_WAIT2&#x27;</span>, <span class="string">&#x27;06&#x27;</span> =&gt; <span class="string">&#x27;TIME_WAIT&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;07&#x27;</span> =&gt; <span class="string">&#x27;CLOSE&#x27;</span>,       <span class="string">&#x27;08&#x27;</span> =&gt; <span class="string">&#x27;CLOSE_WAIT&#x27;</span>,<span class="string">&#x27;09&#x27;</span> =&gt; <span class="string">&#x27;LAST_ACK&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;0A&#x27;</span> =&gt; <span class="string">&#x27;LISTEN&#x27;</span>,      <span class="string">&#x27;0B&#x27;</span> =&gt; <span class="string">&#x27;CLOSING&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment"># convert to network byte order :</span></span><br><span class="line">$dest_ip =~ <span class="regexp">/^(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)\.(\d&#123;1,3&#125;)$/</span>;</span><br><span class="line"><span class="keyword">my</span> $dest_hex = <span class="keyword">sprintf</span> <span class="string">&quot;%.2X%.2X%.2X%.2X:%.4X&quot;</span>,$4,$3,$2,$1,$dest_port;</span><br><span class="line"><span class="comment"># check in /proc/net/tcp :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] checking connection with [$dest_ip:$dest_port]\n&quot;</span>;</span><br><span class="line"><span class="keyword">my</span> ( $local_ip, $local_port, $state) = &amp;check_tcp( $dest_hex );</span><br><span class="line"><span class="keyword">if</span> ( ! $state ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] error : unable to find a connection with &quot;</span>.</span><br><span class="line">      <span class="string">&quot;[$dest_ip:$dest_port]\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] found connection with [$local_ip:$local_port] &quot;</span>.</span><br><span class="line">   <span class="string">&quot;($TCP_STATES&#123;$state&#125;)\n&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># fork our child which will hook the server response to our spoofed</span></span><br><span class="line"><span class="comment"># packet and extract the correct acknum (and seqnum) needed to close</span></span><br><span class="line"><span class="comment"># the connection :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] forking child\n&quot;</span>;</span><br><span class="line"><span class="keyword">use</span> POSIX <span class="string">&#x27;WNOHANG&#x27;</span>;</span><br><span class="line">$SIG<span class="string">&#123;CHLD&#125;</span> = <span class="function"><span class="keyword">sub</span> </span>&#123; <span class="keyword">while</span>( <span class="keyword">waitpid</span>( -<span class="number">1</span>,WNOHANG ) &gt; <span class="number">0</span> ) &#123;&#125; &#125;;</span><br><span class="line"><span class="keyword">defined</span> ( <span class="keyword">my</span> $child_pid = <span class="keyword">fork</span> ) <span class="keyword">or</span></span><br><span class="line">   <span class="keyword">die</span> <span class="string">&quot;[PARENT] error : cannot fork : $!\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $child_pid == <span class="number">0</span> ) &#123;</span><br><span class="line">   setsid <span class="keyword">or</span> <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : cannot setid : $!&quot;</span>;</span><br><span class="line">   <span class="keyword">my</span> ($err, $filter, $netmask, $address, $pcap);</span><br><span class="line"></span><br><span class="line">   <span class="comment"># no interface given, let&#x27;s try to find one :</span></span><br><span class="line">   <span class="keyword">if</span> ( ! $interface ) &#123;</span><br><span class="line">      $interface = Net::Pcap::lookupdev( \$err );</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;[CHILD]  &quot;</span>;</span><br><span class="line">      <span class="keyword">if</span> ( $interface ) &#123;</span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;interface not defined, will use [$interface]\n&quot;</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">         <span class="comment"># switch to loopback if we can&#x27;t find any interface :</span></span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;no interface found, switching to loopback\n&quot;</span>;</span><br><span class="line">         $interface = <span class="string">&#x27;lo&#x27;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment"># let&#x27;s sniff :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  setting up filter to sniff ACK on [$interface]&quot;</span>.</span><br><span class="line">      <span class="string">&quot; for 5 seconds\n&quot;</span>;</span><br><span class="line">   <span class="keyword">my</span> $pcap = Net::Pcap::open_live( $interface, <span class="number">100</span>, <span class="number">1</span>, <span class="number">5000</span>, \$err) ||</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : open_live failed : $err\n&quot;</span>;</span><br><span class="line">   <span class="comment"># setup filter :</span></span><br><span class="line">   Net::Pcap::compile( $pcap, \$filter,</span><br><span class="line">      <span class="string">&quot;(dst port $dest_port) &amp;&amp; (src port $local_port)&quot;</span>,</span><br><span class="line">      <span class="number">0</span>, $netmask) &amp;&amp;</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : compile failed : $!\n&quot;</span>;</span><br><span class="line">   Net::Pcap::setfilter($pcap, $filter) &amp;&amp;</span><br><span class="line">      <span class="keyword">die</span> <span class="string">&quot;[CHILD]  error : setfilter failed : $!\n&quot;</span>;</span><br><span class="line">   <span class="comment"># only want to hook 1 packet :</span></span><br><span class="line">   Net::Pcap::loop($pcap, <span class="number">1</span> , \&amp;process_packet, <span class="string">&#x27;&#x27;</span>);</span><br><span class="line">   Net::Pcap::<span class="keyword">close</span>($pcap);</span><br><span class="line">   <span class="comment"># all done, let&#x27;s inform our parent :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  all done, sending USR1 signal to parent [$pid] &quot;</span>.</span><br><span class="line">      <span class="string">&quot;and exiting\n&quot;</span>;</span><br><span class="line">   <span class="string">`kill -s USR1 $pid`</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># wait 0.5 second for our child to be ready :</span></span><br><span class="line"><span class="keyword">select</span>( <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="number">0</span>.<span class="number">5</span> );</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] sending spoofed SYN to [$local_ip:$local_port]&quot;</span>.</span><br><span class="line">   <span class="string">&quot; with bogus SeqNum\n&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># send spoofed SYN packet :</span></span><br><span class="line"><span class="keyword">my</span> $packet = Net::RawIP-&gt;new(&#123;</span><br><span class="line">      <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">               <span class="string">saddr =&gt;</span> $dest_ip, <span class="string">daddr =&gt;</span> $local_ip</span><br><span class="line">            &#125;,</span><br><span class="line">      <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $local_port, <span class="string">source =&gt;</span> $dest_port,</span><br><span class="line">               <span class="string">seq =&gt;</span> <span class="number">10</span>, <span class="string">syn =&gt;</span> <span class="number">1</span></span><br><span class="line">            &#125;</span><br><span class="line">   &#125;);</span><br><span class="line">   $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># wait max 5 seconds :</span></span><br><span class="line"><span class="keyword">select</span>( <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="keyword">undef</span>, <span class="number">5</span> );</span><br><span class="line"></span><br><span class="line"><span class="comment"># didn&#x27;t receive any signal from our child, it has probably failed :</span></span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] no response from child, operation may have failed\n&quot;</span>;</span><br><span class="line"><span class="keyword">if</span> ( $interface <span class="keyword">ne</span> <span class="string">&#x27;lo&#x27;</span> ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] =&gt; you may try using &#x27;lo&#x27; as interface parameter\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">print</span> <span class="string">&quot;[PARENT] killing child [$child_pid] and exiting program\n\n&quot;</span>;</span><br><span class="line"><span class="comment"># kill it and exit :</span></span><br><span class="line"><span class="keyword">kill</span> <span class="number">9</span>, $child_pid;</span><br><span class="line"></span><br><span class="line"><span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">check_res</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="comment"># received signal from our child :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[PARENT] received child signal, checking results...\n&quot;</span>;</span><br><span class="line">   <span class="comment"># check whether the operation was successful or not :</span></span><br><span class="line">   ( $local_ip, $local_port, $state) = &amp;check_tcp( $dest_hex );</span><br><span class="line">   <span class="keyword">if</span> ( $state ) &#123;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;         =&gt; error : connection hasn&#x27;t been closed\n\n&quot;</span>;</span><br><span class="line">      <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;         =&gt; success : connection has been closed !\n\n&quot;</span>;</span><br><span class="line">   <span class="keyword">exit</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">process_packet</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">my</span>( $user_data, $header, $packet ) = @_;</span><br><span class="line">   <span class="keyword">my</span> $ether_data = NetPacket::Ethernet::strip($packet);</span><br><span class="line"></span><br><span class="line">   <span class="comment"># decode TCP/IP packet (server response to our spoofed packet) :</span></span><br><span class="line">   <span class="keyword">my</span> $ip = NetPacket::IP-&gt;decode($ether_data);</span><br><span class="line">   <span class="keyword">my</span> $tcp = NetPacket::TCP-&gt;decode($ip-&gt;&#123;<span class="string">&#x27;data&#x27;</span>&#125;);</span><br><span class="line"></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  hooked ACK from [$local_ip:$local_port]\n&quot;</span>;</span><br><span class="line">   <span class="comment"># look for the magic acknum :</span></span><br><span class="line">   <span class="keyword">print</span> <span class="string">&quot;[CHILD]  &quot;</span>;</span><br><span class="line">   <span class="keyword">if</span> ( $tcp-&gt;&#123;acknum&#125; ) &#123;</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;found AckNum [$tcp-&gt;&#123;acknum&#125;] and SeqNum &quot;</span>.</span><br><span class="line">         <span class="string">&quot;[$tcp-&gt;&#123;seqnum&#125;]\n&quot;</span>;</span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;[CHILD]  sending spoofed RST to [$local_ip:$local_port]&quot;</span>.</span><br><span class="line">         <span class="string">&quot; with SeqNum [$tcp-&gt;&#123;acknum&#125;]\n&quot;</span>;</span><br><span class="line">      <span class="comment"># we have it : spoof another packet (RST) with the correct seqnum</span></span><br><span class="line">      <span class="comment"># to close the connection :</span></span><br><span class="line">      <span class="keyword">my</span> $packet = Net::RawIP-&gt;new( &#123;</span><br><span class="line">         <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">                  <span class="string">saddr =&gt;</span> $dest_ip, <span class="string">daddr =&gt;</span> $local_ip</span><br><span class="line">               &#125;,</span><br><span class="line">         <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $local_port, <span class="string">source =&gt;</span> $dest_port,</span><br><span class="line">                  <span class="string">seq =&gt;</span> $tcp-&gt;&#123;acknum&#125;, <span class="string">rst =&gt;</span> <span class="number">1</span></span><br><span class="line">               &#125;</span><br><span class="line">      &#125; );</span><br><span class="line">         $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line"></span><br><span class="line">      <span class="comment"># if the connection was in the ESTABLISHED state we close it</span></span><br><span class="line">      <span class="comment"># with the remote host as well, otherwise we don&#x27;t care</span></span><br><span class="line">      <span class="comment"># (the server would reply with a RST packet anyway) :</span></span><br><span class="line">      <span class="keyword">if</span> ( $state == <span class="number">1</span> ) &#123;</span><br><span class="line">         <span class="keyword">print</span> <span class="string">&quot;[CHILD]  sending RST &quot;</span>.</span><br><span class="line">            <span class="string">&quot;to remote host as well with SeqNum [$tcp-&gt;&#123;seqnum&#125;]\n&quot;</span>;</span><br><span class="line">         <span class="keyword">my</span> $packet = Net::RawIP-&gt;new( &#123;</span><br><span class="line">         <span class="string">ip =&gt;</span> &#123;  <span class="string">frag_off =&gt;</span> <span class="number">0</span>, <span class="string">tos =&gt;</span> <span class="number">0</span>,</span><br><span class="line">                  <span class="string">saddr =&gt;</span> $local_ip, <span class="string">daddr =&gt;</span> $dest_ip</span><br><span class="line">               &#125;,</span><br><span class="line">         <span class="string">tcp =&gt;</span>&#123;  <span class="string">dest =&gt;</span> $dest_port, <span class="string">source =&gt;</span> $local_port,</span><br><span class="line">                  <span class="string">seq =&gt;</span> $tcp-&gt;&#123;seqnum&#125;, <span class="string">rst =&gt;</span> <span class="number">1</span></span><br><span class="line">               &#125;</span><br><span class="line">         &#125; );</span><br><span class="line">         $packet-&gt;<span class="keyword">send</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment"># very unlikely to happen (ACK packets always have acknum) :</span></span><br><span class="line">      <span class="keyword">print</span> <span class="string">&quot;error : no AckNum found in packet\n&quot;</span>;</span><br><span class="line">      <span class="keyword">exit</span> <span class="number">1</span>;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">check_tcp</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">my</span> $hex_rem = <span class="keyword">shift</span>;</span><br><span class="line">   <span class="keyword">my</span> ( $li, $lp, $st );</span><br><span class="line">   <span class="keyword">open</span> TCP, <span class="string">&quot;&lt;/proc/net/tcp&quot;</span>;</span><br><span class="line">   <span class="keyword">while</span> ( &lt;TCP&gt; ) &#123;</span><br><span class="line">      <span class="keyword">if</span> ( <span class="regexp">/^\s*\d+:\s+(.&#123;8&#125;):(.&#123;4&#125;)\s+$hex_rem\s+(.&#123;2&#125;)\s/</span> ) &#123;</span><br><span class="line">         $st = $3;</span><br><span class="line">         $lp = <span class="keyword">hex</span>( $2 );</span><br><span class="line">         ($li) = $1 =~ <span class="regexp">/(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)/</span>;</span><br><span class="line">         $li = inet_ntoa( <span class="keyword">pack</span>(<span class="string">&quot;N&quot;</span>, <span class="keyword">hex</span>( $4.$3.$2.$1 ) ) );</span><br><span class="line">         <span class="keyword">last</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">close</span> TCP;</span><br><span class="line">   <span class="comment"># if not found, check /proc/net/tcp6 :</span></span><br><span class="line">   <span class="keyword">if</span> ( ( ! $st ) &amp;&amp; ( -e <span class="string">&#x27;/proc/net/tcp6&#x27;</span> ) ) &#123;</span><br><span class="line">      <span class="keyword">open</span> TCP, <span class="string">&quot;&lt;/proc/net/tcp6&quot;</span>;</span><br><span class="line">      <span class="keyword">while</span> ( &lt;TCP&gt; ) &#123;</span><br><span class="line">         <span class="keyword">if</span> ( <span class="regexp">/^\s*\d+:\s+\d&#123;16&#125;FFFF0000(.&#123;8&#125;):(.&#123;4&#125;)\s+</span></span><br><span class="line"><span class="regexp">               \d&#123;16&#125;FFFF0000$hex_rem\s+(.&#123;2&#125;)\s/x</span> ) &#123;</span><br><span class="line">            $st = $3;</span><br><span class="line">            $lp = <span class="keyword">hex</span>( $2 );</span><br><span class="line">            ($li) = $1 =~ <span class="regexp">/(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)(.&#123;2&#125;)/</span>;</span><br><span class="line">            $li = inet_ntoa( <span class="keyword">pack</span>(<span class="string">&quot;N&quot;</span>, <span class="keyword">hex</span>( $4.$3.$2.$1 ) ) );</span><br><span class="line">            <span class="keyword">last</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">close</span> TCP;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> ( $li, $lp, $st );</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">######################################################################</span></span><br><span class="line"><span class="comment"># EOF</span></span><br></pre></td></tr></table></figure>
-
-
-<ol>
-<li>首先通过输入的目的IP和端口，在<code>/proc/net/tcp</code>中查找连接状态，其中IP为网络字节序，并且16进制表示，连接状态为0A（Establish）之类的形式。</li>
-<li>通过raw socket构造syn包，seq num为10（一个随机值即可）</li>
-<li>子进程同时调用pcap抓包，用于获取challenge ack的响应中的seqnum</li>
-<li>用响应中的seqnum构造RST报文</li>
-<li>最后确认下链接是否被关闭</li>
-</ol>
-
-	
-	</div>
-  <a type="button" href="/2022/02/22/killcx/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
-			<a href="/2022/02/08/linux网卡聚合及bond模式原理/" >linux网卡聚合及bond模式原理</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2022-02-08  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h1 id="linux网卡聚合及bond模式原理"><a href="#linux网卡聚合及bond模式原理" class="headerlink" title="linux网卡聚合及bond模式原理"></a>linux网卡聚合及bond模式原理</h1><h2 id="bonding的应用"><a href="#bonding的应用" class="headerlink" title="bonding的应用"></a>bonding的应用</h2><h3 id="网络负载均衡"><a href="#网络负载均衡" class="headerlink" title="网络负载均衡"></a>网络负载均衡</h3><p>用于解决一个ip地址，流量过大，服务器网络压力过大的问题。将多个网卡聚合在一起生成一个bond口，将ip配在这个bond口上，具体mac地址根据bond口的模式选择。</p>
-<h3 id="网络冗余"><a href="#网络冗余" class="headerlink" title="网络冗余"></a>网络冗余</h3><p>通过冗余服务提供服务器的可靠性和安全性，多个网卡绑定到一个IP地址上，当一个网卡发生物理损坏时，另一块网卡也能提供正常服务。</p>
-<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>根据不同的模式有不同的原理，在介绍<a href="#%E6%A8%A1%E5%BC%8F">模式</a>时详细介绍。</p>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond.jpg"></p>
-<h2 id="模式"><a href="#模式" class="headerlink" title="模式"></a>模式</h2><p>linux有7种网卡绑定模式：</p>
-<table>
-<thead>
-<tr>
-<th align="center">模式代号</th>
-<th align="center">模式名称</th>
-<th align="center">模式方式</th>
-<th align="center">说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">0</td>
-<td align="center">balance-rr</td>
-<td align="center">轮询模式</td>
-<td align="center">按照设备顺序依次传输数据包，直到最后一个设备。提供负载均衡和容错能力</td>
-</tr>
-<tr>
-<td align="center">1</td>
-<td align="center">active-backup</td>
-<td align="center">主备策略</td>
-<td align="center">只有一个设备处于活动状态。一个宕机另一个马上由备变成主，mac地址外部可见。</td>
-</tr>
-<tr>
-<td align="center">2</td>
-<td align="center">balance-xor</td>
-<td align="center">异或策略</td>
-<td align="center">该策略是根据mac地址异或运算的结果来选择传输设备</td>
-</tr>
-<tr>
-<td align="center">3</td>
-<td align="center">broadcase policy</td>
-<td align="center">广播策略</td>
-<td align="center">该策略将所有数据包传输给所有接口通过全部设备来传输所有数据，提供容错能力。（每个网卡上发一份）</td>
-</tr>
-<tr>
-<td align="center">4</td>
-<td align="center">802.3ad</td>
-<td align="center">动态链路聚合</td>
-<td align="center">该策略通过创建聚合组来共享相同的传输能力，需要交换机支持802.3ad</td>
-</tr>
-<tr>
-<td align="center">5</td>
-<td align="center">balance-tlb</td>
-<td align="center">适配器传输负载均衡</td>
-<td align="center">发送数据给每一个设备，由当前试用的设备处理收到的数据。（这个不是业务的问题吗？和广播策略的异同）</td>
-</tr>
-<tr>
-<td align="center">6</td>
-<td align="center">balance-alb</td>
-<td align="center">适配器负载均衡</td>
-<td align="center">该策略在IPV4情况下包含适配器传输负载均衡策略，由ARP协商完成接收的负载，通道联合驱动程序截获ARP在本地系统发送出的请求，用其中一个设备的硬件地址覆盖从属设备的原地址。</td>
-</tr>
-</tbody></table>
-<h2 id="balance-rr"><a href="#balance-rr" class="headerlink" title="balance-rr"></a>balance-rr</h2><h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ul>
-<li>负载均衡<ul>
-<li>所有链路处于负载均衡状态，采用轮询的方式往每条链路发送报文，可以通过ping验证。</li>
-</ul>
-</li>
-<li>容错问题<ul>
-<li>增加了带宽，当链路错误后，会将流量切换到正常的链路上。（这个问题需要跟一下，为什么在rr模式下会丢包）</li>
-</ul>
-</li>
-<li>性能问题<ul>
-<li>连接包从不同的接口发出，中途经过不同的链路，在客户端处可能出现包乱序问题（也有可能在某种情况下，链路网络状态差导致丢包），在实际使用中避免接不同的交换机可以在一定程度上避免这个问题。</li>
-</ul>
-</li>
-<li>交换机支持<ul>
-<li>该模式下所有绑定的网卡的ip都被修改成同一个mac地址，此时交换机收到发往该mac地址的数据包，将不知道从对应的那个端口发该数据，交换机应该做端口绑定，将数据发往给逻辑端口，之后由逻辑端口转发数据。</li>
-</ul>
-</li>
-<li>原理<ul>
-<li>实际上就是将所有网卡的地址变为一个地址，然后由交换机将报文发送给bond口，然后由驱动层算法分别转发到不同的真实网卡</li>
-</ul>
-</li>
-</ul>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_rr.png"></p>
-<h2 id="active-backup"><a href="#active-backup" class="headerlink" title="active-backup"></a>active-backup</h2><h3 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h3><ul>
-<li>容错能力<ul>
-<li>只有一个slave是激活状态，同时只有一个网卡能够工作，只有当当前网卡故障后其他网卡才会激活。发生failover时，切换的网卡会发出arp请求</li>
-</ul>
-</li>
-<li>无负载均模式<ul>
-<li>同时只有一个接口处于工作状态</li>
-</ul>
-</li>
-<li>无需交换机支持<ul>
-<li>mac地址采用的是bond0的mac地址，因此mac地址是唯一的（这个为什么会有只有一个mac地址，如果交换机多个端口都是这个mac地址没有问题吗？）</li>
-<li>实际上mac地址都是一致的，但是只有一个网卡生效</li>
-</ul>
-</li>
-</ul>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac.png"></p>
-<p><img src="/2022/02/08/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac_log.png"></p>
-<h2 id="load-balancing-xor"><a href="#load-balancing-xor" class="headerlink" title="load balancing(xor)"></a>load balancing(xor)</h2><h3 id="特点-2"><a href="#特点-2" class="headerlink" title="特点"></a>特点</h3><ul>
-<li>负载均衡和容错能力<ul>
-<li>基于指定的传输HASH策略传输数据包。缺省的负载均衡策略是：(源mac地址XOR目标mac地址)%slave数量，其他传输策略可以通过xmit_hash_policy选项指定。</li>
-</ul>
-</li>
-<li>性能问题<ul>
-<li>该模式将限定流量，以保证到达特定对端的流量总是从同一个接口上发出。既然目的地是通过MAC地址来决定的，因此该模式在“本地”网络配置下可以工作得很好。如果所有流量是通过单个路由器（比如 “网关”型网络配置，只有一个网关时，源和目标mac都固定了，那么这个算法算出的线路就一直是同一条，那么这种模式就没有多少意义了。）源mac是交换机的mac，目的mac是bond0上的mac。再交换机后不建议采用该模式</li>
-</ul>
-</li>
-<li>交换机支持<ul>
-<li>和balance-rr一样，需要交换机配置成“port channel”。该模式通过源和目标mac做hash因子来做xor算法来选路。</li>
-</ul>
-</li>
-</ul>
-<h2 id="fault-tolerance"><a href="#fault-tolerance" class="headerlink" title="fault-tolerance"></a>fault-tolerance</h2><p>这种模式的特点是一个报文会复制两份往bond下的两个接口分别发送出去，当有对端交换机失效，我们感觉不到任何downtime，但此法过于浪费资源；不过这种模式有很好的容错机制。此模式适用于金融行业，因为他们需要高可靠性的网络，不允许出现任何问题。</p>
-<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>这种模式适用于如下拓扑，两个接口分别接入两台交换机，并且属于不同的vlan，当一边的网络出现故障不会影响服务器另一边接入的网络正常工作。而且故障过程是0丢包。</p>
-<h2 id="lacp-802-3ad"><a href="#lacp-802-3ad" class="headerlink" title="lacp(802.3ad)"></a>lacp(802.3ad)</h2><h3 id="特点-3"><a href="#特点-3" class="headerlink" title="特点"></a>特点</h3><p>802.3ad模式是IEEE标准，因此所有实现了802.3ad的对端都可以很好的互操作。802.3ad 协议包括聚合的自动配置，因此只需要很少的对交换机的手动配置（要指出的是，只有某些设备才能使用802.3ad）。802.3ad标准也要求帧按顺序（一定程度上）传递，因此通常单个连接不会看到包的乱序。802.3ad也有些缺点：标准要求所有设备在聚合操作时，要在同样的速率和双工模式，而且，和除了balance-rr模式外的其它bonding负载均衡模式一样，任何连接都不能使用多于一个接口的带宽。（保证了连接的顺序传递，但是所有接口的速率同步）</p>
-<p>要求参与绑定的端口都运行802.3ad协议。该方式与band0很相似，但是又有区别。在IEEE802.3ad中，“链路聚合控制协议（LACP）”自动通知交换机应该聚合哪些端口，IEEE802.3ad聚合配置之后，链路聚合控制协议单元（LACPDU）就会在服务器和交换机之间进行交换，LACP会通知交换机在聚合中配置的适配器应作为交换机上的一个适配器来考虑，而不再有用户的干预。（按照协议应当如此，但是H3C5500-EI交换机上并未发现有单独启用802.3ad或LACP的命令，而聚合组中的静态聚合的所有端口均不启用LACP协议，所以如果按照band4的模式操作的话，建议在交换机上手工做动态端口聚合，且手工指定全局报文按照源MAC和目的MAC地址进行聚合负载分担。）根据IEEE802.3ad的规范，前往相同IP地址的数据包都会通过相同的适配器进行发送。因此当在802.3ad方式下操作时，信息包会始终按照标准（standard）的方式进行分发，而不会按照轮询（Round-Robin）方式进行分发。</p>
-<ul>
-<li>交换机配置<ul>
-<li>interface AggregatePort 1 配置聚合口 interface GigabitEthernet 0&#x2F;23 port-group 1 mode active 接口下开启lacp 主动模式 interface GigabitEthernet 0&#x2F;24 port-group 1 mode active</li>
-</ul>
-</li>
-<li>必要条件<ul>
-<li>ethtool支持获取每个slave的速率和双工设定 </li>
-<li>switch(交换机)支持IEEE 802.3ad Dynamic link aggregation </li>
-<li>大多数switch(交换机)需要经过特定配置才能支持802.3ad模式</li>
-</ul>
-</li>
-</ul>
-<h2 id="balance-tlb"><a href="#balance-tlb" class="headerlink" title="balance-tlb"></a>balance-tlb</h2><p>balance-tlb模式通过对端均衡外出（outgoing）流量。既然它是根据MAC地址进行均衡，在“网关”型配置（如上文所述）下，该模式会通过单个设备来发送所有流量，然而，在“本地”型网络配置下，该模式以相对智能的方式（不是balance-xor或802.3ad模式里提及的XOR方式）来均衡多个本地网络对端，因此那些数字不幸的MAC地址（比如XOR得到同样值）不会聚集到同一个接口上。不像802.3ad，该模式的接口可以有不同的速率，而且不需要特别的交换机配置。不利的一面在于，该模式下所有进入的（incoming）流量会到达同一个接口；该模式要求slave接口的网络设备驱动有某种ethtool支持；而且ARP监控不可用。</p>
-<h2 id="balance-alb"><a href="#balance-alb" class="headerlink" title="balance-alb"></a>balance-alb</h2><p>该模式包含了balance-tlb模式，同时加上针对IPV4流量的接收负载均衡(receive load balance， rlb)，而且不需要任何switch(交换机)的支持。接收负载均衡是通过ARP协商实现的。bonding驱动截获本机发送的ARP应答，并把源硬件地址改写为bond中某个slave的唯一硬件地址，从而使得不同的对端使用不同的硬件地址进行通信。所有端口都会收到对端的arp请求报文，回复arp回时，bond驱动模块会截获所发的arp回复报文，根据算法算到相应端口，这时会把arp回复报文的源mac，send源mac都改成相应端口mac。从抓包情况分析回复报文是第一个从端口1发，第二个从端口2发。以此类推。</p>
-<p>当本机发送ARP请求时，bonding驱动把对端的IP信息从ARP包中复制并保存下来。当ARP应答从对端到达时，bonding驱动把它的硬件地址提取出来，并发起一个ARP应答给bond中的某个slave(这个算法和上面一样，比如算到1口，就给发送arp请求，1回复时mac用1的mac)。使用ARP协商进行负载均衡的一个问题是：每次广播 ARP请求时都会使用bond的硬件地址，因此对端学习到这个硬件地址后，接收流量将会全部流向当前的slave。这个问题通过给所有的对端发送更新（ARP应答）来解决，往所有端口发送应答，应答中包含他们独一无二的硬件地址，从而导致流量重新分布。当新的slave加入到bond中时，或者某个未激活的slave重新激活时，接收流量也要重新分布。接收的负载被顺序地分布（round robin）在bond中最高速的slave上。</p>
-
-	
-	</div>
-  <a type="button" href="/2022/02/08/linux网卡聚合及bond模式原理/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
 
 		</div>
 
@@ -1205,7 +1172,7 @@ var _hmt = _hmt || [];
 		
 			<li><a href="/categories/dpdk/">dpdk<span>1</span></a></li>
 		
-			<li><a href="/categories/os/">os<span>10</span></a></li>
+			<li><a href="/categories/os/">os<span>14</span></a></li>
 		
 		</ul>
 	</div>
@@ -1220,11 +1187,11 @@ var _hmt = _hmt || [];
 		
 			<li><a href="/tags/os/">os<span>1</span></a></li>
 		
-			<li><a href="/tags/network/">network<span>9</span></a></li>
-		
 			<li><a href="/tags/computer/">computer<span>1</span></a></li>
 		
 			<li><a href="/tags/memory/">memory<span>1</span></a></li>
+		
+			<li><a href="/tags/network/">network<span>13</span></a></li>
 		
 		 
 		</ul>
@@ -1238,23 +1205,23 @@ var _hmt = _hmt || [];
   <ul class="entry list-unstyled">
     
       <li>
+        <a href="/2022/07/19/wireguard/" ><i class="fa fa-file-o"></i>wireguard</a>
+      </li>
+    
+      <li>
+        <a href="/2022/07/08/raw-socket/" ><i class="fa fa-file-o"></i>raw_socket</a>
+      </li>
+    
+      <li>
+        <a href="/2022/06/24/ebpf/" ><i class="fa fa-file-o"></i>ebpf</a>
+      </li>
+    
+      <li>
+        <a href="/2022/06/24/xdp/" ><i class="fa fa-file-o"></i>xdp</a>
+      </li>
+    
+      <li>
         <a href="/2022/06/13/ip-range/" ><i class="fa fa-file-o"></i>ip_range</a>
-      </li>
-    
-      <li>
-        <a href="/2022/05/20/路由/" ><i class="fa fa-file-o"></i>路由</a>
-      </li>
-    
-      <li>
-        <a href="/2022/04/18/操作系统导论/" ><i class="fa fa-file-o"></i>操作系统导论</a>
-      </li>
-    
-      <li>
-        <a href="/2022/04/12/计算机是怎样跑起来的/" ><i class="fa fa-file-o"></i>计算机是怎样跑起来的</a>
-      </li>
-    
-      <li>
-        <a href="/2022/04/10/dpdk深入浅出/" ><i class="fa fa-file-o"></i>dpdk深入浅出</a>
       </li>
     
   </ul>
