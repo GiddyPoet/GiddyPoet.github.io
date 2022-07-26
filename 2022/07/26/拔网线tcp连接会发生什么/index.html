@@ -146,13 +146,13 @@ var _hmt = _hmt || [];
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE, &amp;on,<span class="keyword">sizeof</span>(on));</span><br></pre></td></tr></table></figure>
 
 <p><code>tcp keepalived</code>的默认时间是<code>/proc/sys/net/ipv4/tcp_keepalive_time</code>设置的。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@TAP ~]# cat /proc/sys/net/ipv4/tcp_keepalive_time </span><br><span class="line">7200</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@xxx ~]# cat /proc/sys/net/ipv4/tcp_keepalive_time </span><br><span class="line">7200</span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>7200秒，直接是2个小时，简单来说如果连接没有任何连接相关的活动，则会启动保活机制，一段时间内没有收到报文。</p>
 </blockquote>
 <p>实际上检测机制就是通过发送keepalive包实现，那么发送间隔和检测次数分别是如下参数设置的。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 发送间隔</span></span><br><span class="line">[root@TAP ~]# cat /proc/sys/net/ipv4/tcp_keepalive_intvl </span><br><span class="line">75</span><br><span class="line"><span class="meta">#</span><span class="bash"> 9次才认为连接失效</span></span><br><span class="line">[root@TAP ~]# cat /proc/sys/net/ipv4/tcp_keepalive_probes</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 发送间隔</span></span><br><span class="line">[root@xxx ~]# cat /proc/sys/net/ipv4/tcp_keepalive_intvl </span><br><span class="line">75</span><br><span class="line"><span class="meta">#</span><span class="bash"> 9次才认为连接失效</span></span><br><span class="line">[root@xxx ~]# cat /proc/sys/net/ipv4/tcp_keepalive_probes</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
 
 <p>如果两端的 TCP 连接一直没有数据交互，达到了触发 TCP 保活机制的条件，那么内核里的 TCP 协议栈就会发送探测报文。</p>
 <ul>
