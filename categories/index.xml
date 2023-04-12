@@ -5,27 +5,6 @@
     <link>https://giddypoet.github.io/categories/</link>
     <description>Recent content in Categories on GiddyPoet</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    <lastBuildDate>Tue, 19 Jul 2022 14:39:45 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>os</title>
-      <link>https://giddypoet.github.io/categories/os/</link>
-      <pubDate>Tue, 19 Jul 2022 14:39:45 +0000</pubDate>
-      
-      <guid>https://giddypoet.github.io/categories/os/</guid>
-      <description></description>
-      <content></content>
-    </item>
-    
-    <item>
-      <title>dpdk</title>
-      <link>https://giddypoet.github.io/categories/dpdk/</link>
-      <pubDate>Sun, 10 Apr 2022 14:14:33 +0000</pubDate>
-      
-      <guid>https://giddypoet.github.io/categories/dpdk/</guid>
-      <description></description>
-      <content></content>
-    </item>
-    
+    <language>en-us</language><atom:link href="https://giddypoet.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>
