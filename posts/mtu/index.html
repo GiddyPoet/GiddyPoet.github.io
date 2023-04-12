@@ -186,7 +186,7 @@ categories: [os]</h2>
 <h1 id="mtu">MTU<a href="#mtu" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
 <p>Maximum Transmission Unit 最大传输单元。</p>
 <p>不同链路介质对网络有不同的默认MTU值，以下是一些常见的默认值:</p>
-<p><img src="frame_mtu.png" alt=""></p>
+<p><img src="/static/img/frame_mtu.png" alt=""></p>
 <p>以太网MTU通常被设置为1500。</p>
 <h2 id="为什么以太网帧mtu被设为1500">为什么以太网帧mtu被设为1500<a href="#为什么以太网帧mtu被设为1500" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
 <p>早期的以太网使用共享链路的工作方式，为了保证CSMA/CD（载波多路复用/冲突检测）机制，所以规定了以太帧长度最小为64字节，最大为1518字节。最小64字节是为了保证最极端的冲突能被检测到，64字节是能被检测到的最小值；最大不超过1518字节是为了防止过长的帧传输时间过长而占用共享链路太长时间导致其他业务阻塞。所以规定以太网帧大小为64~1518字节，虽然技术不断发展，但协议一直没有更改。</p>
@@ -195,7 +195,7 @@ categories: [os]</h2>
 <p>其实不同厂商对于MTU的定义略有不同，常见的是MTU为IP包的最大长度，如cisco，MTU是指的IP+以太网帧头部，还有的MTU=IP+以太网帧头部+CRC</p>
 </blockquote>
 <h2 id="mtu划分的帧格式">MTU划分的帧格式<a href="#mtu划分的帧格式" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
-<p><img src="frame.png" alt=""></p>
+<p><img src="/static/img/frame.png" alt=""></p>
 <h2 id="jumbo帧与mtu">Jumbo帧与MTU<a href="#jumbo帧与mtu" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
 <blockquote>
 <p>帧过小，导致帧的利用率过小，同时增加分片开销，帧过大，如果丢包导致大量数据重传浪费资源</p>
@@ -209,7 +209,7 @@ categories: [os]</h2>
 <p>加大帧长的好处在于，减少了网络中数据包的个数，减轻了网络设备处理包头的额外开销。大量减少的帧数目也带来了性能的提高。</p>
 <h2 id="tcp-mss和mtu">TCP MSS和MTU<a href="#tcp-mss和mtu" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
 <p>TCP MSS（Maximum Segment Size）是指TCP协议所允许的从对方收到的最大报文长度，即TCP数据包每次能够传输的最大数据分段，只包含TCP Payload，不包含TCP Header和TCP Option。MSS是TCP用来限制application层最大的发送字节数。为了达到最佳的传输效能，TCP协议在建立连接的时候通常要协商双方的MSS值，这个值TCP协议在实现的时候往往根据MTU值来计算（需要减去IP包头20字节和TCP包头20字节），所以通常MSS为1460=1500(MTU)- 20(IP Header) -20 (TCP Header)。</p>
-<p><img src="mss.png" alt=""></p>
+<p><img src="/static/img/mss.png" alt=""></p>
 <h2 id="path-mtu">Path MTU<a href="#path-mtu" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
 <blockquote>
 <p>简单来说就是路径上最小的MTU作为这条链路的MTU
@@ -221,7 +221,7 @@ UDP和TCP通过ICMP实现，ICMP会回复type为3code为4的差错报文，表�
 <li>如果路由器本地链路的MTU为整个端到端链路中最小值时，数据包很幸运的被送达目的地。</li>
 </ol>
 <p>对于1，路由器会回复icmp差错报文，同时在差错报文中携带了此路由器的下一跳MTU值。（Destination unreachable(fragmentation needed)），从而调整MTU值。</p>
-<p><img src="PathMTU_Discovery.png" alt=""></p>
+<p><img src="/static/img/PathMTU_Discovery.png" alt=""></p>
 <blockquote>
 <p>tcp协议栈会根据路由器回复的icmp报文动态调整mss，实际上处于安全考虑并不是所有的路由器都会回复icmp报文，如果此时没有收到任何icmp报文，tcp会在超时重传后修改mss的值为更小的值。上述的一切基于tcp开启mtu_probing实现</p>
 </blockquote>
