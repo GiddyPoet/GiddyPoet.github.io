@@ -140,46 +140,6 @@
     
       <article class="post on-list">
         <h1 class="post-title">
-          <a href="https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/">虚拟网络设备</a>
-        </h1>
-        <div class="post-meta">
-          
-            <time class="post-date">
-              2022-02-03 ::
-            </time>
-          
-          
-        </div>
-
-        
-          <span class="post-tags">
-            
-            #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
-            
-          </span>
-        
-
-        
-
-
-        <div class="post-content">
-          
-            虚拟网络设备 本文将从基础的虚拟网络设备进行介绍，开启linux网络虚拟化的学习之路。
-tun/tap tap/tun是linux内核实现的一对虚拟网络设备，TAP工作在二层，tun工作在三层，linux内核通过TAP/TUN设备向绑定该设备的用户空间应用发送数据。反之，用户空间也可以像操作网络硬件设备那样，通过TAP/TUN设备发送数据。
-#include &lt;sys/types.h&gt; #include &lt;sys/socket.h&gt; #include &lt;linux/if_tun.h&gt; #include &lt;linux/if.h&gt; static int create_tun(char *devname,int flags) { int fd; struct ifreq ifr; if((fd = open(&#34;/dev/net/tun&#34;,O_RDWR))&lt;0) { perror(&#34;open&#34;); return ERROR; } memset(&amp;ifr,0,sizeof(ifr)); // IFF_NO_PI，package info，tun/tap会默认在网卡包包信息，信息内容如下 // struct tun_pi { // unsigned short flags; // unsigned short proto; // }; ifr.ifr_flags = flags; strcpy(ifr.ifr_name,devname); if(ioctl(fd,TUNSETIFF,(void*)&amp;ifr)&lt;0) { perror(&#34;ioctl&#34;); return ERROR; } return fd; } Linux Bridge Linux Bridge（网桥）是工作在二层的虚拟网络设备，功能类似于物理的交换机。
-对于普通的网络设备来说，只有两端，从一端进来的数据会从另一端出去，如物理网卡从外面物理 网络收到的数据会转发给内核协议栈，而从内核协议栈过来的数据会转发到外面的物理网络中。而 Bridge 不同，Bridge 有多个端口，数据可以从任何端口进来，进来之后从哪个端口出去要看MAC地址， 和物理交换机的原理类似。
-          
-        </div>
-
-        
-          <div>
-            <a class="read-more button" href="/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/">Read more →</a>
-          </div>
-        
-      </article>
-    
-      <article class="post on-list">
-        <h1 class="post-title">
           <a href="https://giddypoet.github.io/posts/nic%E6%94%B6%E5%8F%91%E5%8C%85/">nic网卡收包</a>
         </h1>
         <div class="post-meta">
