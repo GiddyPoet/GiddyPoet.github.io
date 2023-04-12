@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>wireguard :: GiddyPoet</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="WireGuard WireGuard是由Jason Donenfeld等大佬用C语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如IPSec、Openvpn等技术的痛点。 WireGuard是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 IPsec更快，更简单，更精简，更易用，同时避免大规模配置IPsec的麻烦事。同时WireGuard也打算比OpenVPN更高效。
+配置使用 WireGuard相关定义 Peer：节点，对于WireGuard来说所有节点之间都是对等的，每一个启动WireGuard实例的节点都是一个peer Bounce Server(中继服务器)：类似内网穿透的原理，当设备在NAT内，需要进行通信，则可以通过中继服务器实现两个节点之间的通信，中继服务作为一个Peer，充当消息的中介。 私钥：WireGuard所用的私钥，通过wg genkey生成 公钥：WireGuard所用的公钥，通过wg genkey privatekey生成公钥，公钥在与邻居节点建立连接关系的时候使用 IP漫游：WireGuard由于是无连接的，因此如果双方地址发生变动，通过协议可以记录其新地址 WireGuard工作模式 Direct Node-to-Node：点对点模式，节点在同一局域网或者都在公网 Node behind local NAT to Public node：一个在内网通过NAT访问公网节点，配置PerisistentKeepalived，实现连接保持，维护NAT设备上的连接信息 Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接 Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞 WireGuard配置 本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。
+本地节点配置
+&amp;lt;!-- node1 --&amp;gt; [Interface] Address = 172.16.1.11/24 ListenPort = 8001 PrivateKey = 6JNM0s6crFOAleXhL&#43;rt6kJTyyFrXWrVql97ZnvTmUQ= [Peer] PublicKey = 94jlm8&#43;3rr5KtFMJqHubgDgRa87/Fb0Xc9ql2LUp2RA= AllowedIPs = 0." />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/wireguard/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="wireguard">
+<meta property="og:description" content="WireGuard WireGuard是由Jason Donenfeld等大佬用C语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如IPSec、Openvpn等技术的痛点。 WireGuard是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 IPsec更快，更简单，更精简，更易用，同时避免大规模配置IPsec的麻烦事。同时WireGuard也打算比OpenVPN更高效。
+配置使用 WireGuard相关定义 Peer：节点，对于WireGuard来说所有节点之间都是对等的，每一个启动WireGuard实例的节点都是一个peer Bounce Server(中继服务器)：类似内网穿透的原理，当设备在NAT内，需要进行通信，则可以通过中继服务器实现两个节点之间的通信，中继服务作为一个Peer，充当消息的中介。 私钥：WireGuard所用的私钥，通过wg genkey生成 公钥：WireGuard所用的公钥，通过wg genkey privatekey生成公钥，公钥在与邻居节点建立连接关系的时候使用 IP漫游：WireGuard由于是无连接的，因此如果双方地址发生变动，通过协议可以记录其新地址 WireGuard工作模式 Direct Node-to-Node：点对点模式，节点在同一局域网或者都在公网 Node behind local NAT to Public node：一个在内网通过NAT访问公网节点，配置PerisistentKeepalived，实现连接保持，维护NAT设备上的连接信息 Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接 Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞 WireGuard配置 本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。
+本地节点配置
+&amp;lt;!-- node1 --&amp;gt; [Interface] Address = 172.16.1.11/24 ListenPort = 8001 PrivateKey = 6JNM0s6crFOAleXhL&#43;rt6kJTyyFrXWrVql97ZnvTmUQ= [Peer] PublicKey = 94jlm8&#43;3rr5KtFMJqHubgDgRa87/Fb0Xc9ql2LUp2RA= AllowedIPs = 0." />
+<meta property="og:url" content="https://giddypoet.github.io/posts/wireguard/" />
+<meta property="og:site_name" content="GiddyPoet" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-07-19 14:39:45 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    Terminal
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/showcase">Showcase</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/showcase">Showcase</a></li>
+        
+      
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/wireguard/">wireguard</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-07-19 ::
+        
+      </time>
+    
+    
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+
+  <div class="post-content"><div>
+        <h1 id="wireguard">WireGuard<a href="#wireguard" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p><code>WireGuard</code>是由<code>Jason Donenfeld</code>等大佬用<code>C</code>语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如<code>IPSec</code>、<code>Openvpn</code>等技术的痛点。
+<code>WireGuard</code>是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 <code>IPsec</code>更快，更简单，更精简，更易用，同时避免大规模配置<code>IPsec</code>的麻烦事。同时<code>WireGuard</code>也打算比<code>OpenVPN</code>更高效。</p>
+<p><img src="./wireguard/wireguard_performance.jpg" alt=""></p>
+<h2 id="配置使用">配置使用<a href="#配置使用" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="wireguard相关定义">WireGuard相关定义<a href="#wireguard相关定义" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<ul>
+<li>Peer：节点，对于<code>WireGuard</code>来说所有节点之间都是对等的，每一个启动<code>WireGuard</code>实例的节点都是一个peer</li>
+<li>Bounce Server(中继服务器)：类似内网穿透的原理，当设备在NAT内，需要进行通信，则可以通过中继服务器实现两个节点之间的通信，中继服务作为一个Peer，充当消息的中介。</li>
+<li>私钥：<code>WireGuard</code>所用的私钥，通过<code>wg genkey</code>生成</li>
+<li>公钥：<code>WireGuard</code>所用的公钥，通过<code>wg genkey privatekey</code>生成公钥，公钥在与邻居节点建立连接关系的时候使用</li>
+<li>IP漫游：<code>WireGuard</code>由于是无连接的，因此如果双方地址发生变动，通过协议可以记录其新地址</li>
+</ul>
+<h3 id="wireguard工作模式">WireGuard工作模式<a href="#wireguard工作模式" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<ul>
+<li>Direct Node-to-Node：点对点模式，节点在同一局域网或者都在公网</li>
+<li>Node behind local NAT to Public node：一个在内网通过NAT访问公网节点，配置PerisistentKeepalived，实现连接保持，维护NAT设备上的连接信息</li>
+<li>Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接</li>
+<li>Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞</li>
+</ul>
+<p><img src="./wireguard/nat.jpg" alt=""></p>
+<h3 id="wireguard配置">WireGuard配置<a href="#wireguard配置" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。</p>
+</blockquote>
+<p>本地节点配置</p>
+<pre tabindex="0"><code class="language-conifg" data-lang="conifg">&lt;!-- node1 --&gt;
+[Interface]
+Address = 172.16.1.11/24
+ListenPort = 8001
+PrivateKey = 6JNM0s6crFOAleXhL+rt6kJTyyFrXWrVql97ZnvTmUQ=
+
+[Peer]
+PublicKey = 94jlm8+3rr5KtFMJqHubgDgRa87/Fb0Xc9ql2LUp2RA=
+AllowedIPs = 0.0.0.0/0,::/0
+Endpoint = 192.168.74.151:8001
+PersistentKeepalive = 25
+</code></pre><p>对端节点配置</p>
+<pre tabindex="0"><code class="language-conifg" data-lang="conifg">&lt;!-- node2 --&gt;
+[Interface]
+Address = 172.16.1.12/24
+ListenPort = 8002
+PrivateKey = qDRJf3UodsOrBdt78Hce9eSYLpynCA2CQGyzXY5BS2w=
+
+[Peer]
+PublicKey = rtdDoG02qkydY6sOBlfC9+IGqZXxhunLRVLPPNZKKAQ=
+AllowedIPs = 0.0.0.0/0,::/0
+Endpoint = 192.168.74.150:8001
+PersistentKeepalive = 25
+</code></pre><h4 id="配置文件解析">配置文件解析<a href="#配置文件解析" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p><code>WireGuard</code>使用INI语法作为其配置文件格式。默认路径是<code>/etc/wireguard/wg0.conf</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[Interface]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Name = phone.example-vpn.dev</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Address</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">192.0.2.5/32</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">PrivateKey</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;private key for phone.example-vpn.dev&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Peer]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Name = home-server.example-vpn.dev</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Endpoint</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">home-server.example-vpn.dev:51820</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">PublicKey</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;public key for home-server.example-vpn.dev&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">AllowedIPs</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">192.0.2.3/32</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">PersistentKeepalive</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">25</span>
+</span></span></code></pre></div><h5 id="interface">Interface<a href="#interface" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<ul>
+<li>Address：定义本地节点应该对哪个地址范围进行路由。如果是常规的客户端，则将其设置为节点本身的单个 IP（使用 CIDR 指定，例如 192.0.2.3/32）；如果是中继服务器，则将其设置为可路由的子网范围。
+<ul>
+<li>常规客户端，只路由自身的流量</li>
+<li>中继服务器，可以将流量转发到其他对等节点，路由网段的流量</li>
+</ul>
+</li>
+<li>ListenPort：如果是中继服务时，需要通过该参数指定端口来监听传入VPN连接，默认端口号是51820</li>
+<li>PrivateKey：本地节点私钥，通过<code>wg genkey</code>生成</li>
+<li>DNS：处理vpn的DNS请求</li>
+<li>Table：子网使用的路由表
+<ul>
+<li>off：默认不创建</li>
+<li>auto，将路由添加到系统的默认table中，并启用对默认路由的特殊处理。</li>
+</ul>
+</li>
+<li>MTU：虚拟网卡的MTU设置</li>
+<li>PreUp：启动vpn接口之前运行的命令</li>
+<li>PostUp：启动vpn接口之后运行的命令</li>
+<li>PreDown：停止接口前运行的命令</li>
+<li>PostDown：停止接口后运行的命令</li>
+</ul>
+<h5 id="peer">Peer<a href="#peer" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<ul>
+<li>EndPoint：指定对端节点的公网地址</li>
+<li>AllowedIPs：允许该对等节点（peer）发送过来的 VPN 流量中的源地址范围。同时这个字段也会作为本机路由表中 wg0 绑定的 IP 地址范围。如果对等节点（peer）是常规的客户端，则将其设置为节点本身的单个 IP；如果对等节点（peer）是中继服务器，则将其设置为可路由的子网范围。可以使用 , 来指定多个 IP 或子网范围。</li>
+<li>PublicKey：对等节点（peer）的公钥，所有节点（包括中继服务器）都必须设置。可与其他对等节点（peer）共用同一个公钥。</li>
+<li>PersistentKeepalive：如果连接是从一个位于 NAT 后面的对等节点（peer）到一个公网可达的对等节点（peer），那么 NAT 后面的对等节点（peer）必须定期发送一个出站 ping 包来检查连通性，如果 IP 有变化，就会自动更新Endpoint。
+<ul>
+<li>本地节点与对等节点（peer）可直连：该字段不需要指定，因为不需要连接检查。</li>
+<li>对等节点（peer）位于 NAT 后面：该字段不需要指定，因为维持连接是客户端（连接的发起方）的责任。</li>
+<li>本地节点位于 NAT 后面，对等节点（peer）公网可达：需要指定该字段 PersistentKeepalive = 25，表示每隔 25 秒发送一次 ping 来检查连接。</li>
+</ul>
+</li>
+</ul>
+<h2 id="原理">原理<a href="#原理" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>其实<code>Wireguard</code>的原理有点类似<code>Openvpn</code>的<code>tun</code>模式，通过构建虚拟网卡，配置地址以及路由信息，实现导流。</p>
+<blockquote>
+<p>实际上wireguard只负责在节点之间传输加密后的数据，当节点之间的数据被解密后，会写到虚拟网卡上，会根据操作系统的路由进行转发。</p>
+</blockquote>
+<h3 id="中继服务器的原理">中继服务器的原理<a href="#中继服务器的原理" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>简单介绍一下中继服务器的原理：<strong>实际上就是将从一个peer收到的流量直接转发到正确的peer上，具体怎么转发wireguard并不关心，中继服务器只需要维护一个映射关系，然后将ip包后转发到正确的peer上即可</strong></p>
+<h3 id="源码解析">源码解析<a href="#源码解析" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>later~</p>
+</blockquote>
+<h2 id="后续">后续<a href="#后续" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>其实这些P2P通信都无法规避一个问题：NAT问题，如果不想利用中继服务器，必须要解决NAT问题，业内常见的方案是UDP打洞的方式。</p>
+<blockquote>
+<p>基础NAT不在讨论范围内，只讨论NAPT</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">本地nat方式</th>
+<th style="text-align:center">对端nat方式</th>
+<th style="text-align:center">能否打洞</th>
+<th style="text-align:center">打洞方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">全锥型</td>
+<td style="text-align:center">全锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">全锥型</td>
+<td style="text-align:center">受限制锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">全锥型</td>
+<td style="text-align:center">端口受限制锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">全锥型</td>
+<td style="text-align:center">对称型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">受限锥型</td>
+<td style="text-align:center">受限锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">受限锥型</td>
+<td style="text-align:center">端口受限锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">受限锥型</td>
+<td style="text-align:center">对称型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">端口受限锥型</td>
+<td style="text-align:center">端口受限锥型</td>
+<td style="text-align:center">能</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">端口受限锥型</td>
+<td style="text-align:center">对称型</td>
+<td style="text-align:center">否</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">对称型</td>
+<td style="text-align:center">对称型</td>
+<td style="text-align:center">否</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/raw-socket/">
+                <span class="button__text">raw_socket</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

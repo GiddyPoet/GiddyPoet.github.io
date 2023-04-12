@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>dpdk on GiddyPoet</title>
+    <link>https://giddypoet.github.io/tags/dpdk/</link>
+    <description>Recent content in dpdk on GiddyPoet</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 03 Feb 2022 16:24:33 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/tags/dpdk/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>dpdk安装部署</title>
+      <link>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</link>
+      <pubDate>Thu, 03 Feb 2022 16:24:33 +0000</pubDate>
+      
+      <guid>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</guid>
+      <description>基础知识 DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
+UMA架构 在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
+这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。
+NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。
+在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。
+查看架构 可以通过numactl查看或者通过查看cpu设备信息。
+[root@GiddyPoet ~]# numactl --hardware available: 1 nodes (0) node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 node 0 size: 65189 MB node 0 free: 56946 MB node distances: node 0 0: 10 [root@GiddyPoet node]# ls /sys/devices/system/node/ has_cpu has_memory has_normal_memory node0 online possible power uevent 通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</description>
+      <content>&lt;h1 id=&#34;基础知识&#34;&gt;基础知识&lt;/h1&gt;
+&lt;p&gt;DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升&lt;/p&gt;
+&lt;h2 id=&#34;uma架构&#34;&gt;UMA架构&lt;/h2&gt;
+&lt;p&gt;在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。&lt;/p&gt;
+&lt;h2 id=&#34;numa架构&#34;&gt;NUMA架构&lt;/h2&gt;
+&lt;p&gt;NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。&lt;/p&gt;
+&lt;h2 id=&#34;查看架构&#34;&gt;查看架构&lt;/h2&gt;
+&lt;p&gt;可以通过numactl查看或者通过查看cpu设备信息。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;root@GiddyPoet ~&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# numactl --hardware&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;available: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; nodes &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;0&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; cpus: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;6&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;13&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;14&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;15&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;17&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;18&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;19&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; size: &lt;span style=&#34;color:#ae81ff&#34;&gt;65189&lt;/span&gt; MB
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; free: &lt;span style=&#34;color:#ae81ff&#34;&gt;56946&lt;/span&gt; MB
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node distances:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node   &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  0:  &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;root@GiddyPoet node&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# ls /sys/devices/system/node/&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。&lt;/p&gt;
+&lt;h2 id=&#34;pps算法包转发率&#34;&gt;pps算法（包转发率）&lt;/h2&gt;
+&lt;p&gt;pps: package per sesond&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。&lt;/p&gt;
+&lt;p&gt;一个最短以太帧实际长度为：
+$(12+7+1+6+6+2+46+4)*8=672bit$&lt;/p&gt;
+&lt;p&gt;通常按照万兆光计算下64个字节的包转发率。&lt;/p&gt;
+&lt;p&gt;$10*1000/672≈14.88Mpps$&lt;/p&gt;
+&lt;h2 id=&#34;uio用户空间io&#34;&gt;UIO:用户空间IO&lt;/h2&gt;
+&lt;p&gt;小的内核模块，用于将设备内存映射到用户空间，并注册中断。
+uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe uio_pci_generic 加载。
+但是其不支持虚拟功能，DPDK提供一个替代模块igb_uio模块。&lt;/p&gt;
+&lt;h2 id=&#34;vfio后续补充&#34;&gt;VFIO(后续补充)&lt;/h2&gt;
+&lt;p&gt;使用vfio不仅需要驱动支持，内核和bios都要支持，并配置IO虚拟化（如Intel VT-d)&lt;/p&gt;
+&lt;h2 id=&#34;大页内存&#34;&gt;大页内存&lt;/h2&gt;
+&lt;p&gt;通过grub进行修改&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 修改/etc/default/grub，在GRUB_CMDLINE_LINUX后新增大页内存配置，同时支持iommu，对于iommu&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 需要再虚拟机cpu里也做相应的修改&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;default_hugepagesz&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;2m hugepagesz&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;2m hugepages&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;256&lt;/span&gt; iommu&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;pt intel_iommu&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;on
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 修改后重新生成grub文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;grub2-mkconfig -o /boot/grub2/grub.cfg
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;修改/etc/fstab开机挂载打页内存&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;nodev /mnt/huge hugetlbfs defaults &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;h1 id=&#34;虚拟机环境配置&#34;&gt;虚拟机环境配置&lt;/h1&gt;
+&lt;p&gt;由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;修改igb_uio驱动检测方法：
+&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; RTE_INTR_MODE_LEGACY:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;          &lt;span style=&#34;color:#75715e&#34;&gt;// 添加true，保证能通过检测
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;          &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (&lt;span style=&#34;color:#a6e22e&#34;&gt;pci_intx_mask_supported&lt;/span&gt;(udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;pdev)&lt;span style=&#34;color:#f92672&#34;&gt;||&lt;/span&gt;true) {                                             
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;              &lt;span style=&#34;color:#a6e22e&#34;&gt;dev_dbg&lt;/span&gt;(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;pdev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;dev, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;using INTX&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;              udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;info.irq_flags &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; IRQF_SHARED &lt;span style=&#34;color:#f92672&#34;&gt;|&lt;/span&gt; IRQF_NO_THREAD;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;              udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;info.irq &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;pdev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;irq;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;              udev&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;mode &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; RTE_INTR_MODE_LEGACY;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;              &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;          }   
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h1 id=&#34;编译安装dpdk&#34;&gt;编译安装dpdk&lt;/h1&gt;
+&lt;p&gt;dpdk的版本选择很重要，由于centos通常是趋于稳定版的版本，所以编译器等环境都是较为老旧的版本，根据官方的相关建议，选用dpdk-18.11.11-stable版本做为测试。&lt;/p&gt;
+&lt;h2 id=&#34;设置环境变量&#34;&gt;设置环境变量&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export RTE_SDK&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;/root/dpdk-stable-18.11.11/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export RTE_TARGET&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;x86_64-native-linuxapp-gcc
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 如果需要对相关代码进行调试可以添加&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export RTE_CFLAGS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;-O0 -g&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;编译dpdk&#34;&gt;编译dpdk&lt;/h2&gt;
+&lt;p&gt;Makefile层层嵌套，入口为&lt;code&gt;GNUmakefile&lt;/code&gt;，指定平台为&lt;code&gt;x86_64-native-linuxapp-gcc&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 在dpdk-stable-18.11.11/config中实现&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;make install T&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;x86_64-native-linuxapp-gcc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;编译后的目录结构&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;root@giddypoet x86_64-native-linuxapp-gcc&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# tree -aL 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── app  &lt;span style=&#34;color:#75715e&#34;&gt;# 测试用二进制文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── build &lt;span style=&#34;color:#75715e&#34;&gt;#&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── .config &lt;span style=&#34;color:#75715e&#34;&gt;# config文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── .config.orig
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── include &lt;span style=&#34;color:#75715e&#34;&gt;# 头文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── kmod &lt;span style=&#34;color:#75715e&#34;&gt;# 驱动文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── lib &lt;span style=&#34;color:#75715e&#34;&gt;# 库文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;└── Makefile
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;配置dpdk&#34;&gt;配置dpdk&lt;/h2&gt;
+&lt;h3 id=&#34;uio驱动&#34;&gt;uio驱动&lt;/h3&gt;
+&lt;p&gt;内核自带了&lt;code&gt;uio_pci_generic&lt;/code&gt;驱动可以实现uio功能，dpdk提供了一个&lt;code&gt;igb_uio&lt;/code&gt;模块，对于不支持传统中断的设置，例如虚拟功能设备，必须使用&lt;code&gt;igb_uio&lt;/code&gt;来替代&lt;code&gt;uio_pci_generi&lt;/code&gt;模块。&lt;/p&gt;
+&lt;h3 id=&#34;调用网卡使用uio驱动&#34;&gt;调用网卡使用uio驱动&lt;/h3&gt;
+&lt;p&gt;首先要将网卡下线（原因在于网卡默认使用的是uio驱动）&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ip link set xxx down
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;./dpdk-devbind.py --bind&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;gib_uio eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;多队列网卡支持&#34;&gt;多队列网卡支持&lt;/h3&gt;
+&lt;p&gt;在原始网卡中一个网卡只能对应一个中断，但是一个中断通常在多核cpu中只能触发一个cpu工作，因此网卡的收发包工作都有一个cpu实现，因此但队列网卡对于cpu的利用率较低。
+多队列网卡通过在加载网卡驱动获取网卡的硬件queue数量，并结合CPU的数量，最终通过Sum=Min的出所要激活的网卡queue数量，并申请Sum个中断号，分配给激活的各个queue，通过多队列网卡，可以将网卡queue的中断和不同的cpu绑定，同时为了避免不同的5元组交给不同的cpu处理，网卡通过hash包头的sip、dip、sport、dport实现将同一条流总是手法到相同的队列。&lt;/p&gt;
+&lt;h2 id=&#34;常见问题解决&#34;&gt;常见问题解决&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;yum install numactl-devel
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;用户程序&#34;&gt;用户程序&lt;/h2&gt;
+&lt;p&gt;通过meson+ninja编译后，可以将dpdk相关头文件和动态放到指定位置，之后库和头文件都可以通过pkg-config进行管理。&lt;/p&gt;
+&lt;h3 id=&#34;设置pkgconfig路径&#34;&gt;设置pkgconfig路径&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;在centos下编译出来的pkgconfig文件默认放到&lt;code&gt;/usr/lib64/pkgconfig/libdpdk.pc&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;查询当前pkg-config检索的默认路径&lt;code&gt;pkg-config --variable pc_path pkg-config&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;将pc文件拷贝到对应路径，或者增加pkg-config检索路径&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;root@giddypoet x86_64-native-linuxapp-gcc&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# ll /usr/lib64/pkgconfig/libdpdk.pc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;-rw-r--r-- &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; root root &lt;span style=&#34;color:#ae81ff&#34;&gt;3356&lt;/span&gt; Apr &lt;span style=&#34;color:#ae81ff&#34;&gt;13&lt;/span&gt; 17:29 /usr/lib64/pkgconfig/libdpdk.pc
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;root@giddypoet x86_64-native-linuxapp-gcc&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# pkg-config --variable pc_path pkg-config&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;/usr/lib64/pkgconfig:/usr/share/pkgconfig
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;动态库链接路径&#34;&gt;动态库链接路径&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;/etc/ld.conf.d/&lt;/code&gt;路径下新增&lt;code&gt;libdpdk&lt;/code&gt;相关路径&lt;/li&gt;
+&lt;li&gt;ldconfig&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;用户makefile&#34;&gt;用户Makefile&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-Makefile&#34; data-lang=&#34;Makefile&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;PKGCONF &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; pkg-config
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;APP &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; send
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SRCS-y &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; send.c
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;CFLAGS &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; -O0 &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;shell &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;PKGCONF&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; --cflags libdpdk&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; -g
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;LDFLAGS &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;shell &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;PKGCONF&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; --libs libdpdk&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;$(APP)&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;SRCS-y&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;CC&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;CFLAGS&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;SRCS-y&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt; -o $@ &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;LDFLAGS&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;.PHONY&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; clean
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;clean&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        rm -f &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;APP&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</content>
+    </item>
+    
+  </channel>
+</rss>
