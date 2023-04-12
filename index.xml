@@ -8,10 +8,10 @@
     <language>en-us</language><atom:link href="https://giddypoet.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title></title>
-      <link>https://giddypoet.github.io/posts/mtu/mtu/</link>
+      <link>https://giddypoet.github.io/posts/mtu/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/mtu/mtu/</guid>
+      <guid>https://giddypoet.github.io/posts/mtu/</guid>
       <description> title: mtu date: 2022-03-25 09:52:24 tags: [network] categories: [os] MTU Maximum Transmission Unit 最大传输单元。
 不同链路介质对网络有不同的默认MTU值，以下是一些常见的默认值:
 以太网MTU通常被设置为1500。
