@@ -13,7 +13,7 @@ struct sockaddr { unsigned short sa_family; // address family, AF_xxx char sa_da
 
   <meta name="robots" content="noodp" />
 
-<link rel="canonical" href="https://giddypoet.github.io/posts/ip-range/" />
+<link rel="canonical" href="https://giddypoet.github.io/posts/ip-range/ip-range/" />
 
 
 
@@ -53,7 +53,7 @@ struct sockaddr { unsigned short sa_family; // address family, AF_xxx char sa_da
 <meta property="og:description" content="ip地址范围判断问题 在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以下场景。
 ip1-ip2 ip/CIDR (ip/24) ip/netmask (ip/255.255.255.0) ip地址判断 ip地址格式 常用的地址格式类型：
 struct sockaddr { unsigned short sa_family; // address family, AF_xxx char sa_data[14]; // 14 bytes of protocol address }; struct sockaddr_in { short sin_family; // e.g. AF_INET, AF_INET6 unsigned short sin_port; // e.g. htons(3490) struct in_addr sin_addr; // see struct in_addr, below char sin_zero[8]; // zero this if you want to }; struct sockaddr_in6 { u_int16_t sin6_family; // address family, AF_INET6 u_int16_t sin6_port; // port number, Network Byte Order u_int32_t sin6_flowinfo; // IPv6 flow information struct in6_addr sin6_addr; // IPv6 address u_int32_t sin6_scope_id; // Scope ID }; struct sockaddr_storage { sa_family_t ss_family; // address family // all this is padding, implementation specific, ignore it: char __ss_pad1[_SS_PAD1SIZE]; int64_t __ss_align; char __ss_pad2[_SS_PAD2SIZE]; }; struct sockaddr 通常不会自己创建，该结构体，一般都是通过struct sockaddr_in和struct sockaddr_in6进行转换，由于历史因素，因此套接字api都只支持struct sockaddr，通过family字段进行判断，同时支持ipv4和ipv6，如果一个ip地址是ipv4,它只会读取其前4个字节，如果是ipv6，则会读取完整的16个字节." />
-<meta property="og:url" content="https://giddypoet.github.io/posts/ip-range/" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/ip-range/ip-range/" />
 <meta property="og:site_name" content="GiddyPoet" />
 
   
@@ -143,7 +143,7 @@ struct sockaddr { unsigned short sa_family; // address family, AF_xxx char sa_da
     
 <article class="post">
   <h1 class="post-title">
-    <a href="https://giddypoet.github.io/posts/ip-range/">ip_range</a>
+    <a href="https://giddypoet.github.io/posts/ip-range/ip-range/">ip_range</a>
   </h1>
   <div class="post-meta">
     
@@ -505,7 +505,7 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
     <div class="pagination__buttons">
         
         <span class="button previous">
-            <a href="https://giddypoet.github.io/posts/raw-socket/">
+            <a href="https://giddypoet.github.io/posts/raw-socket/raw-socket/">
                 <span class="button__icon">←</span>
                 <span class="button__text">raw_socket</span>
             </a>

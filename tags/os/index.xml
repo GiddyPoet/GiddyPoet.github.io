@@ -9,10 +9,10 @@
     <lastBuildDate>Mon, 18 Apr 2022 12:29:45 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/tags/os/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>操作系统导论</title>
-      <link>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</link>
+      <link>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</link>
       <pubDate>Mon, 18 Apr 2022 12:29:45 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</guid>
+      <guid>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</guid>
       <description>第一章 关于本书的对话 Operating Systems: Three Easy Pieces：
 虚拟化(virtualization) 并发(concurrency) 持久性(persistence) 第二章 操作系统介绍 程序运行时会发生什么：(冯诺依曼计算模型) 获取指令fecth -&amp;gt; 解码指令decode -&amp;gt; 执行指令execute
 操作系统主要利用一种通用的技术，我们称之为虚拟化（virtualization）。也就是说，操作系统将物理（physical）资源（如处理器、内存或磁盘）转换为更通用、更强大且更易于使用的虚拟形式。
@@ -135,7 +135,7 @@
 &lt;p&gt;操作系统是如何运行一个程序：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;将代码和静态数据（例如初始化变量）从硬盘加载到内存中，加载到进程的地址空间中。
-&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/load_process.jpg&#34; alt=&#34;&#34;&gt;&lt;/li&gt;
+&lt;img src=&#34;load_process.jpg&#34; alt=&#34;&#34;&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;在早期的操作系统采用的加载方式是将进程一次性的加载到内存中，但是现代操作系统采用的加载方式是惰性加载，其实这里涉及到内存交换，内存虚拟化相应的知识。&lt;/p&gt;
@@ -156,7 +156,7 @@
 &lt;li&gt;就绪(ready)：就绪状态下，进程已准备好运行，但是由于某种原因操作系统不运行&lt;/li&gt;
 &lt;li&gt;阻塞(blocked)：一个进程执行了某种操作，知道发生其他事件才会准备运行，如：I/O操作，他会被阻塞，其他进程可以使用CPU&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/process_state_machine.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;process_state_machine.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;数据结构&#34;&gt;数据结构&lt;/h2&gt;
 &lt;p&gt;操作系统通过进程李彪来跟踪当前运行的进程，操作系统还必须以某种方式跟踪被阻塞的进程。&lt;/p&gt;
 &lt;p&gt;通过xv6进程数据结构：&lt;/p&gt;
@@ -373,7 +373,7 @@
 &lt;li&gt;参数传递方式：带l表示逐个列举的形式，带v表示可以将所有参数构造成一个指针数组传递，首地址当做参数传递，数组中的最后一个指针要求是NULL&lt;/li&gt;
 &lt;li&gt;环境变量：exec函数族默认使用了系统默认的环境变量，也可以传入指定的环境变量，以e结尾的两个函数就可以在envp[]中指定当前进程使用的环境变量替换掉该进程所继承的所有环境变量&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/exec_faimly.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;exec_faimly.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;实际上操作系统真正的系统调用只有execve，其他5个都是库函数，它们最终都会调用evecve这个系统调用
 同时由于exec函数族替换了当前进程的堆栈信息，并替换成不同的程序，因此在exec函数族之后执行的代码通常不会执行，除非exec函数族执行失败。&lt;/p&gt;

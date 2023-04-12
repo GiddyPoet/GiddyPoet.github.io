@@ -9,10 +9,10 @@
     <lastBuildDate>Thu, 03 Feb 2022 16:24:33 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/tags/dpdk/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>dpdk安装部署</title>
-      <link>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</link>
+      <link>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</link>
       <pubDate>Thu, 03 Feb 2022 16:24:33 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</guid>
+      <guid>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</guid>
       <description>基础知识 DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
 UMA架构 在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
 这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。
@@ -24,11 +24,11 @@ NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存�
 &lt;p&gt;DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升&lt;/p&gt;
 &lt;h2 id=&#34;uma架构&#34;&gt;UMA架构&lt;/h2&gt;
 &lt;p&gt;在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;uma.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。&lt;/p&gt;
 &lt;h2 id=&#34;numa架构&#34;&gt;NUMA架构&lt;/h2&gt;
 &lt;p&gt;NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;numa.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。&lt;/p&gt;
 &lt;h2 id=&#34;查看架构&#34;&gt;查看架构&lt;/h2&gt;
 &lt;p&gt;可以通过numactl查看或者通过查看cpu设备信息。&lt;/p&gt;
@@ -46,7 +46,7 @@ NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。&lt;/p&gt;
 &lt;h2 id=&#34;pps算法包转发率&#34;&gt;pps算法（包转发率）&lt;/h2&gt;
 &lt;p&gt;pps: package per sesond&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;%E5%B8%A7%E7%BB%93%E6%9E%84.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。&lt;/p&gt;
 &lt;p&gt;一个最短以太帧实际长度为：
 $(12+7+1+6+6+2+46+4)*8=672bit$&lt;/p&gt;
@@ -71,7 +71,7 @@ uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe 
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
 &lt;h1 id=&#34;虚拟机环境配置&#34;&gt;虚拟机环境配置&lt;/h1&gt;
 &lt;p&gt;由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。&lt;/p&gt;
 &lt;/blockquote&gt;

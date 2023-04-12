@@ -9,10 +9,10 @@
     <lastBuildDate>Tue, 19 Jul 2022 14:39:45 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/categories/os/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>wireguard</title>
-      <link>https://giddypoet.github.io/posts/wireguard/</link>
+      <link>https://giddypoet.github.io/posts/wireguard/wireguard/</link>
       <pubDate>Tue, 19 Jul 2022 14:39:45 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/wireguard/</guid>
+      <guid>https://giddypoet.github.io/posts/wireguard/wireguard/</guid>
       <description>WireGuard WireGuard是由Jason Donenfeld等大佬用C语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如IPSec、Openvpn等技术的痛点。 WireGuard是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 IPsec更快，更简单，更精简，更易用，同时避免大规模配置IPsec的麻烦事。同时WireGuard也打算比OpenVPN更高效。
 配置使用 WireGuard相关定义 Peer：节点，对于WireGuard来说所有节点之间都是对等的，每一个启动WireGuard实例的节点都是一个peer Bounce Server(中继服务器)：类似内网穿透的原理，当设备在NAT内，需要进行通信，则可以通过中继服务器实现两个节点之间的通信，中继服务作为一个Peer，充当消息的中介。 私钥：WireGuard所用的私钥，通过wg genkey生成 公钥：WireGuard所用的公钥，通过wg genkey privatekey生成公钥，公钥在与邻居节点建立连接关系的时候使用 IP漫游：WireGuard由于是无连接的，因此如果双方地址发生变动，通过协议可以记录其新地址 WireGuard工作模式 Direct Node-to-Node：点对点模式，节点在同一局域网或者都在公网 Node behind local NAT to Public node：一个在内网通过NAT访问公网节点，配置PerisistentKeepalived，实现连接保持，维护NAT设备上的连接信息 Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接 Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞 WireGuard配置 本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。
 本地节点配置
@@ -20,7 +20,7 @@
       <content>&lt;h1 id=&#34;wireguard&#34;&gt;WireGuard&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;WireGuard&lt;/code&gt;是由&lt;code&gt;Jason Donenfeld&lt;/code&gt;等大佬用&lt;code&gt;C&lt;/code&gt;语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如&lt;code&gt;IPSec&lt;/code&gt;、&lt;code&gt;Openvpn&lt;/code&gt;等技术的痛点。
 &lt;code&gt;WireGuard&lt;/code&gt;是一个利用现有社会最先进的加密技术而产生的非常简单和快捷的VPN工具。它的目标是比 &lt;code&gt;IPsec&lt;/code&gt;更快，更简单，更精简，更易用，同时避免大规模配置&lt;code&gt;IPsec&lt;/code&gt;的麻烦事。同时&lt;code&gt;WireGuard&lt;/code&gt;也打算比&lt;code&gt;OpenVPN&lt;/code&gt;更高效。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;./wireguard/wireguard_performance.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;wireguard_performance.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;配置使用&#34;&gt;配置使用&lt;/h2&gt;
 &lt;h3 id=&#34;wireguard相关定义&#34;&gt;WireGuard相关定义&lt;/h3&gt;
 &lt;ul&gt;
@@ -37,7 +37,7 @@
 &lt;li&gt;Node behind local NAT to node behind remote NAT (via relay)：两个节点都在NAT内，通过中继服务器实现内网穿透，中继服务器用于转发连接&lt;/li&gt;
 &lt;li&gt;Node behind local NAT to node behind remote NAT (via UDP NAT hole-punching)：UDP nat打洞模式，udp打洞&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;./wireguard/nat.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;nat.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h3 id=&#34;wireguard配置&#34;&gt;WireGuard配置&lt;/h3&gt;
 &lt;blockquote&gt;
 &lt;p&gt;本测试场景基于vmware虚拟机测试，虚拟出两台设备，IP分别为192.168.74.150和192.168.74.151。采用的是Ubuntu22.04。&lt;/p&gt;
@@ -208,10 +208,10 @@ PersistentKeepalive = 25
     
     <item>
       <title>raw_socket</title>
-      <link>https://giddypoet.github.io/posts/raw-socket/</link>
+      <link>https://giddypoet.github.io/posts/raw-socket/raw-socket/</link>
       <pubDate>Fri, 08 Jul 2022 14:58:53 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/raw-socket/</guid>
+      <guid>https://giddypoet.github.io/posts/raw-socket/raw-socket/</guid>
       <description>RAW_SOCKET 我们常用的套接字类型主要就是：
 TCP UDP 原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力： 读写ICMPv4、IGMPv4和IGMPv6等分组 有了原始套接字，进程可以读取内核不处理的IP type类型 有了原始套接字，进程可以使用IP_HDRINCL套接字选项构造TCP或UDP分组 原始套接字创建 原始套接字协议类型：
 // netinet/in.h enum { IPPROTO_IP = 0,	/* Dummy protocol for TCP. */ #define IPPROTO_IP	IPPROTO_IP IPPROTO_ICMP = 1,	/* Internet Control Message Protocol. */ #define IPPROTO_ICMP	IPPROTO_ICMP IPPROTO_IGMP = 2,	/* Internet Group Management Protocol. */ #define IPPROTO_IGMP	IPPROTO_IGMP IPPROTO_IPIP = 4,	/* IPIP tunnels (older KA9Q tunnels use 94). */ #define IPPROTO_IPIP	IPPROTO_IPIP IPPROTO_TCP = 6,	/* Transmission Control Protocol.</description>
@@ -333,16 +333,16 @@ connect用于设置外部地址，同样目的端口无效，调用之后可以�
 &lt;blockquote&gt;
 &lt;p&gt;对于自己构造的IP包，可以将标识字段置0，让内核控制该选项，即便是自定义IP头，首部校验和也是有内核计算存储，同时ipv4选项字段是可选字段。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;./raw-socket/iphdr.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;iphdr.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 </content>
     </item>
     
     <item>
       <title>ip_range</title>
-      <link>https://giddypoet.github.io/posts/ip-range/</link>
+      <link>https://giddypoet.github.io/posts/ip-range/ip-range/</link>
       <pubDate>Mon, 13 Jun 2022 15:07:07 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/ip-range/</guid>
+      <guid>https://giddypoet.github.io/posts/ip-range/ip-range/</guid>
       <description>ip地址范围判断问题 在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以下场景。
 ip1-ip2 ip/CIDR (ip/24) ip/netmask (ip/255.255.255.0) ip地址判断 ip地址格式 常用的地址格式类型：
 struct sockaddr { unsigned short sa_family; // address family, AF_xxx char sa_data[14]; // 14 bytes of protocol address }; struct sockaddr_in { short sin_family; // e.g. AF_INET, AF_INET6 unsigned short sin_port; // e.g. htons(3490) struct in_addr sin_addr; // see struct in_addr, below char sin_zero[8]; // zero this if you want to }; struct sockaddr_in6 { u_int16_t sin6_family; // address family, AF_INET6 u_int16_t sin6_port; // port number, Network Byte Order u_int32_t sin6_flowinfo; // IPv6 flow information struct in6_addr sin6_addr; // IPv6 address u_int32_t sin6_scope_id; // Scope ID }; struct sockaddr_storage { sa_family_t ss_family; // address family // all this is padding, implementation specific, ignore it: char __ss_pad1[_SS_PAD1SIZE]; int64_t __ss_align; char __ss_pad2[_SS_PAD2SIZE]; }; struct sockaddr 通常不会自己创建，该结构体，一般都是通过struct sockaddr_in和struct sockaddr_in6进行转换，由于历史因素，因此套接字api都只支持struct sockaddr，通过family字段进行判断，同时支持ipv4和ipv6，如果一个ip地址是ipv4,它只会读取其前4个字节，如果是ipv6，则会读取完整的16个字节.</description>
@@ -674,10 +674,10 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
     
     <item>
       <title>操作系统导论</title>
-      <link>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</link>
+      <link>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</link>
       <pubDate>Mon, 18 Apr 2022 12:29:45 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</guid>
+      <guid>https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/</guid>
       <description>第一章 关于本书的对话 Operating Systems: Three Easy Pieces：
 虚拟化(virtualization) 并发(concurrency) 持久性(persistence) 第二章 操作系统介绍 程序运行时会发生什么：(冯诺依曼计算模型) 获取指令fecth -&amp;gt; 解码指令decode -&amp;gt; 执行指令execute
 操作系统主要利用一种通用的技术，我们称之为虚拟化（virtualization）。也就是说，操作系统将物理（physical）资源（如处理器、内存或磁盘）转换为更通用、更强大且更易于使用的虚拟形式。
@@ -800,7 +800,7 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
 &lt;p&gt;操作系统是如何运行一个程序：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;将代码和静态数据（例如初始化变量）从硬盘加载到内存中，加载到进程的地址空间中。
-&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/load_process.jpg&#34; alt=&#34;&#34;&gt;&lt;/li&gt;
+&lt;img src=&#34;load_process.jpg&#34; alt=&#34;&#34;&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;在早期的操作系统采用的加载方式是将进程一次性的加载到内存中，但是现代操作系统采用的加载方式是惰性加载，其实这里涉及到内存交换，内存虚拟化相应的知识。&lt;/p&gt;
@@ -821,7 +821,7 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
 &lt;li&gt;就绪(ready)：就绪状态下，进程已准备好运行，但是由于某种原因操作系统不运行&lt;/li&gt;
 &lt;li&gt;阻塞(blocked)：一个进程执行了某种操作，知道发生其他事件才会准备运行，如：I/O操作，他会被阻塞，其他进程可以使用CPU&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/process_state_machine.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;process_state_machine.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;数据结构&#34;&gt;数据结构&lt;/h2&gt;
 &lt;p&gt;操作系统通过进程李彪来跟踪当前运行的进程，操作系统还必须以某种方式跟踪被阻塞的进程。&lt;/p&gt;
 &lt;p&gt;通过xv6进程数据结构：&lt;/p&gt;
@@ -1038,7 +1038,7 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
 &lt;li&gt;参数传递方式：带l表示逐个列举的形式，带v表示可以将所有参数构造成一个指针数组传递，首地址当做参数传递，数组中的最后一个指针要求是NULL&lt;/li&gt;
 &lt;li&gt;环境变量：exec函数族默认使用了系统默认的环境变量，也可以传入指定的环境变量，以e结尾的两个函数就可以在envp[]中指定当前进程使用的环境变量替换掉该进程所继承的所有环境变量&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/exec_faimly.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;exec_faimly.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;实际上操作系统真正的系统调用只有execve，其他5个都是库函数，它们最终都会调用evecve这个系统调用
 同时由于exec函数族替换了当前进程的堆栈信息，并替换成不同的程序，因此在exec函数族之后执行的代码通常不会执行，除非exec函数族执行失败。&lt;/p&gt;
@@ -1240,10 +1240,10 @@ ipv6的地址比较直接比较内存大小就可以，ipv6是16个uint8做比�
     
     <item>
       <title>tcp_syncookies</title>
-      <link>https://giddypoet.github.io/posts/tcp-cookies/</link>
+      <link>https://giddypoet.github.io/posts/tcp-syncookies/tcp-cookies/</link>
       <pubDate>Tue, 15 Mar 2022 15:25:13 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/tcp-cookies/</guid>
+      <guid>https://giddypoet.github.io/posts/tcp-syncookies/tcp-cookies/</guid>
       <description>tcp_syncookies 背景 需要对设备进行synflood测试，验证syn_cookies功能是否正常。
 syncookies原理 SYN Cookie是对TCP服务器端的三次握手做一些修改，专门用来防范SYN Flood攻击的一种手段。它的原理是，在TCP服务器接收到TCP SYN包并返回TCP SYN + ACK包时，不分配一个专门的数据区，而是根据这个SYN包计算出一个cookie值。这个cookie作为将要返回的SYN ACK包的初始序列号。
 syncookies复用seqnum字段，前5个bits是简易版本的时间戳，中间3个bits是mss值，后面24个是散列值。
@@ -1308,10 +1308,10 @@ seq = hash(saddr, daddr, sport, dport, 0, 0) + req.th.seq + t &amp;lt;&amp;lt; 2
     
     <item>
       <title>killcx</title>
-      <link>https://giddypoet.github.io/posts/killcx/</link>
+      <link>https://giddypoet.github.io/posts/killcx/killcx/</link>
       <pubDate>Tue, 22 Feb 2022 09:43:07 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/killcx/</guid>
+      <guid>https://giddypoet.github.io/posts/killcx/killcx/</guid>
       <description>killcx 背景介绍 今天在逛博客的时候发现一个有意思的问题：
 如何在不是同一个进程的情况下，关闭一个TCP连接？ 通常我们可以想到的关闭一个连接的方法如下：
 进程内close（通用文件描述符关闭方法） 进程内shutdown（可以半关闭socket，专门为socket定制） 回RST报文 内核回调？等奇技淫巧这里就不讨论了 但是1和2的方式都必须在同一个进程内实现，因此不满足问题的要求，所以应该就是回RST报文，实际上这也是防火墙或者一些旁路设备常的事情，有些VPN也会构造类似的请求，来阻止不合法的连接。
@@ -1354,7 +1354,7 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
 &lt;p&gt;实际上部分防火墙和nat设备并不支持challenge ACK&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;那么我们就可以通过raw socket进行构造乱序的SYN包，再通过服务端回的正确的ACK获取到序列号，再回复RST报文。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;killcx/challenge_ack.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;challenge_ack.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;其实有现成的工具就可以实现上述功能，killcx是一款基于perl实现的脚本工具，下面将对killcx进行简单的分析。&lt;/p&gt;
 &lt;h2 id=&#34;killcx分析&#34;&gt;killcx分析&lt;/h2&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-perl&#34; data-lang=&#34;perl&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;use&lt;/span&gt; strict; 
@@ -1625,10 +1625,10 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
     
     <item>
       <title>linux网卡聚合及bond模式原理</title>
-      <link>https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/</link>
+      <link>https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/</link>
       <pubDate>Tue, 08 Feb 2022 19:40:19 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/</guid>
+      <guid>https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/</guid>
       <description>linux网卡聚合及bond模式原理 bonding的应用 网络负载均衡 用于解决一个ip地址，流量过大，服务器网络压力过大的问题。将多个网卡聚合在一起生成一个bond口，将ip配在这个bond口上，具体mac地址根据bond口的模式选择。
 网络冗余 通过冗余服务提供服务器的可靠性和安全性，多个网卡绑定到一个IP地址上，当一个网卡发生物理损坏时，另一块网卡也能提供正常服务。
 原理 根据不同的模式有不同的原理，在介绍模式时详细介绍。
@@ -1642,7 +1642,7 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
 &lt;p&gt;通过冗余服务提供服务器的可靠性和安全性，多个网卡绑定到一个IP地址上，当一个网卡发生物理损坏时，另一块网卡也能提供正常服务。&lt;/p&gt;
 &lt;h2 id=&#34;原理&#34;&gt;原理&lt;/h2&gt;
 &lt;p&gt;根据不同的模式有不同的原理，在介绍&lt;a href=&#34;#%E6%A8%A1%E5%BC%8F&#34;&gt;模式&lt;/a&gt;时详细介绍。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;bond.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;模式&#34;&gt;模式&lt;/h2&gt;
 &lt;p&gt;linux有7种网卡绑定模式：&lt;/p&gt;
 &lt;table&gt;
@@ -1728,7 +1728,7 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_rr.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;bond_rr.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;active-backup&#34;&gt;active-backup&lt;/h2&gt;
 &lt;h3 id=&#34;特点-1&#34;&gt;特点&lt;/h3&gt;
 &lt;ul&gt;
@@ -1749,8 +1749,8 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/bond_ac_log.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;bond_ac.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;bond_ac_log.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;load-balancingxor&#34;&gt;load balancing(xor)&lt;/h2&gt;
 &lt;h3 id=&#34;特点-2&#34;&gt;特点&lt;/h3&gt;
 &lt;ul&gt;
@@ -1802,10 +1802,10 @@ killcx分析 use strict; use Socket; use Net::RawIP; use Net::Pcap; use NetPacke
     
     <item>
       <title>一次内存异常问题排查经历</title>
-      <link>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</link>
+      <link>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</link>
       <pubDate>Thu, 03 Feb 2022 16:28:39 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</guid>
+      <guid>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</guid>
       <description>内存异常现象 在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。
 排查思路 使用free -mh查看系统内存占用情况 发现buff/cache占用大量的内存
 # 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存 [root@TAC ~]# free -mh total used free shared buff/cache available Mem: 62G 6.8G 8G 80M 49G 8G Swap: 31G 0B 31G 大致介绍一下free命令输出的含义
@@ -1988,10 +1988,10 @@ mem 内存使用情况 total 总共 used 已用 free 空闲 shared 共享使用 
     
     <item>
       <title>dpdk安装部署</title>
-      <link>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</link>
+      <link>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</link>
       <pubDate>Thu, 03 Feb 2022 16:24:33 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</guid>
+      <guid>https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/</guid>
       <description>基础知识 DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
 UMA架构 在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
 这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。
@@ -2003,11 +2003,11 @@ NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存�
 &lt;p&gt;DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升&lt;/p&gt;
 &lt;h2 id=&#34;uma架构&#34;&gt;UMA架构&lt;/h2&gt;
 &lt;p&gt;在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/uma.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;uma.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。&lt;/p&gt;
 &lt;h2 id=&#34;numa架构&#34;&gt;NUMA架构&lt;/h2&gt;
 &lt;p&gt;NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/numa.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;numa.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。&lt;/p&gt;
 &lt;h2 id=&#34;查看架构&#34;&gt;查看架构&lt;/h2&gt;
 &lt;p&gt;可以通过numactl查看或者通过查看cpu设备信息。&lt;/p&gt;
@@ -2025,7 +2025,7 @@ NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。&lt;/p&gt;
 &lt;h2 id=&#34;pps算法包转发率&#34;&gt;pps算法（包转发率）&lt;/h2&gt;
 &lt;p&gt;pps: package per sesond&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/%E5%B8%A7%E7%BB%93%E6%9E%84.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;%E5%B8%A7%E7%BB%93%E6%9E%84.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。&lt;/p&gt;
 &lt;p&gt;一个最短以太帧实际长度为：
 $(12+7+1+6+6+2+46+4)*8=672bit$&lt;/p&gt;
@@ -2050,7 +2050,7 @@ uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe 
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
 &lt;h1 id=&#34;虚拟机环境配置&#34;&gt;虚拟机环境配置&lt;/h1&gt;
 &lt;p&gt;由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -2139,10 +2139,10 @@ uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe 
     
     <item>
       <title>虚拟网络设备</title>
-      <link>https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/</link>
+      <link>https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/</link>
       <pubDate>Thu, 03 Feb 2022 16:09:24 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/</guid>
+      <guid>https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/</guid>
       <description>虚拟网络设备 本文将从基础的虚拟网络设备进行介绍，开启linux网络虚拟化的学习之路。
 tun/tap tap/tun是linux内核实现的一对虚拟网络设备，TAP工作在二层，tun工作在三层，linux内核通过TAP/TUN设备向绑定该设备的用户空间应用发送数据。反之，用户空间也可以像操作网络硬件设备那样，通过TAP/TUN设备发送数据。
 #include &amp;lt;sys/types.h&amp;gt; #include &amp;lt;sys/socket.h&amp;gt; #include &amp;lt;linux/if_tun.h&amp;gt; #include &amp;lt;linux/if.h&amp;gt; static int create_tun(char *devname,int flags) { int fd; struct ifreq ifr; if((fd = open(&amp;#34;/dev/net/tun&amp;#34;,O_RDWR))&amp;lt;0) { perror(&amp;#34;open&amp;#34;); return ERROR; } memset(&amp;amp;ifr,0,sizeof(ifr)); // IFF_NO_PI，package info，tun/tap会默认在网卡包包信息，信息内容如下 // struct tun_pi { // unsigned short flags; // unsigned short proto; // }; ifr.ifr_flags = flags; strcpy(ifr.ifr_name,devname); if(ioctl(fd,TUNSETIFF,(void*)&amp;amp;ifr)&amp;lt;0) { perror(&amp;#34;ioctl&amp;#34;); return ERROR; } return fd; } Linux Bridge Linux Bridge（网桥）是工作在二层的虚拟网络设备，功能类似于物理的交换机。
@@ -2431,71 +2431,6 @@ tap+bridge -&amp;gt; macvlan -&amp;gt; macvtap&lt;/p&gt;
 &lt;li&gt;&amp;hellip;&amp;hellip;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;上述设备的用途通常不在于云原生场景中，后续再对其他虚拟设备进行介绍。&lt;/p&gt;
-</content>
-    </item>
-    
-    <item>
-      <title>nic网卡收包</title>
-      <link>https://giddypoet.github.io/posts/nic%E6%94%B6%E5%8F%91%E5%8C%85/</link>
-      <pubDate>Thu, 03 Feb 2022 14:40:19 +0000</pubDate>
-      
-      <guid>https://giddypoet.github.io/posts/nic%E6%94%B6%E5%8F%91%E5%8C%85/</guid>
-      <description>网卡收发包 程序控制I/O 这是最简单的一种 I/O 模式，也叫忙等待或者轮询：用户通过发起一个系统调用，陷入内核态，内核将系统调用翻译成一个对应设备驱动程序的过程调用，接着设备驱动程序会启动 I/O 不断循环去检查该设备，看看是否已经就绪，一般通过返回码来表示，I/O 结束之后，设备驱动程序会把数据送到指定的地方并返回，切回用户态。
-cpu一直处于忙轮询状态，调用驱动程序检查设备状态
-中断I/O 用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据； 磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里； 完成拷贝之后磁盘控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而磁盘控制器会在后面持续发送中断信号直至中断控制器受理； 中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个磁盘设备的编号，表示这次中断需要关注的设备是磁盘； 中断控制器向 CPU 置起一个磁盘中断信号； CPU 收到中断信号之后停止当前的工作，把当前的 PC/PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行磁盘中断服务，把数据从磁盘控制器的缓冲区拷贝到主存里的内核缓冲区； 最后 CPU 再把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。 内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。
-DMA I/O 在上述中断I/O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。
-DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。
-用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设置 DMA 控制器的寄存器对它进行编程：把内核缓冲区和磁盘文件的地址分别写入 MAR 和 ADR 寄存器，然后把期望读取的字节数写入 WC 寄存器，启动 DMA 控制器； DMA 控制器根据 ADR 寄存器里的信息知道这次 I/O 需要读取的外设是磁盘的某个地址，便向磁盘控制器发出一个命令，通知它从磁盘读取数据到其内部的缓冲区里； 磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里，并对缓冲区内数据的校验和进行检验，如果数据是有效的，那么 DMA 就可以开始了； DMA 控制器通过总线向磁盘控制器发出一个读请求信号从而发起 DMA 传输，这个信号和前面的中断驱动 I/O 小节里 CPU 发给磁盘控制器的读请求是一样的，它并不知道或者并不关心这个读请求是来自 CPU 还是 DMA 控制器； 紧接着 DMA 控制器将引导磁盘控制器将数据传输到 MAR 寄存器里的地址，也就是内核缓冲区； 数据传输完成之后，返回一个 ack 给 DMA 控制器，WC 寄存器里的值会减去相应的数据长度，如果 WC 还不为 0，则重复第 4 步到第 6 步，一直到 WC 里的字节数等于 0； 收到 ack 信号的 DMA 控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而 DMA 控制器会在后面持续发送中断信号直至中断控制器受理； 中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个主存设备的编号，表示这次中断需要关注的设备是主存； 中断控制器向 CPU 置起一个 DMA 中断的信号； CPU 收到中断信号之后停止当前的工作，把当前的 PC/PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行 DMA 中断服务，把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。 简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。</description>
-      <content>&lt;h2 id=&#34;网卡收发包&#34;&gt;网卡收发包&lt;/h2&gt;
-&lt;h3 id=&#34;程序控制io&#34;&gt;程序控制I/O&lt;/h3&gt;
-&lt;p&gt;这是最简单的一种 I/O 模式，也叫忙等待或者轮询：用户通过发起一个系统调用，陷入内核态，内核将系统调用翻译成一个对应设备驱动程序的过程调用，接着设备驱动程序会启动 I/O 不断循环去检查该设备，看看是否已经就绪，一般通过返回码来表示，I/O 结束之后，设备驱动程序会把数据送到指定的地方并返回，切回用户态。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;cpu一直处于忙轮询状态，调用驱动程序检查设备状态&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;nic%E6%94%B6%E5%8F%91%E5%8C%85/roundrobin_io.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;h3 id=&#34;中断io&#34;&gt;中断I/O&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设备驱动程序向设备寄存器写入一个通知信号，告知设备控制器 (我们这里是磁盘控制器)要读取数据；&lt;/li&gt;
-&lt;li&gt;磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里；&lt;/li&gt;
-&lt;li&gt;完成拷贝之后磁盘控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而磁盘控制器会在后面持续发送中断信号直至中断控制器受理；&lt;/li&gt;
-&lt;li&gt;中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个磁盘设备的编号，表示这次中断需要关注的设备是磁盘；&lt;/li&gt;
-&lt;li&gt;中断控制器向 CPU 置起一个磁盘中断信号；&lt;/li&gt;
-&lt;li&gt;CPU 收到中断信号之后停止当前的工作，把当前的 PC/PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行磁盘中断服务，把数据从磁盘控制器的缓冲区拷贝到主存里的内核缓冲区；&lt;/li&gt;
-&lt;li&gt;最后 CPU 再把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;blockquote&gt;
-&lt;p&gt;内核调用硬盘驱动，实现将数据从硬盘拷贝至硬盘控制器缓冲区，然后传递设备号，触发中断（硬中断），之后cpu将数据从硬盘控制器缓存区拷贝出来传递到内存中，再拷贝到用户缓存区。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;nic%E6%94%B6%E5%8F%91%E5%8C%85/irq_io.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;h3 id=&#34;dma-io&#34;&gt;DMA I/O&lt;/h3&gt;
-&lt;p&gt;在上述中断I/O中，当网卡控制器将数据从硬盘上存储到自身的缓存区后，cpu负责将数据从网卡控制器的缓存区搬运至内存中再拷贝至用户态，在这两次数据拷贝阶段中CPU是完全被占用而不能处理其他工作的。由于从内核态拷贝到用户态都在主存中，只能由cpu完成，但是第 6 步的数据拷贝，是从磁盘控制器的缓冲区到主存，是两个设备之间的数据传输，这一步并非一定要 CPU 来完成，可以借助 DMA 来完成，减轻 CPU 的负担。&lt;/p&gt;
-&lt;p&gt;DMA 全称是 Direct Memory Access，也即直接存储器存取，是一种用来提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。整个过程无须 CPU 参与，数据直接通过 DMA 控制器进行快速地移动拷贝，节省 CPU 的资源去做其他工作。&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;用户进程发起一个 read() 系统调用读取磁盘文件，陷入内核态并由其所在的 CPU 通过设置 DMA 控制器的寄存器对它进行编程：把内核缓冲区和磁盘文件的地址分别写入 MAR 和 ADR 寄存器，然后把期望读取的字节数写入 WC 寄存器，启动 DMA 控制器；&lt;/li&gt;
-&lt;li&gt;DMA 控制器根据 ADR 寄存器里的信息知道这次 I/O 需要读取的外设是磁盘的某个地址，便向磁盘控制器发出一个命令，通知它从磁盘读取数据到其内部的缓冲区里；&lt;/li&gt;
-&lt;li&gt;磁盘控制器启动磁盘读取的过程，把数据从磁盘拷贝到磁盘控制器缓冲区里，并对缓冲区内数据的校验和进行检验，如果数据是有效的，那么 DMA 就可以开始了；&lt;/li&gt;
-&lt;li&gt;DMA 控制器通过总线向磁盘控制器发出一个读请求信号从而发起 DMA 传输，这个信号和前面的中断驱动 I/O 小节里 CPU 发给磁盘控制器的读请求是一样的，它并不知道或者并不关心这个读请求是来自 CPU 还是 DMA 控制器；&lt;/li&gt;
-&lt;li&gt;紧接着 DMA 控制器将引导磁盘控制器将数据传输到 MAR 寄存器里的地址，也就是内核缓冲区；&lt;/li&gt;
-&lt;li&gt;数据传输完成之后，返回一个 ack 给 DMA 控制器，WC 寄存器里的值会减去相应的数据长度，如果 WC 还不为 0，则重复第 4 步到第 6 步，一直到 WC 里的字节数等于 0；&lt;/li&gt;
-&lt;li&gt;收到 ack 信号的 DMA 控制器会通过总线发送一个中断信号到中断控制器，如果此时中断控制器手头还有正在处理的中断或者有一个和该中断信号同时到达的更高优先级的中断，则这个中断信号将被忽略，而 DMA 控制器会在后面持续发送中断信号直至中断控制器受理；&lt;/li&gt;
-&lt;li&gt;中断控制器收到磁盘控制器的中断信号之后会通过地址总线存入一个主存设备的编号，表示这次中断需要关注的设备是主存；&lt;/li&gt;
-&lt;li&gt;中断控制器向 CPU 置起一个 DMA 中断的信号；&lt;/li&gt;
-&lt;li&gt;CPU 收到中断信号之后停止当前的工作，把当前的 PC/PSW 等寄存器压入堆栈保存现场，然后从地址总线取出设备编号，通过编号找到中断向量所包含的中断服务的入口地址，压入 PC 寄存器，开始运行 DMA 中断服务，把数据从内核缓冲区拷贝到用户缓冲区，完成读取操作，read() 返回，切换回用户态。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;blockquote&gt;
-&lt;p&gt;简单来说就是通过DMA将数据从硬盘控制器缓存区拷贝到内存中，减少了一次CPU COPY。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;nic%E6%94%B6%E5%8F%91%E5%8C%85/dma_io.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;h3 id=&#34;napi-io&#34;&gt;napi I/O&lt;/h3&gt;
-&lt;p&gt;napi并不是基于硬件实现的，实际上napi是一种新的linux网卡数据处理API，简单来说其杂合中断和轮询的技术。&lt;/p&gt;
-&lt;p&gt;中断的好处是响应及时，如果数据量较小，则不会占用太多的CPU时间；缺点是数据量大时，会产生过多中断，频繁上下文切换，同时中断也会大量消耗大量的CPU时间。&lt;/p&gt;
-&lt;p&gt;轮询方式与中断方式相反，它更适合处理大量数据，因为每次轮询不需要消耗过多的CPU时间；缺点是即使只接收很少数据或不接收数据时，也要占用CPU时间。&lt;/p&gt;
-&lt;p&gt;实际上就是通过驱动本身的poll函数，实现一次中断收多个包。&lt;/p&gt;
-&lt;h3 id=&#34;硬中断和软中断&#34;&gt;硬中断和软中断&lt;/h3&gt;
-&lt;p&gt;NAPI：数据包到来，第一个数据包产生硬件中断，中断处理程序将设备的napi_struct结构挂在当前cpu的待收包设备链表softnet_data-&amp;gt;poll_list中，并触发软中断，软中断执行过程中，遍历softnet_data-&amp;gt;poll_list中的所有设备，依次调用其收包函数napi_sturct-&amp;gt;poll，处理收包过程；&lt;/p&gt;
-&lt;p&gt;非NAPI：每个数据包到来，都会产生硬件中断，中断处理程序将收到的包放入当前cpu的收包队列softnet_data-&amp;gt;input_pkt_queue中，并且将非napi设备对应的虚拟设备napi结构softnet-&amp;gt;backlog结构挂在当前cpu的待收包设备链表softnet_data-&amp;gt;poll_list中，并触发软中断，软中断处理过程中，会调用backlog的回调处理函数process_backlog，将收包队列input_pkt_queue合并到softdata-&amp;gt;process_queue后面，并依次处理该队列中的数据包；&lt;/p&gt;
 </content>
     </item>
     

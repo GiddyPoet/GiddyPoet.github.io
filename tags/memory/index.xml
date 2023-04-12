@@ -9,10 +9,10 @@
     <lastBuildDate>Thu, 03 Feb 2022 16:28:39 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/tags/memory/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>一次内存异常问题排查经历</title>
-      <link>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</link>
+      <link>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</link>
       <pubDate>Thu, 03 Feb 2022 16:28:39 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</guid>
+      <guid>https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/</guid>
       <description>内存异常现象 在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。
 排查思路 使用free -mh查看系统内存占用情况 发现buff/cache占用大量的内存
 # 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存 [root@TAC ~]# free -mh total used free shared buff/cache available Mem: 62G 6.8G 8G 80M 49G 8G Swap: 31G 0B 31G 大致介绍一下free命令输出的含义

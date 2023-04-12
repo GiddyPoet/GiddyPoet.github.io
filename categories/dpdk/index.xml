@@ -9,10 +9,10 @@
     <lastBuildDate>Sun, 10 Apr 2022 14:14:33 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/categories/dpdk/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>dpdk深入浅出</title>
-      <link>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</link>
+      <link>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</link>
       <pubDate>Sun, 10 Apr 2022 14:14:33 +0000</pubDate>
       
-      <guid>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</guid>
+      <guid>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</guid>
       <description>第一章 认识DPDK 主流包处理硬件平台 简单介绍了当前从互联网面临的挑战：从计算密集型设备转换为IO密集型设备，同时介绍了当前主流包处理的硬件平台，并对其在不同领域的优缺点做了阐述：
 硬件加速器：适用于功能固化，功能具有高性能低成本的特点 网络处理器：提供了包处理逻辑软件可编程的能力，在获得灵活性的同事兼顾了高性能的硬件包处理 多核处理器：更为复杂多变的高层包处理上拥有优势 硬件加速器 ASIC和FPGA。
 涉及集成电路和嵌入式设备，这里不再赘述。
@@ -84,7 +84,7 @@ DPDK通过以下技术解决了上述问题：
 &lt;li&gt;降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h3 id=&#34;dpdk框架简介&#34;&gt;DPDK框架简介&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk_arch.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;dpdk_arch.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;核心库&lt;code&gt;Core Libs&lt;/code&gt;：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件&lt;/li&gt;
 &lt;li&gt;PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡&lt;/li&gt;
@@ -267,7 +267,7 @@ DPDK区分了主线程和从线程&lt;/p&gt;
 &lt;p&gt;存储系统：磁盘、磁带、光盘存储器、内存和CPU内部的Cache。&lt;/p&gt;
 &lt;h3 id=&#34;系统架构演进&#34;&gt;系统架构演进&lt;/h3&gt;
 &lt;p&gt;早期的计算机，内存控制器还没有整合进 CPU，所有的内存访问都需要经过北桥芯片来完成。如下图所示，CPU 通过前端总线（FSB，Front Side Bus）连接到北桥芯片，然后北桥芯片连接到内存——内存控制器集成在北桥芯片里面。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/cpu_fsb.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;cpu_fsb.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;这种架构下cpu无论访问内存，设备，同时处理器之间的交换都要通过北桥，北桥成为系统瓶颈&lt;/p&gt;
 &lt;/blockquote&gt;

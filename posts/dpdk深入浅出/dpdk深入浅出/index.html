@@ -24,7 +24,7 @@ DPDK通过以下技术解决了上述问题：
 
   <meta name="robots" content="noodp" />
 
-<link rel="canonical" href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
+<link rel="canonical" href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
 
 
 
@@ -75,7 +75,7 @@ cpu亲和性，通过CPU亲和性，将线程绑定到cpu单个核上执行，ca
 DPDK通过以下技术解决了上述问题：
 轮询替换中断，避免中断上下文切换的开销 用户态驱动，在这种工作方式中，规避了不必要的内存拷贝，又避免了系统调用。 亲和性与独占，dpdk工作在用户态，利用线程的CPU亲和绑定的方式，特定任务值在某个核上工作。好处是可避免线程在不同核间频繁切换，核间线程切换容易导致因cache miss和cache write back造成的大量性能损失。 降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。 DPDK框架简介 核心库Core Libs：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件 PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡 Classify库：支持精确匹配(Exact Match)、最长匹配(LPM)和通配符匹配(ACL)，提供常用的包处理的查表操作 Qos库：提供网络服务质量相关组件，如限速(Meter)和调度(Sched) 上述是DPDK主要的库，其实还提供了一些对于运行频率调整(Power)，与Linux Kernel Stack建立快速通道的(KNI Kernel Network Interface)。而Packet FrameWrok和DISTRIB是为了搭建更为复杂的多核流水线处理模型提供了基础组件。
 解读数据包处理能力 实际上以太网帧数据最小是64个字节，其中包括46个字节的数据部分，2个字节的协议类型，12个字节的目的mac地址和源mac地址，以及4个字节的校验和。每个以太网帧默认帧间距为12个字节，同时每个帧还有7个字节的前导，和一个自己的帧首定界，因此一个最小以太网帧为46&#43;2&#43;12&#43;4&#43;12&#43;7&#43;1=84个字节，672个bit。" />
-<meta property="og:url" content="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
 <meta property="og:site_name" content="GiddyPoet" />
 
   
@@ -165,7 +165,7 @@ DPDK通过以下技术解决了上述问题：
     
 <article class="post">
   <h1 class="post-title">
-    <a href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/">dpdk深入浅出</a>
+    <a href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/">dpdk深入浅出</a>
   </h1>
   <div class="post-meta">
     
@@ -248,7 +248,7 @@ DPDK通过以下技术解决了上述问题：
 <li>降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。</li>
 </ol>
 <h3 id="dpdk框架简介">DPDK框架简介<a href="#dpdk框架简介" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
-<p><img src="dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/dpdk_arch.png" alt=""></p>
+<p><img src="dpdk_arch.png" alt=""></p>
 <ul>
 <li>核心库<code>Core Libs</code>：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件</li>
 <li>PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡</li>
@@ -431,7 +431,7 @@ DPDK区分了主线程和从线程</p>
 <p>存储系统：磁盘、磁带、光盘存储器、内存和CPU内部的Cache。</p>
 <h3 id="系统架构演进">系统架构演进<a href="#系统架构演进" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
 <p>早期的计算机，内存控制器还没有整合进 CPU，所有的内存访问都需要经过北桥芯片来完成。如下图所示，CPU 通过前端总线（FSB，Front Side Bus）连接到北桥芯片，然后北桥芯片连接到内存——内存控制器集成在北桥芯片里面。</p>
-<p><img src="dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/cpu_fsb.jpg" alt=""></p>
+<p><img src="cpu_fsb.jpg" alt=""></p>
 <blockquote>
 <p>这种架构下cpu无论访问内存，设备，同时处理器之间的交换都要通过北桥，北桥成为系统瓶颈</p>
 </blockquote>
@@ -467,7 +467,7 @@ DPDK区分了主线程和从线程</p>
         
         
         <span class="button next">
-            <a href="https://giddypoet.github.io/posts/linux-start-process/">
+            <a href="https://giddypoet.github.io/posts/linux-start-process/linux-start-process/">
                 <span class="button__text">linux_start_process</span>
                 <span class="button__icon">→</span>
             </a>

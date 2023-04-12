@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>dpdk安装部署 :: GiddyPoet</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="基础知识 DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
+UMA架构 在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
+这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。
+NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。
+在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。
+查看架构 可以通过numactl查看或者通过查看cpu设备信息。
+[root@GiddyPoet ~]# numactl --hardware available: 1 nodes (0) node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 node 0 size: 65189 MB node 0 free: 56946 MB node distances: node 0 0: 10 [root@GiddyPoet node]# ls /sys/devices/system/node/ has_cpu has_memory has_normal_memory node0 online possible power uevent 通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="dpdk安装部署">
+<meta property="og:description" content="基础知识 DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升
+UMA架构 在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：
+这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。
+NUMA架构 NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。
+在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。
+查看架构 可以通过numactl查看或者通过查看cpu设备信息。
+[root@GiddyPoet ~]# numactl --hardware available: 1 nodes (0) node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 node 0 size: 65189 MB node 0 free: 56946 MB node distances: node 0 0: 10 [root@GiddyPoet node]# ls /sys/devices/system/node/ has_cpu has_memory has_normal_memory node0 online possible power uevent 通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/" />
+<meta property="og:site_name" content="GiddyPoet" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-02-03 16:24:33 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    Terminal
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/showcase">Showcase</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/showcase">Showcase</a></li>
+        
+      
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/">dpdk安装部署</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-02-03 ::
+        
+      </time>
+    
+    
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+      
+      #<a href="https://giddypoet.github.io/tags/dpdk/">dpdk</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+
+  <div class="post-content"><div>
+        <h1 id="基础知识">基础知识<a href="#基础知识" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>DPDK在安装时需要对操作系统进行相应的驱动、内存等等做相应的设置，以提升</p>
+<h2 id="uma架构">UMA架构<a href="#uma架构" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>在一开始，内存控制器还在北桥中，所有CPU对内存的访问都要通过北桥来完成。此时所有CPU访问内存都是“一致的”，如下图所示：</p>
+<p><img src="uma.webp" alt=""></p>
+<p>这样的架构称为UMA(Uniform Memory Access)，直译为“统一内存访问”，这样的架构对软件层面来说非常容易，总线模型保证所有的内存访问是一致的，即每个处理器核心共享相同的内存地址空间。但随着CPU核心数的增加，这样的架构难免遇到问题，比如对总线的带宽带来挑战、访问同一块内存的冲突问题。为了解决这些问题，有人搞出了NUMA。</p>
+<h2 id="numa架构">NUMA架构<a href="#numa架构" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>NUMA 全称 Non-Uniform Memory Access，译为“非一致性内存访问”。这种构架下，不同的内存器件和CPU核心从属不同的 Node，每个 Node 都有自己的集成内存控制器（IMC，Integrated Memory Controller）。</p>
+<p><img src="numa.webp" alt=""></p>
+<p>在上述架构中，通常一个内存插槽对应一个Node。需要注意的一个特点是，QPI的延迟要高于IMC Bus，也就是说CPU访问内存有了远近（remote/local）之别，而且实验分析来看，这个差别非常明显。</p>
+<h2 id="查看架构">查看架构<a href="#查看架构" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>可以通过numactl查看或者通过查看cpu设备信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@GiddyPoet ~<span style="color:#f92672">]</span><span style="color:#75715e"># numactl --hardware</span>
+</span></span><span style="display:flex;"><span>available: <span style="color:#ae81ff">1</span> nodes <span style="color:#f92672">(</span>0<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>node <span style="color:#ae81ff">0</span> cpus: <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">4</span> <span style="color:#ae81ff">5</span> <span style="color:#ae81ff">6</span> <span style="color:#ae81ff">7</span> <span style="color:#ae81ff">8</span> <span style="color:#ae81ff">9</span> <span style="color:#ae81ff">10</span> <span style="color:#ae81ff">11</span> <span style="color:#ae81ff">12</span> <span style="color:#ae81ff">13</span> <span style="color:#ae81ff">14</span> <span style="color:#ae81ff">15</span> <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">17</span> <span style="color:#ae81ff">18</span> <span style="color:#ae81ff">19</span>
+</span></span><span style="display:flex;"><span>node <span style="color:#ae81ff">0</span> size: <span style="color:#ae81ff">65189</span> MB
+</span></span><span style="display:flex;"><span>node <span style="color:#ae81ff">0</span> free: <span style="color:#ae81ff">56946</span> MB
+</span></span><span style="display:flex;"><span>node distances:
+</span></span><span style="display:flex;"><span>node   <span style="color:#ae81ff">0</span> 
+</span></span><span style="display:flex;"><span>  0:  <span style="color:#ae81ff">10</span> 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>root@GiddyPoet node<span style="color:#f92672">]</span><span style="color:#75715e"># ls /sys/devices/system/node/</span>
+</span></span><span style="display:flex;"><span>has_cpu  has_memory  has_normal_memory  node0  online  possible  power  uevent
+</span></span></code></pre></div><p>通过上述信息可以查看cpu架构，上述都是uma架构，目前我还没有发现numa架构。</p>
+<h2 id="pps算法包转发率">pps算法（包转发率）<a href="#pps算法包转发率" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>pps: package per sesond</p>
+<p><img src="%E5%B8%A7%E7%BB%93%E6%9E%84.webp" alt=""></p>
+<p>以太帧最小载荷为46Bytes，但是算上帧首部和校验码，总共有64Bytes，但是在实际传输过程中，帧之间有12个Bytes的帧间距，每个帧前面还有7个字节的前导帧和1个字节的帧首界定符。</p>
+<p>一个最短以太帧实际长度为：
+$(12+7+1+6+6+2+46+4)*8=672bit$</p>
+<p>通常按照万兆光计算下64个字节的包转发率。</p>
+<p>$10*1000/672≈14.88Mpps$</p>
+<h2 id="uio用户空间io">UIO:用户空间IO<a href="#uio用户空间io" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>小的内核模块，用于将设备内存映射到用户空间，并注册中断。
+uio_pci_generic 为linux 内核模块，提供此功能，可以通过 modprobe uio_pci_generic 加载。
+但是其不支持虚拟功能，DPDK提供一个替代模块igb_uio模块。</p>
+<h2 id="vfio后续补充">VFIO(后续补充)<a href="#vfio后续补充" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>使用vfio不仅需要驱动支持，内核和bios都要支持，并配置IO虚拟化（如Intel VT-d)</p>
+<h2 id="大页内存">大页内存<a href="#大页内存" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>通过grub进行修改</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># 修改/etc/default/grub，在GRUB_CMDLINE_LINUX后新增大页内存配置，同时支持iommu，对于iommu</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 需要再虚拟机cpu里也做相应的修改</span>
+</span></span><span style="display:flex;"><span>default_hugepagesz<span style="color:#f92672">=</span>2m hugepagesz<span style="color:#f92672">=</span>2m hugepages<span style="color:#f92672">=</span><span style="color:#ae81ff">256</span> iommu<span style="color:#f92672">=</span>pt intel_iommu<span style="color:#f92672">=</span>on
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 修改后重新生成grub文件</span>
+</span></span><span style="display:flex;"><span>grub2-mkconfig -o /boot/grub2/grub.cfg
+</span></span></code></pre></div><p>修改/etc/fstab开机挂载打页内存</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>nodev /mnt/huge hugetlbfs defaults <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><hr>
+<h1 id="虚拟机环境配置">虚拟机环境配置<a href="#虚拟机环境配置" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>由于dpdk需要对cpu绑定做相应的设置，cpu核数最好是大于2核，这里我们采用4核，同时创建4个网卡用于dpdk测试（此处建议网卡数和cpu数对应，便于测试cpu绑定功能）</p>
+<p><img src="vmware%E8%99%9A%E6%8B%9F%E6%9C%BA%E9%85%8D%E7%BD%AE.jpg" alt=""></p>
+<blockquote>
+<p>注：其实部分在虚拟配置中修改.vmx文件，将网卡从e1000修改为其他dpdk能识别的网卡类型，也可以通过dpdk中igb_uio驱动关闭检测网卡类型来实现，实际上只是dpdk无法识别该网卡类型，但是dpdk支持在此网卡上工作。</p>
+</blockquote>
+<pre><code>修改igb_uio驱动检测方法：
+</code></pre>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">case</span> RTE_INTR_MODE_LEGACY:
+</span></span><span style="display:flex;"><span>          <span style="color:#75715e">// 添加true，保证能通过检测
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>          <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">pci_intx_mask_supported</span>(udev<span style="color:#f92672">-&gt;</span>pdev)<span style="color:#f92672">||</span>true) {                                             
+</span></span><span style="display:flex;"><span>              <span style="color:#a6e22e">dev_dbg</span>(<span style="color:#f92672">&amp;</span>udev<span style="color:#f92672">-&gt;</span>pdev<span style="color:#f92672">-&gt;</span>dev, <span style="color:#e6db74">&#34;using INTX&#34;</span>);
+</span></span><span style="display:flex;"><span>              udev<span style="color:#f92672">-&gt;</span>info.irq_flags <span style="color:#f92672">=</span> IRQF_SHARED <span style="color:#f92672">|</span> IRQF_NO_THREAD;
+</span></span><span style="display:flex;"><span>              udev<span style="color:#f92672">-&gt;</span>info.irq <span style="color:#f92672">=</span> udev<span style="color:#f92672">-&gt;</span>pdev<span style="color:#f92672">-&gt;</span>irq;
+</span></span><span style="display:flex;"><span>              udev<span style="color:#f92672">-&gt;</span>mode <span style="color:#f92672">=</span> RTE_INTR_MODE_LEGACY;
+</span></span><span style="display:flex;"><span>              <span style="color:#66d9ef">break</span>;
+</span></span><span style="display:flex;"><span>          }   
+</span></span></code></pre></div><h1 id="编译安装dpdk">编译安装dpdk<a href="#编译安装dpdk" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>dpdk的版本选择很重要，由于centos通常是趋于稳定版的版本，所以编译器等环境都是较为老旧的版本，根据官方的相关建议，选用dpdk-18.11.11-stable版本做为测试。</p>
+<h2 id="设置环境变量">设置环境变量<a href="#设置环境变量" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>export RTE_SDK<span style="color:#f92672">=</span>/root/dpdk-stable-18.11.11/
+</span></span><span style="display:flex;"><span>export RTE_TARGET<span style="color:#f92672">=</span>x86_64-native-linuxapp-gcc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 如果需要对相关代码进行调试可以添加</span>
+</span></span><span style="display:flex;"><span>export RTE_CFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-O0 -g&#34;</span>
+</span></span></code></pre></div><h2 id="编译dpdk">编译dpdk<a href="#编译dpdk" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>Makefile层层嵌套，入口为<code>GNUmakefile</code>，指定平台为<code>x86_64-native-linuxapp-gcc</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># 在dpdk-stable-18.11.11/config中实现</span>
+</span></span><span style="display:flex;"><span>make install T<span style="color:#f92672">=</span>x86_64-native-linuxapp-gcc
+</span></span></code></pre></div><p>编译后的目录结构</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet x86_64-native-linuxapp-gcc<span style="color:#f92672">]</span><span style="color:#75715e"># tree -aL 1</span>
+</span></span><span style="display:flex;"><span>.
+</span></span><span style="display:flex;"><span>├── app  <span style="color:#75715e"># 测试用二进制文件</span>
+</span></span><span style="display:flex;"><span>├── build <span style="color:#75715e">#</span>
+</span></span><span style="display:flex;"><span>├── .config <span style="color:#75715e"># config文件</span>
+</span></span><span style="display:flex;"><span>├── .config.orig
+</span></span><span style="display:flex;"><span>├── include <span style="color:#75715e"># 头文件</span>
+</span></span><span style="display:flex;"><span>├── kmod <span style="color:#75715e"># 驱动文件</span>
+</span></span><span style="display:flex;"><span>├── lib <span style="color:#75715e"># 库文件</span>
+</span></span><span style="display:flex;"><span>└── Makefile
+</span></span></code></pre></div><h2 id="配置dpdk">配置dpdk<a href="#配置dpdk" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="uio驱动">uio驱动<a href="#uio驱动" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>内核自带了<code>uio_pci_generic</code>驱动可以实现uio功能，dpdk提供了一个<code>igb_uio</code>模块，对于不支持传统中断的设置，例如虚拟功能设备，必须使用<code>igb_uio</code>来替代<code>uio_pci_generi</code>模块。</p>
+<h3 id="调用网卡使用uio驱动">调用网卡使用uio驱动<a href="#调用网卡使用uio驱动" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>首先要将网卡下线（原因在于网卡默认使用的是uio驱动）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>ip link set xxx down
+</span></span><span style="display:flex;"><span>./dpdk-devbind.py --bind<span style="color:#f92672">=</span>gib_uio eth0
+</span></span></code></pre></div><h3 id="多队列网卡支持">多队列网卡支持<a href="#多队列网卡支持" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>在原始网卡中一个网卡只能对应一个中断，但是一个中断通常在多核cpu中只能触发一个cpu工作，因此网卡的收发包工作都有一个cpu实现，因此但队列网卡对于cpu的利用率较低。
+多队列网卡通过在加载网卡驱动获取网卡的硬件queue数量，并结合CPU的数量，最终通过Sum=Min的出所要激活的网卡queue数量，并申请Sum个中断号，分配给激活的各个queue，通过多队列网卡，可以将网卡queue的中断和不同的cpu绑定，同时为了避免不同的5元组交给不同的cpu处理，网卡通过hash包头的sip、dip、sport、dport实现将同一条流总是手法到相同的队列。</p>
+<h2 id="常见问题解决">常见问题解决<a href="#常见问题解决" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e">#安装时可能会存在缺少`numa.h`，可以通过yum安装相关依赖。</span>
+</span></span><span style="display:flex;"><span>yum install numactl-devel
+</span></span></code></pre></div><h2 id="用户程序">用户程序<a href="#用户程序" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>通过meson+ninja编译后，可以将dpdk相关头文件和动态放到指定位置，之后库和头文件都可以通过pkg-config进行管理。</p>
+<h3 id="设置pkgconfig路径">设置pkgconfig路径<a href="#设置pkgconfig路径" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<ol>
+<li>在centos下编译出来的pkgconfig文件默认放到<code>/usr/lib64/pkgconfig/libdpdk.pc</code></li>
+<li>查询当前pkg-config检索的默认路径<code>pkg-config --variable pc_path pkg-config</code></li>
+<li>将pc文件拷贝到对应路径，或者增加pkg-config检索路径</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet x86_64-native-linuxapp-gcc<span style="color:#f92672">]</span><span style="color:#75715e"># ll /usr/lib64/pkgconfig/libdpdk.pc</span>
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">3356</span> Apr <span style="color:#ae81ff">13</span> 17:29 /usr/lib64/pkgconfig/libdpdk.pc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet x86_64-native-linuxapp-gcc<span style="color:#f92672">]</span><span style="color:#75715e"># pkg-config --variable pc_path pkg-config</span>
+</span></span><span style="display:flex;"><span>/usr/lib64/pkgconfig:/usr/share/pkgconfig
+</span></span></code></pre></div><h3 id="动态库链接路径">动态库链接路径<a href="#动态库链接路径" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<ol>
+<li>在<code>/etc/ld.conf.d/</code>路径下新增<code>libdpdk</code>相关路径</li>
+<li>ldconfig</li>
+</ol>
+<h3 id="用户makefile">用户Makefile<a href="#用户makefile" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Makefile" data-lang="Makefile"><span style="display:flex;"><span>PKGCONF <span style="color:#f92672">=</span> pkg-config
+</span></span><span style="display:flex;"><span>APP <span style="color:#f92672">=</span> send
+</span></span><span style="display:flex;"><span>SRCS-y <span style="color:#f92672">=</span> send.c
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>CFLAGS <span style="color:#f92672">+=</span> -O0 <span style="color:#66d9ef">$(</span>shell <span style="color:#66d9ef">$(</span>PKGCONF<span style="color:#66d9ef">)</span> --cflags libdpdk<span style="color:#66d9ef">)</span> -g
+</span></span><span style="display:flex;"><span>LDFLAGS <span style="color:#f92672">+=</span> <span style="color:#66d9ef">$(</span>shell <span style="color:#66d9ef">$(</span>PKGCONF<span style="color:#66d9ef">)</span> --libs libdpdk<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">$(APP)</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">$(</span>SRCS-y<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">$(</span>CC<span style="color:#66d9ef">)</span> <span style="color:#66d9ef">$(</span>CFLAGS<span style="color:#66d9ef">)</span> <span style="color:#66d9ef">$(</span>SRCS-y<span style="color:#66d9ef">)</span> -o $@ <span style="color:#66d9ef">$(</span>LDFLAGS<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">.PHONY</span><span style="color:#f92672">:</span> clean
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">clean</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>        rm -f <span style="color:#66d9ef">$(</span>APP<span style="color:#66d9ef">)</span>
+</span></span></code></pre></div>
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/">
+                <span class="button__icon">←</span>
+                <span class="button__text">一次内存异常问题排查经历</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/">
+                <span class="button__text">虚拟网络设备</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>
