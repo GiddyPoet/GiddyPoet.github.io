@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>操作系统导论 :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="第一章 关于本书的对话 Operating Systems: Three Easy Pieces： 虚拟化(virtualization) 并发(concurrency) 持久性(persistence" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="操作系统导论">
+<meta property="og:description" content="第一章 关于本书的对话 Operating Systems: Three Easy Pieces： 虚拟化(virtualization) 并发(concurrency) 持久性(persistence" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-04-18 12:29:45 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/">操作系统导论</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-04-18 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 12 min read (5920 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/os/">os</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#虚拟化cpu">虚拟化CPU</a></li>
+    <li><a href="#虚拟化内存">虚拟化内存</a></li>
+    <li><a href="#并发">并发</a></li>
+    <li><a href="#持久性">持久性</a></li>
+    <li><a href="#设计目标">设计目标</a></li>
+    <li><a href="#系统调用">系统调用</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#抽象进程">抽象：进程</a></li>
+    <li><a href="#进程api">进程API</a></li>
+    <li><a href="#进程创建更多细节">进程创建：更多细节</a></li>
+    <li><a href="#进程状态">进程状态</a></li>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#process-runpy"><code>process-run.py</code></a>
+      <ul>
+        <li><a href="#原理">原理</a></li>
+        <li><a href="#例子">例子</a></li>
+      </ul>
+    </li>
+    <li><a href="#第五章-插叙进程api">第五章 插叙：进程API</a>
+      <ul>
+        <li><a href="#fork">fork</a></li>
+        <li><a href="#wait">wait</a></li>
+        <li><a href="#exec系统调用">exec系统调用</a></li>
+        <li><a href="#vfork">vfork</a></li>
+        <li><a href="#习题">习题</a></li>
+      </ul>
+    </li>
+    <li><a href="#第6章-机制受限直接执行">第6章 机制：受限直接执行</a>
+      <ul>
+        <li><a href="#trap">trap</a></li>
+        <li><a href="#在进程间切换">在进程间切换</a></li>
+        <li><a href="#作业测量">作业测量</a></li>
+      </ul>
+    </li>
+    <li><a href="#第7章-进程调度介绍">第7章 进程调度：介绍</a>
+      <ul>
+        <li><a href="#fifo">FIFO</a></li>
+        <li><a href="#sjf最短任务优先">SJF（最短任务优先）</a></li>
+        <li><a href="#stcf最短完成时间优先">STCF（最短完成时间优先）</a></li>
+        <li><a href="#新度量指标响应时间">新度量指标：响应时间</a></li>
+        <li><a href="#轮转">轮转</a></li>
+        <li><a href="#结合io">结合I/O</a></li>
+      </ul>
+    </li>
+    <li><a href="#第8章-调度多级反馈队列">第8章 调度：多级反馈队列</a>
+      <ul>
+        <li><a href="#mlfq基本规则">MLFQ：基本规则</a></li>
+        <li><a href="#如何改变优先级">如何改变优先级</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <h1 id="第一章-关于本书的对话">第一章 关于本书的对话<a href="#第一章-关于本书的对话" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>Operating Systems: Three Easy Pieces：</p>
+<ul>
+<li>虚拟化(virtualization)</li>
+<li>并发(concurrency)</li>
+<li>持久性(persistence)</li>
+</ul>
+<h1 id="第二章-操作系统介绍">第二章 操作系统介绍<a href="#第二章-操作系统介绍" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>程序运行时会发生什么：(冯诺依曼计算模型)
+获取指令<code>fecth</code> -&gt; 解码指令<code>decode</code> -&gt; 执行指令<code>execute</code></p>
+<p>操作系统主要利用一种通用的技术，我们称之为虚拟化（virtualization）。也就是说，操作系统将物理（physical）资源（如处理器、内存或磁盘）转换为更通用、更强大且更易于使用的虚拟形式。</p>
+<p>为了让用户可以告诉操作系统做什么，从而利用虚拟机的功能（如运行程序、分配内存或访问文件），操作系统还提供了一些接口（API）。</p>
+<blockquote>
+<p>总的来说操作系统对下屏蔽底层硬件细节，对上提供接口调用底层硬件。让程序运行变得容易（甚至允许你同时运行多个程序），允许程序共享内存，让程序能够与设备交互，以及其他类似的有趣的工作。</p>
+</blockquote>
+<h2 id="虚拟化cpu">虚拟化CPU<a href="#虚拟化cpu" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>此处主要说明了操作系统对于CPU的虚拟化能力，对单核CPU的串行调度。</p>
+<blockquote>
+<p>这里书中有一个例子展示了虚拟化CPU，操作系统在单CPU设备上调度多个进程。</p>
+</blockquote>
+<h2 id="虚拟化内存">虚拟化内存<a href="#虚拟化内存" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>多进程通过虚拟内存共享物理内存</p>
+<blockquote>
+<p>例子展示了多进程共享相同的内存地址，就好像每个进程都有自己的私有内存。（展示这里例子要关闭进程地址随机化，参数是<code>/proc/sys/kernel/randomize_va_space</code>）</p>
+</blockquote>
+<h2 id="并发">并发<a href="#并发" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>简单来说就是通过多线程之间的共享变量，会对非原子操作有影响。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;../include/common_threads.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// volatile 标志这个变量可能不仅有当前程序改变，也可以被某些编译器未知的因素更改，比如操作系统、硬件或者其它线程等，添加该关键字后编译器将不对该变量优化，每次都是去内存里读
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 其实在这里加不加volatile都可以，主要是加了volatile很容易触发问题
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">int</span> counter <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> loops;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span> <span style="color:#a6e22e">work</span>(<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span> arg) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> i;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span>(i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span>loops;i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>        counter<span style="color:#f92672">++</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> NULL;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>argv) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span>(argc <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">fprintf</span>(stderr, <span style="color:#e6db74">&#34;usage: thread &lt;value&gt;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    loops <span style="color:#f92672">=</span> <span style="color:#a6e22e">atoi</span>(argv[<span style="color:#ae81ff">1</span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">pthread_t</span> p1,p2;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Initial value: %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,counter);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Pthread_create</span>(<span style="color:#f92672">&amp;</span>p1,NULL,work,NULL);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Pthread_create</span>(<span style="color:#f92672">&amp;</span>p2,NULL,work,NULL);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Pthread_join</span>(p1,NULL);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Pthread_join</span>(p2,NULL);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Final value : %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,counter);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="持久性">持久性<a href="#持久性" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>介绍文件系统，性能优化，驱动等。</p>
+<h2 id="设计目标">设计目标<a href="#设计目标" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>它取得 CPU、内存或磁盘等物理资源（resources），甚对它们进行虚拟化（virtualize）。它处理与甚发（concurrency）有关的麻烦且棘手的问题。它持久地（persistently）存储文件，从而使它们长期随全。</p>
+<ul>
+<li>隔离</li>
+<li>可靠性</li>
+<li>安全性</li>
+<li>移动性</li>
+</ul>
+<h2 id="系统调用">系统调用<a href="#系统调用" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>系统调用和过程调用之间的关键区别在于，系统调用将控制转移（跳转）到 OS 中，同时提高硬件特权级别（hardware privilege level）。用户应用程序以所谓的用户模式（user mode）运行，这意味着硬件限制了应用程序的功能。例如，以用户模式运行的应用程序通常不能发起对磁盘的I/O 请求，不能访问任何物理内存页或在网络上发送数据包。在发起系统调用时通常通过一个称为陷阱（trap）的特殊硬件指令，硬件将控制转移到预先指定的陷阱处理程序（trap handler）（即预先设置的操作系统），甚同时将特权级别提升到内核模式（kernel mode）。在内核模式下，操作系统可以完全访问系统的硬件，因此可以执行诸如发起I/O 请求或为程序提供更多内存等功能。当操作系统完成请求的服务时，它通过特殊的陷阱返回
+（return-from-trap）指令将控制权交还给用户，该指令返回到用户模式，同时将控制权交还给应用程序，回到应用离开的地方。</p>
+<hr>
+<blockquote>
+<p>后续简单介绍了操作系统的发展历史，这里就不再赘述了</p>
+</blockquote>
+<h1 id="第三章-关于虚拟化的对话">第三章 关于虚拟化的对话<a href="#第三章-关于虚拟化的对话" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<blockquote>
+<p>跳过</p>
+</blockquote>
+<h1 id="第4章-抽象进程">第4章 抽象：进程<a href="#第4章-抽象进程" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>通过时分技术实现多进程共享CPU。</p>
+<blockquote>
+<p>操作系统会通过一系列的策略对进程占用时间片进行管理，同时对于硬件资源操作系统也会做相应的统一管理。</p>
+</blockquote>
+<h2 id="抽象进程">抽象：进程<a href="#抽象进程" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>进程的机器状态：</p>
+<ul>
+<li>内存：指令和读取写入的数据都在内存里。</li>
+<li>寄存器：用于读取存储指令，如程序计数器，栈指针和相关帧指针</li>
+</ul>
+<h2 id="进程api">进程API<a href="#进程api" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>操作系统必须以某种形式提供这些API：</p>
+<ul>
+<li>创建(create)</li>
+<li>销毁(destory)</li>
+<li>等待(wait)</li>
+<li>其他控制(miscellaneous control)：除了杀死或等待，可能还要一些其他控制，例如暂停进程</li>
+<li>状态(state)：提供当前进程的状态信息</li>
+</ul>
+<h2 id="进程创建更多细节">进程创建：更多细节<a href="#进程创建更多细节" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>操作系统是如何运行一个程序：</p>
+<ol>
+<li>将代码和静态数据（例如初始化变量）从硬盘加载到内存中，加载到进程的地址空间中。
+<img src="/posts/img/load_process.jpg"/></li>
+</ol>
+<blockquote>
+<p>在早期的操作系统采用的加载方式是将进程一次性的加载到内存中，但是现代操作系统采用的加载方式是惰性加载，其实这里涉及到内存交换，内存虚拟化相应的知识。</p>
+</blockquote>
+<ol start="2">
+<li>为程序运行时栈分配一些内存，用来存放局部变量，函数参数和返回值，实际上根据程序操作系统也会为程序的堆分配一些内存。</li>
+<li>其他初始化工作如：I/O初始化(Unix默认打开3个文件描述符)。</li>
+</ol>
+<blockquote>
+<p>这里涉及到I/O和文件描述符的知识</p>
+</blockquote>
+<ol start="4">
+<li>启动程序，OS将CPU的控制权转移到新创建的进程中</li>
+</ol>
+<h2 id="进程状态">进程状态<a href="#进程状态" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<ul>
+<li>运行(runing)：进程正在处理器上运行，正在执行指令</li>
+<li>就绪(ready)：就绪状态下，进程已准备好运行，但是由于某种原因操作系统不运行</li>
+<li>阻塞(blocked)：一个进程执行了某种操作，知道发生其他事件才会准备运行，如：I/O操作，他会被阻塞，其他进程可以使用CPU</li>
+</ul>
+<p><img src="/posts/img/process_state_machine.jpg"/></p>
+<h2 id="数据结构">数据结构<a href="#数据结构" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>操作系统通过进程李彪来跟踪当前运行的进程，操作系统还必须以某种方式跟踪被阻塞的进程。</p>
+<p>通过xv6进程数据结构：</p>
+<blockquote>
+<p>实际上xv6最新版本的代码和书上的代码有些出入，和书中一致的提交号为<code>943fd37</code></p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">// Saved registers for kernel context switches.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// Don&#39;t need to save all the %fs etc. segment registers,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// because they are constant across kernel contexts.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// Save all the regular registers so we don&#39;t need to care
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// which are caller save, but not the return register %eax.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// (Not saving %eax just simplifies the switching code.)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// The layout of context must match code in swtch.S.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> context {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> eip;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> esp;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> ebx;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> ecx;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> edx;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> esi;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> edi;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> ebp;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">enum</span> proc_state { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Per-process state
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> proc {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>mem;                <span style="color:#75715e">// Start of process memory (kernel address)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  uint sz;                  <span style="color:#75715e">// Size of process memory (bytes)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>kstack;             <span style="color:#75715e">// Bottom of kernel stack for this process
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">enum</span> proc_state state;    <span style="color:#75715e">// Process state
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> pid;                  <span style="color:#75715e">// Process ID
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> proc <span style="color:#f92672">*</span>parent;      <span style="color:#75715e">// Parent process
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>chan;               <span style="color:#75715e">// If non-zero, sleeping on chan
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> killed;               <span style="color:#75715e">// If non-zero, have been killed
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> file <span style="color:#f92672">*</span>ofile[NOFILE];  <span style="color:#75715e">// Open files
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> inode <span style="color:#f92672">*</span>cwd;        <span style="color:#75715e">// Current directory
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> context context;   <span style="color:#75715e">// Switch here to run process
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> trapframe <span style="color:#f92672">*</span>tf;     <span style="color:#75715e">// Trap frame for current interrupt
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">char</span> name[<span style="color:#ae81ff">16</span>];            <span style="color:#75715e">// Process name (debugging)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Process memory is laid out contiguously, low addresses first:
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//   text
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//   original data and bss
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//   fixed-size stack
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//   expandable heap
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Per-CPU state
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> cpu {
+</span></span><span style="display:flex;"><span>  uchar apicid;               <span style="color:#75715e">// Local APIC ID
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> proc <span style="color:#f92672">*</span>curproc;       <span style="color:#75715e">// Process currently running.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> context context;     <span style="color:#75715e">// Switch here to enter scheduler
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> taskstate ts;        <span style="color:#75715e">// Used by x86 to find stack for interrupt
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">struct</span> segdesc gdt[NSEGS];  <span style="color:#75715e">// x86 global descriptor table
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">volatile</span> uint booted;        <span style="color:#75715e">// Has the CPU started?
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> ncli;                   <span style="color:#75715e">// Depth of pushcli nesting.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> intena;                 <span style="color:#75715e">// Were interrupts enabled before pushcli? 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+</span></span></code></pre></div><h2 id="process-runpy"><code>process-run.py</code><a href="#process-runpy" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>使用模拟器：<code>process-run.py</code>
+主要参数介绍：</p>
+<ul>
+<li>-l：x:y , x为需要执行的指令数，y为是cpu指令的几率，如果是100则是cpu指令，如果是0的话就是I/O指令</li>
+<li>-L：I/O指令耗时</li>
+<li>-S：进程切换特性，两个参数：SWITCH_ON_IO，SWITCH_ON_END</li>
+<li>-I：I/O处理特性，两个参数：IO_RUN_LATER，IO_RUN_IMMEDIATE</li>
+<li>-c：计算答案</li>
+<li>-p：打印数据统计</li>
+</ul>
+<h3 id="原理">原理<a href="#原理" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>通过<code>scheduler.load()</code>载入指令，通过<code>scheduler.run()</code>对指令进行编排</p>
+<blockquote>
+<p>通过对指令排列进行模拟CPU行为</p>
+</blockquote>
+<h3 id="例子">例子<a href="#例子" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<h4 id="进程切换">进程切换<a href="#进程切换" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<h5 id="swith_on_end">SWITH_ON_END<a href="#swith_on_end" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet cpu-intro<span style="color:#f92672">]</span><span style="color:#75715e"># ./process-run.py -l 1:0,4:100 -c -p -S SWITCH_ON_END</span>
+</span></span><span style="display:flex;"><span>Time        PID: <span style="color:#ae81ff">0</span>        PID: <span style="color:#ae81ff">1</span>           CPU           IOs
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">1</span>         RUN:io         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">2</span>        WAITING         READY                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">3</span>        WAITING         READY                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">4</span>        WAITING         READY                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">5</span>        WAITING         READY                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">6</span>        WAITING         READY                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  7*   RUN:io_done         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">8</span>           DONE       RUN:cpu             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">9</span>           DONE       RUN:cpu             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">10</span>           DONE       RUN:cpu             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">11</span>           DONE       RUN:cpu             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Stats: Total Time <span style="color:#ae81ff">11</span>
+</span></span><span style="display:flex;"><span>Stats: CPU Busy <span style="color:#ae81ff">6</span> <span style="color:#f92672">(</span>54.55%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Stats: IO Busy  <span style="color:#ae81ff">5</span> <span style="color:#f92672">(</span>45.45%<span style="color:#f92672">)</span>
+</span></span></code></pre></div><blockquote>
+<p>执行I/O时不切换</p>
+</blockquote>
+<h5 id="switch_on_io">SWITCH_ON_IO<a href="#switch_on_io" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet cpu-intro<span style="color:#f92672">]</span><span style="color:#75715e"># ./process-run.py -l 1:0,4:100 -c -p -S SWITCH_ON_IO</span>
+</span></span><span style="display:flex;"><span>Time        PID: <span style="color:#ae81ff">0</span>        PID: <span style="color:#ae81ff">1</span>           CPU           IOs
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">1</span>         RUN:io         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">2</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">3</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">4</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">5</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">6</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  7*   RUN:io_done          DONE             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Stats: Total Time <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>Stats: CPU Busy <span style="color:#ae81ff">6</span> <span style="color:#f92672">(</span>85.71%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Stats: IO Busy  <span style="color:#ae81ff">5</span> <span style="color:#f92672">(</span>71.43%<span style="color:#f92672">)</span>
+</span></span></code></pre></div><blockquote>
+<p>执行I/O时切换</p>
+</blockquote>
+<h4 id="io切换">I/O切换<a href="#io切换" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<h5 id="io_run_later">IO_RUN_LATER<a href="#io_run_later" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet cpu-intro<span style="color:#f92672">]</span><span style="color:#75715e"># ./process-run.py -l 2:0,6:100 -c -p -I IO_RUN_LATER</span>
+</span></span><span style="display:flex;"><span>Time        PID: <span style="color:#ae81ff">0</span>        PID: <span style="color:#ae81ff">1</span>           CPU           IOs
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">1</span>         RUN:io         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">2</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">3</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">4</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">5</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">6</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  7*         READY       RUN:cpu             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">8</span>    RUN:io_done          DONE             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">9</span>         RUN:io          DONE             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">10</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">11</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">12</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">13</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">14</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> 15*   RUN:io_done          DONE             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Stats: Total Time <span style="color:#ae81ff">15</span>
+</span></span><span style="display:flex;"><span>Stats: CPU Busy <span style="color:#ae81ff">10</span> <span style="color:#f92672">(</span>66.67%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Stats: IO Busy  <span style="color:#ae81ff">10</span> <span style="color:#f92672">(</span>66.67%<span style="color:#f92672">)</span>
+</span></span></code></pre></div><blockquote>
+<p>I/O操作等待上一个cpu指令完成后才开始</p>
+</blockquote>
+<h5 id="io_run_immediate">IO_RUN_IMMEDIATE<a href="#io_run_immediate" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@giddypoet cpu-intro<span style="color:#f92672">]</span><span style="color:#75715e"># ./process-run.py -l 2:0,6:100 -c -p -I IO_RUN_IMMEDIATE</span>
+</span></span><span style="display:flex;"><span>Time        PID: <span style="color:#ae81ff">0</span>        PID: <span style="color:#ae81ff">1</span>           CPU           IOs
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">1</span>         RUN:io         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">2</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">3</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">4</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">5</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">6</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  7*   RUN:io_done         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">8</span>         RUN:io         READY             <span style="color:#ae81ff">1</span>          
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">9</span>        WAITING       RUN:cpu             <span style="color:#ae81ff">1</span>             <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">10</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">11</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">12</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">13</span>        WAITING          DONE                           <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> 14*   RUN:io_done          DONE             <span style="color:#ae81ff">1</span>          
+</span></span></code></pre></div><blockquote>
+<p>I/O指令立即开始，中断正在运行的cpu指令</p>
+</blockquote>
+<blockquote>
+<p>两者的区别在于I/O操作执行完是CPU先接受下一个I/O请求，还是运行进程指令。由于采用默认模式SWITCH_ON_IO，CPU执行指令与I/O操作同时进行，因而 IO_RUN_IMMEDIATE快一个单位时间。</p>
+</blockquote>
+<h2 id="第五章-插叙进程api">第五章 插叙：进程API<a href="#第五章-插叙进程api" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="fork">fork<a href="#fork" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<h3 id="wait">wait<a href="#wait" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/wait.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">pid_t</span> pid;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    pid <span style="color:#f92672">=</span> <span style="color:#a6e22e">fork</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;fork error</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    }<span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Hello from child %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,<span style="color:#a6e22e">getpid</span>());
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//exit(0);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }<span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">int</span> status;
+</span></span><span style="display:flex;"><span>        pid <span style="color:#f92672">=</span> <span style="color:#a6e22e">wait</span>(<span style="color:#f92672">&amp;</span>status);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;parent status %d (wait status %d),parent pid %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, pid , status, <span style="color:#a6e22e">getpid</span>());
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">WIFEXITED</span>(status)) 
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;exit code %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, <span style="color:#a6e22e">WEXITSTATUS</span>(status));
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">WIFSIGNALED</span>(status))
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;signal exit %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, <span style="color:#a6e22e">WSTOPSIG</span>(status));
+</span></span><span style="display:flex;"><span>    }   
+</span></span><span style="display:flex;"><span>}                                        
+</span></span></code></pre></div><blockquote>
+<p>实际上发现如果子进程没有指定退出时的返回值时，我当前环境返回的exit code不定</p>
+</blockquote>
+<blockquote>
+<p>wait返回的是进程id，子进程调用wait后会立马返回，由于子进程没有子进程因此返回值为-1</p>
+</blockquote>
+<h3 id="exec系统调用">exec系统调用<a href="#exec系统调用" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extern</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>environ;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execl</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>path, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>arg, ...);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execlp</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>file, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>arg, ...);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execle</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>path, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>arg,
+</span></span><span style="display:flex;"><span>           ..., <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> envp[]);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execv</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>path, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#66d9ef">const</span> argv[]);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execvp</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>file, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#66d9ef">const</span> argv[]);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">execvpe</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>file, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#66d9ef">const</span> argv[],
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#66d9ef">const</span> envp[]);
+</span></span></code></pre></div><ul>
+<li>查找方式：带p的，表示可以通过环境变量查找响应的命令，可以只给出文件名，而不用给出完整的路径，不带p的则需要添加完整的路径</li>
+<li>参数传递方式：带l表示逐个列举的形式，带v表示可以将所有参数构造成一个指针数组传递，首地址当做参数传递，数组中的最后一个指针要求是NULL</li>
+<li>环境变量：exec函数族默认使用了系统默认的环境变量，也可以传入指定的环境变量，以e结尾的两个函数就可以在envp[]中指定当前进程使用的环境变量替换掉该进程所继承的所有环境变量</li>
+</ul>
+<p><img src="/posts/img/exec_faimly.jpg"/></p>
+<blockquote>
+<p>实际上操作系统真正的系统调用只有execve，其他5个都是库函数，它们最终都会调用evecve这个系统调用
+同时由于exec函数族替换了当前进程的堆栈信息，并替换成不同的程序，因此在exec函数族之后执行的代码通常不会执行，除非exec函数族执行失败。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/wait.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;fcntl.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">pid_t</span> pid;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    pid <span style="color:#f92672">=</span> <span style="color:#a6e22e">fork</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;fork error</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    }<span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// 如果此时没有换行符，当前操作系统又是行缓冲，则有可能不会输出任何信息
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// printf(&#34;fork child \n&#34;);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;fork child </span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// fflush(stdout);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">close</span>(STDOUT_FILENO);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;./output.txt&#34;</span>,O_CREAT<span style="color:#f92672">|</span>O_WRONLY<span style="color:#f92672">|</span>O_TRUNC, S_IRWXU);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> myargs[<span style="color:#ae81ff">3</span>];
+</span></span><span style="display:flex;"><span>        myargs[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wc&#34;</span>;
+</span></span><span style="display:flex;"><span>        myargs[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wait.c&#34;</span>;
+</span></span><span style="display:flex;"><span>        myargs[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> NULL;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">execvp</span>(myargs[<span style="color:#ae81ff">0</span>],myargs);
+</span></span><span style="display:flex;"><span>    }<span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">int</span> status;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">wait</span>(<span style="color:#f92672">&amp;</span>status);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;parent</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/wait.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">pid_t</span> pid;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>myargs[<span style="color:#ae81ff">3</span>];
+</span></span><span style="display:flex;"><span>    myargs[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/bin/ls&#34;</span>;
+</span></span><span style="display:flex;"><span>    myargs[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;./&#34;</span>;
+</span></span><span style="display:flex;"><span>    myargs[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> NULL;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    pid <span style="color:#f92672">=</span> <span style="color:#a6e22e">fork</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;fork error.</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    }<span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span>(pid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// execl(&#34;/bin/ls&#34;,&#34;ls&#34;, &#34;./&#34;);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// execv(myargs[0],myargs);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.3
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// execlp(&#34;ls&#34;,&#34;ls&#34;,&#34;./&#34;);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.4
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// execvp(myargs[0],myargs);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.5
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// execle(&#34;/bin/ls&#34;,&#34;ls&#34;,&#34;./&#34;,NULL);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no.6
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">execve</span>(myargs[<span style="color:#ae81ff">0</span>],myargs,NULL);
+</span></span><span style="display:flex;"><span>    }<span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">int</span> status;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">wait</span>(<span style="color:#f92672">&amp;</span>status);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="vfork">vfork<a href="#vfork" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>vfork和fork之间的区别：</p>
+<ul>
+<li>fork本身父子进程的执行顺序不确定，但是vfork保证子进程先运行，再它调用exec或exit后父进程才能被调度。</li>
+<li>同时fork创建的子进程是父进程的一个复制品，而vfork创建的子进程共享父进程的地址空间</li>
+</ul>
+<h3 id="习题">习题<a href="#习题" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>注意习题8中dup和pipe相关的函数</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">// dup是将oldfd复制给最小的未被使用的文件描述符
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">dup</span>(<span style="color:#66d9ef">int</span> oldfd);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// dup2是将oldfd复制给newfd文件描述符，如果newfd存在，则将newfd先关闭，如果不存在直接复制
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">dup2</span>(<span style="color:#66d9ef">int</span> oldfd, <span style="color:#66d9ef">int</span> newfd);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// pipe pipefd[0] read pipefd[1] write
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">pipe</span>(<span style="color:#66d9ef">int</span> pipefd[<span style="color:#ae81ff">2</span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 将管道连在一起的操作
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">pipe</span>(pipefd);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// clild fork 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">dup2</span>(pipefd[<span style="color:#ae81ff">1</span>], STDOUT_FILENO);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;xxxx&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// child fork 2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">dup2</span>(pipefd[<span style="color:#ae81ff">0</span>], STDIN_FILENO);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">gets</span>(buf);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">puts</span>(buf);
+</span></span></code></pre></div><h2 id="第6章-机制受限直接执行">第6章 机制：受限直接执行<a href="#第6章-机制受限直接执行" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>虚拟化CPU支持多任务共享物理CPU，通过时分共享CPU，实现CPU虚拟化，因此引入了如下问题：</p>
+<ul>
+<li>性能，如何不增加系统开销实现虚拟化</li>
+<li>控制权，有效地运行进程，同时保留对CPU的控制</li>
+</ul>
+<blockquote>
+<p>简单来说就是如何高效、可控地虚拟化CPU</p>
+</blockquote>
+<p>为了限制进程的操作，演化出了用户模式和内核模式：</p>
+<ul>
+<li>用户模式，代码受限，不能直接访问I/O</li>
+<li>内核模式，代码可以执行它喜欢做的事，包括特权操作</li>
+</ul>
+<p>简单来说就是通过trap和return from trap实现的系统返回。</p>
+<p>用户态内核切换：</p>
+<ul>
+<li>系统调用</li>
+<li>Page fault， 运算时除以0的错误</li>
+<li>一个设备触发了中断使得当前程序运行需要响应内核设备驱动</li>
+</ul>
+<blockquote>
+<p>上述切换中，只有1和2涉及到trap的范畴，而3是一个中断的典型例子</p>
+</blockquote>
+<h3 id="trap">trap<a href="#trap" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>在遇到trap时，操作系统通常会执行如下操作：</p>
+<ol>
+<li>先保护现场，保存当前32个用户寄存器，保存pc，用于从内核态返回后，继续执行用户态程序（这些寄存器设计多种功能，有为保存用户进程状态，有为trap提供工作基础等）</li>
+<li>进入内核态，从user mode修改为supervisor mode，将SATP指向内核对应的页表</li>
+</ol>
+<blockquote>
+<p>trap table以及userrecv等相关信息需要后续学习</p>
+</blockquote>
+<h3 id="在进程间切换">在进程间切换<a href="#在进程间切换" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<h4 id="协作方式等待系统调用">协作方式：等待系统调用<a href="#协作方式等待系统调用" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>在这种模式下操作系统认为系统进程会合理的运行，运行时间过长的进程被假定会定期放弃CPU，以便操作系统能够决定运行其他任务。</p>
+<ul>
+<li>通过系统调用或者触发非法操作，将CPU的控制权交给操作系统。</li>
+</ul>
+<blockquote>
+<p>实际上这个方式已经被遗弃，如果某个进程进入无线循环，并且从来不进行调用，会导致操作系统不能获取到CPU的控制权</p>
+</blockquote>
+<h4 id="非协作方式">非协作方式<a href="#非协作方式" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>没有硬件的额外帮助下，在上述方式下无法打断一个从来不进行系统调用的无限循环进程，因此需要借助外部设备来实现操作系统重新获取CPU控制权。</p>
+<ul>
+<li>利用时钟中断重新获取控制权，操作系统通过预先配置的时钟中断程序，重新获取CPU的控制权，来进行进程间的切换。</li>
+</ul>
+<h4 id="恢复和保存上下文">恢复和保存上下文<a href="#恢复和保存上下文" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>操作系统进程调度机制是有调度程序(scheduler)做出的，它是操作系统的一部分。</p>
+<p>如果决定进行切换，OS就会执行一些底层代码，即所谓的上下文切换，上下文切换做的操作：</p>
+<ul>
+<li>操作系统为当前正在执行的进程保存一些寄存器的值，到它的内核栈中</li>
+<li>同时将要执行的进程恢复一些寄存器的值</li>
+</ul>
+<blockquote>
+<p>实际上操作系统会执行一些底层的汇编代码来保存和恢复通用寄存器、程序计数器，完成这一系列的操作后从陷阱返回指令时，就会将执行的进程变成当前进行的进程。</p>
+</blockquote>
+<h3 id="作业测量">作业测量<a href="#作业测量" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>通过sched_setaffinity实现将进程绑定到cpu核上，测试进程间切换，通过管道时间进程间的通信，用通信时间差值算出上下文切换花费的时间</p>
+</blockquote>
+<h2 id="第7章-进程调度介绍">第7章 进程调度：介绍<a href="#第7章-进程调度介绍" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="fifo">FIFO<a href="#fifo" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>优势：
+简单易于实现，在进程工作大致相同的时间是，可以完成。</p>
+<p>劣势：
+当某一个进程执行时间过长，导致系统的平均周转时间过长。</p>
+<h3 id="sjf最短任务优先">SJF（最短任务优先）<a href="#sjf最短任务优先" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>在非抢占式模式下，实际上无法解决护航问题，同时最短任务只在理论上可信，实际工程场景中无法区分最短任务。</p>
+<h3 id="stcf最短完成时间优先">STCF（最短完成时间优先）<a href="#stcf最短完成时间优先" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>在SJF上叠加抢占，称为最短完成时间优先。每当新的工作进入系统时，它就会确定剩余工作和新工作中，谁的剩余时间更少，然后调度该工作。</p>
+<h3 id="新度量指标响应时间">新度量指标：响应时间<a href="#新度量指标响应时间" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>首次运行时间 - 到达时间 = 响应时间</p>
+<h3 id="轮转">轮转<a href="#轮转" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>为程序分配不同的时间片，在不同的时间片运行不同的工作。</p>
+<p>系统设计者需要权衡时间片长度，通过将时间片分给不同的工作，使其足够长，以便摊销上下文切换成本，并且不会使系统不及时响应。</p>
+<blockquote>
+<p>实际上要减少上下文切换在进程执行中所占用的时间，需要对时间片的长度进行考量
+同时上下文件切换将带来大量的性能成本，CPU高速缓存、TLB、分支预测和其他片上硬件建立大量的状态，切换后导致明显的性能成本。</p>
+</blockquote>
+<h3 id="结合io">结合I/O<a href="#结合io" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>简单来说在执行I/O的时候CPU由其他工作抢占，等I/O完成后，触发中断，CPU回到之前的工作。</p>
+</blockquote>
+<h2 id="第8章-调度多级反馈队列">第8章 调度：多级反馈队列<a href="#第8章-调度多级反馈队列" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="mlfq基本规则">MLFQ：基本规则<a href="#mlfq基本规则" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<ul>
+<li>通过多个队列区分不同的优先级，任何时刻一个工作只能存在一个队列中，MLFQ总是优先执行较高优先级的工作。</li>
+<li>每个队列中可能有多个工作，同样的优先级下，对这些队列采用轮转调度</li>
+</ul>
+<blockquote>
+<p>MLFQ核心问题在于如何设置优先级，MLFQ会根据进程行为学习其行为，预测动态调整其优先级</p>
+</blockquote>
+<h3 id="如何改变优先级">如何改变优先级<a href="#如何改变优先级" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/ip-range/">
+                <span class="button__icon">←</span>
+                <span class="button__text">ip_range</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/">
+                <span class="button__text">计算机是怎样跑起来的</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

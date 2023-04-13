@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>killcx :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="killcx 背景介绍 今天在逛博客的时候发现一个有意思的问题： 如何在不是同一个进程的情况下，关闭一个TCP连接？ 通常我们可以想到的关闭一个连接的方法如下" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/killcx/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="killcx">
+<meta property="og:description" content="killcx 背景介绍 今天在逛博客的时候发现一个有意思的问题： 如何在不是同一个进程的情况下，关闭一个TCP连接？ 通常我们可以想到的关闭一个连接的方法如下" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/killcx/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-02-22 09:43:07 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/killcx/">killcx</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-02-22 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 4 min read (1973 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景介绍">背景介绍</a></li>
+    <li><a href="#合法的rst报文">合法的RST报文</a></li>
+    <li><a href="#killcx分析">killcx分析</a></li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <h1 id="killcx">killcx<a href="#killcx" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="背景介绍">背景介绍<a href="#背景介绍" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>今天在逛博客的时候发现一个有意思的问题：</p>
+<pre><code>如何在不是同一个进程的情况下，关闭一个TCP连接？
+</code></pre>
+<p>通常我们可以想到的关闭一个连接的方法如下：</p>
+<ol>
+<li>进程内close（通用文件描述符关闭方法）</li>
+<li>进程内shutdown（可以半关闭socket，专门为socket定制）</li>
+<li>回RST报文</li>
+<li>内核回调？等奇技淫巧这里就不讨论了</li>
+</ol>
+<p>但是1和2的方式都必须在同一个进程内实现，因此不满足问题的要求，所以应该就是回RST报文，实际上这也是防火墙或者一些旁路设备常的事情，有些VPN也会构造类似的请求，来阻止不合法的连接。</p>
+<p>那么既然我们知道需要怎么做，那怎么构造一个合法的RST报文就是一个问题。</p>
+<h2 id="合法的rst报文">合法的RST报文<a href="#合法的rst报文" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>合法的RST报文需要的条件：</p>
+<ol>
+<li>四元组</li>
+<li>正确的序列号</li>
+</ol>
+<!-- raw HTML omitted -->
+<p>上述信息通常可以由旁路设备获得（旁路设备通过侦听链路上的报文就可以获得），VPN防火墙也可以通过连接获得，那么第三方进程如何构造正确的RST报文呢？</p>
+<p>可以通过challenge ACK实现，原理如下：</p>
+<blockquote>
+<p>处于 establish 状态的服务端如果收到了客户端的 SYN 报文（注意此时的 SYN 报文其实是乱序的，因为 SYN 报文的初始化序列号其实是一个随机数），会回复一个携带了正确序列号和确认号的 ACK 报文，这个 ACK 被称之为 Challenge ACK。</p>
+</blockquote>
+<blockquote>
+<p>实际上部分防火墙和nat设备并不支持challenge ACK</p>
+</blockquote>
+<p>那么我们就可以通过raw socket进行构造乱序的SYN包，再通过服务端回的正确的ACK获取到序列号，再回复RST报文。</p>
+<p><img src="/posts/img/challenge_ack.jpg"/></p>
+<p>其实有现成的工具就可以实现上述功能，killcx是一款基于perl实现的脚本工具，下面将对killcx进行简单的分析。</p>
+<h2 id="killcx分析">killcx分析<a href="#killcx分析" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span><span style="color:#66d9ef">use</span> strict; 
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> Socket; 
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> Net::RawIP;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> Net::Pcap;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> NetPacket::Ethernet <span style="color:#e6db74">qw(:strip)</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> NetPacket::IP <span style="color:#e6db74">qw(:strip)</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> NetPacket::TCP;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> POSIX <span style="color:#e6db74">qw(setsid)</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $appname <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;killcx&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;v1.0.3&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $copyright <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;(c)2009-2011 Jerome Bruandet - http://killcx.sourceforge.net/&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;$appname $version - $copyright\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> ( $&gt; ) {
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;\t[ERROR] : you must be root\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">1</span>; 
+</span></span><span style="display:flex;"><span>} <span style="color:#66d9ef">elsif</span> ( $^O <span style="color:#f92672">ne</span> <span style="color:#e6db74">&#39;linux&#39;</span> ){
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;\t[ERROR] : that script is for Linux only, not $^O\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">1</span>; 
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>$SIG{USR1} <span style="color:#f92672">=</span> <span style="color:#f92672">\&amp;</span>check_res;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> ( $dest_ip, $dest_port ) <span style="color:#f92672">=</span>
+</span></span><span style="display:flex;"><span>   $ARGV[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=~</span><span style="color:#e6db74"> /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d+)$/</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $interface <span style="color:#f92672">=</span> $ARGV[<span style="color:#ae81ff">1</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> ( ( <span style="color:#f92672">!</span> $dest_ip ) <span style="color:#f92672">||</span> ( <span style="color:#f92672">!</span> $dest_port ) ) {
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;- syntax   : $appname &lt;destip:destport&gt; &lt;interface&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  destip               : remote IP
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  destport             : remote port
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  interface (optional) : network interface (eth0, lo etc). Note that
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">                         in many cases, using &#39;lo&#39; (loopback) will give
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">                         better results, specially when a connection
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">                         is not yet or no longer in the ESTABLISHED state
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">                         (SYN_RECV, TIME_WAIT etc).
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">- example  : $appname 10.11.12.13:1234
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">             $appname 10.11.12.13:1234 eth0
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">- doc      :  http://killcx.sourceforge.net/
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">1</span>; 
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $pid <span style="color:#f92672">=</span> $$;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> %TCP_STATES <span style="color:#f92672">=</span> (
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">&#39;01&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;ESTABLISHED&#39;</span>, <span style="color:#e6db74">&#39;02&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SYN_SENT&#39;</span>,  <span style="color:#e6db74">&#39;03&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SYN_RECV&#39;</span>,
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">&#39;04&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;FIN_WAIT1&#39;</span>,   <span style="color:#e6db74">&#39;05&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;FIN_WAIT2&#39;</span>, <span style="color:#e6db74">&#39;06&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;TIME_WAIT&#39;</span>,
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">&#39;07&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;CLOSE&#39;</span>,       <span style="color:#e6db74">&#39;08&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;CLOSE_WAIT&#39;</span>,<span style="color:#e6db74">&#39;09&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;LAST_ACK&#39;</span>,
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">&#39;0A&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;LISTEN&#39;</span>,      <span style="color:#e6db74">&#39;0B&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;CLOSING&#39;</span>
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># convert to network byte order :</span>
+</span></span><span style="display:flex;"><span>$dest_ip <span style="color:#f92672">=~</span><span style="color:#e6db74"> /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $dest_hex <span style="color:#f92672">=</span> sprintf <span style="color:#e6db74">&#34;%.2X%.2X%.2X%.2X:%.4X&#34;</span>,$4,$3,$2,$1,$dest_port;
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># check in /proc/net/tcp :</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] checking connection with [$dest_ip:$dest_port]\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> ( $local_ip, $local_port, $state) <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>check_tcp( $dest_hex );
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> ( <span style="color:#f92672">!</span> $state ) {
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] error : unable to find a connection with &#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;[$dest_ip:$dest_port]\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] found connection with [$local_ip:$local_port] &#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#e6db74">&#34;($TCP_STATES{$state})\n&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># fork our child which will hook the server response to our spoofed</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># packet and extract the correct acknum (and seqnum) needed to close</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># the connection :</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] forking child\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">use</span> POSIX <span style="color:#e6db74">&#39;WNOHANG&#39;</span>;
+</span></span><span style="display:flex;"><span>$SIG{CHLD} <span style="color:#f92672">=</span> <span style="color:#66d9ef">sub</span> { <span style="color:#66d9ef">while</span>( waitpid( <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,WNOHANG ) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span> ) {} };
+</span></span><span style="display:flex;"><span>defined ( <span style="color:#66d9ef">my</span> $child_pid <span style="color:#f92672">=</span> fork ) <span style="color:#f92672">or</span>
+</span></span><span style="display:flex;"><span>   die <span style="color:#e6db74">&#34;[PARENT] error : cannot fork : $!\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> ( $child_pid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> ) {
+</span></span><span style="display:flex;"><span>   setsid <span style="color:#f92672">or</span> die <span style="color:#e6db74">&#34;[CHILD]  error : cannot setid : $!&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> ($err, $filter, $netmask, $address, $pcap);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># no interface given, let&#39;s try to find one :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">if</span> ( <span style="color:#f92672">!</span> $interface ) {
+</span></span><span style="display:flex;"><span>      $interface <span style="color:#f92672">=</span> Net::Pcap::lookupdev( <span style="color:#f92672">\</span>$err );
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  &#34;</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> ( $interface ) {
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;interface not defined, will use [$interface]\n&#34;</span>;
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>         <span style="color:#75715e"># switch to loopback if we can&#39;t find any interface :</span>
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;no interface found, switching to loopback\n&#34;</span>;
+</span></span><span style="display:flex;"><span>         $interface <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;lo&#39;</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># let&#39;s sniff :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  setting up filter to sniff ACK on [$interface]&#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34; for 5 seconds\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> $pcap <span style="color:#f92672">=</span> Net::Pcap::open_live( $interface, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5000</span>, <span style="color:#f92672">\</span>$err) <span style="color:#f92672">||</span>
+</span></span><span style="display:flex;"><span>      die <span style="color:#e6db74">&#34;[CHILD]  error : open_live failed : $err\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># setup filter :</span>
+</span></span><span style="display:flex;"><span>   Net::Pcap::compile( $pcap, <span style="color:#f92672">\</span>$filter,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;(dst port $dest_port) &amp;&amp; (src port $local_port)&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#ae81ff">0</span>, $netmask) <span style="color:#f92672">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>      die <span style="color:#e6db74">&#34;[CHILD]  error : compile failed : $!\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   Net::Pcap::setfilter($pcap, $filter) <span style="color:#f92672">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>      die <span style="color:#e6db74">&#34;[CHILD]  error : setfilter failed : $!\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># only want to hook 1 packet :</span>
+</span></span><span style="display:flex;"><span>   Net::Pcap::loop($pcap, <span style="color:#ae81ff">1</span> , <span style="color:#f92672">\&amp;</span>process_packet, <span style="color:#e6db74">&#39;&#39;</span>);
+</span></span><span style="display:flex;"><span>   Net::Pcap::close($pcap);
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># all done, let&#39;s inform our parent :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  all done, sending USR1 signal to parent [$pid] &#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;and exiting\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#e6db74">`kill -s USR1 $pid`</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># wait 0.5 second for our child to be ready :</span>
+</span></span><span style="display:flex;"><span>select( undef, undef, undef, <span style="color:#ae81ff">0.5</span> );
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] sending spoofed SYN to [$local_ip:$local_port]&#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#e6db74">&#34; with bogus SeqNum\n&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># send spoofed SYN packet :</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">my</span> $packet <span style="color:#f92672">=</span> Net::RawIP<span style="color:#f92672">-&gt;</span><span style="color:#66d9ef">new</span>({
+</span></span><span style="display:flex;"><span>      ip <span style="color:#f92672">=&gt;</span> {  frag_off <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>, tos <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>               saddr <span style="color:#f92672">=&gt;</span> $dest_ip, daddr <span style="color:#f92672">=&gt;</span> $local_ip
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>      tcp <span style="color:#f92672">=&gt;</span>{  dest <span style="color:#f92672">=&gt;</span> $local_port, source <span style="color:#f92672">=&gt;</span> $dest_port,
+</span></span><span style="display:flex;"><span>               seq <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">10</span>, syn <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>   });
+</span></span><span style="display:flex;"><span>   $packet<span style="color:#f92672">-&gt;</span>send;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># wait max 5 seconds :</span>
+</span></span><span style="display:flex;"><span>select( undef, undef, undef, <span style="color:#ae81ff">5</span> );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># didn&#39;t receive any signal from our child, it has probably failed :</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] no response from child, operation may have failed\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> ( $interface <span style="color:#f92672">ne</span> <span style="color:#e6db74">&#39;lo&#39;</span> ) {
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] =&gt; you may try using &#39;lo&#39; as interface parameter\n&#34;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] killing child [$child_pid] and exiting program\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># kill it and exit :</span>
+</span></span><span style="display:flex;"><span>kill <span style="color:#ae81ff">9</span>, $child_pid;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>exit <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">######################################################################</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">sub</span> <span style="color:#a6e22e">check_res</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># received signal from our child :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[PARENT] received child signal, checking results...\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># check whether the operation was successful or not :</span>
+</span></span><span style="display:flex;"><span>   ( $local_ip, $local_port, $state) <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>check_tcp( $dest_hex );
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">if</span> ( $state ) {
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;         =&gt; error : connection hasn&#39;t been closed\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span>      exit <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;         =&gt; success : connection has been closed !\n\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   exit <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">######################################################################</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">sub</span> <span style="color:#a6e22e">process_packet</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span>( $user_data, $header, $packet ) <span style="color:#f92672">=</span> @_;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> $ether_data <span style="color:#f92672">=</span> NetPacket::Ethernet::strip($packet);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># decode TCP/IP packet (server response to our spoofed packet) :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> $ip <span style="color:#f92672">=</span> NetPacket::IP<span style="color:#f92672">-&gt;</span>decode($ether_data);
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> $tcp <span style="color:#f92672">=</span> NetPacket::TCP<span style="color:#f92672">-&gt;</span>decode($ip<span style="color:#f92672">-&gt;</span>{<span style="color:#e6db74">&#39;data&#39;</span>});
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  hooked ACK from [$local_ip:$local_port]\n&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># look for the magic acknum :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  &#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">if</span> ( $tcp<span style="color:#f92672">-&gt;</span>{acknum} ) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;found AckNum [$tcp-&gt;{acknum}] and SeqNum &#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>         <span style="color:#e6db74">&#34;[$tcp-&gt;{seqnum}]\n&#34;</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  sending spoofed RST to [$local_ip:$local_port]&#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>         <span style="color:#e6db74">&#34; with SeqNum [$tcp-&gt;{acknum}]\n&#34;</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># we have it : spoof another packet (RST) with the correct seqnum</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># to close the connection :</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">my</span> $packet <span style="color:#f92672">=</span> Net::RawIP<span style="color:#f92672">-&gt;</span><span style="color:#66d9ef">new</span>( {
+</span></span><span style="display:flex;"><span>         ip <span style="color:#f92672">=&gt;</span> {  frag_off <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>, tos <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>                  saddr <span style="color:#f92672">=&gt;</span> $dest_ip, daddr <span style="color:#f92672">=&gt;</span> $local_ip
+</span></span><span style="display:flex;"><span>               },
+</span></span><span style="display:flex;"><span>         tcp <span style="color:#f92672">=&gt;</span>{  dest <span style="color:#f92672">=&gt;</span> $local_port, source <span style="color:#f92672">=&gt;</span> $dest_port,
+</span></span><span style="display:flex;"><span>                  seq <span style="color:#f92672">=&gt;</span> $tcp<span style="color:#f92672">-&gt;</span>{acknum}, rst <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>               }
+</span></span><span style="display:flex;"><span>      } );
+</span></span><span style="display:flex;"><span>         $packet<span style="color:#f92672">-&gt;</span>send;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># if the connection was in the ESTABLISHED state we close it</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># with the remote host as well, otherwise we don&#39;t care</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># (the server would reply with a RST packet anyway) :</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> ( $state <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span> ) {
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;[CHILD]  sending RST &#34;</span><span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;to remote host as well with SeqNum [$tcp-&gt;{seqnum}]\n&#34;</span>;
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">my</span> $packet <span style="color:#f92672">=</span> Net::RawIP<span style="color:#f92672">-&gt;</span><span style="color:#66d9ef">new</span>( {
+</span></span><span style="display:flex;"><span>         ip <span style="color:#f92672">=&gt;</span> {  frag_off <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>, tos <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>                  saddr <span style="color:#f92672">=&gt;</span> $local_ip, daddr <span style="color:#f92672">=&gt;</span> $dest_ip
+</span></span><span style="display:flex;"><span>               },
+</span></span><span style="display:flex;"><span>         tcp <span style="color:#f92672">=&gt;</span>{  dest <span style="color:#f92672">=&gt;</span> $dest_port, source <span style="color:#f92672">=&gt;</span> $local_port,
+</span></span><span style="display:flex;"><span>                  seq <span style="color:#f92672">=&gt;</span> $tcp<span style="color:#f92672">-&gt;</span>{seqnum}, rst <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>               }
+</span></span><span style="display:flex;"><span>         } );
+</span></span><span style="display:flex;"><span>         $packet<span style="color:#f92672">-&gt;</span>send;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>   } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># very unlikely to happen (ACK packets always have acknum) :</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;error : no AckNum found in packet\n&#34;</span>;
+</span></span><span style="display:flex;"><span>      exit <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">######################################################################</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">sub</span> <span style="color:#a6e22e">check_tcp</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> $hex_rem <span style="color:#f92672">=</span> shift;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">my</span> ( $li, $lp, $st );
+</span></span><span style="display:flex;"><span>   open TCP, <span style="color:#e6db74">&#34;&lt;/proc/net/tcp&#34;</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">while</span> ( <span style="color:#e6db74">&lt;TCP&gt;</span> ) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (<span style="color:#e6db74"> /^\s*\d+:\s+(.{8}):(.{4})\s+$hex_rem\s+(.{2})\s/</span> ) {
+</span></span><span style="display:flex;"><span>         $st <span style="color:#f92672">=</span> $3;
+</span></span><span style="display:flex;"><span>         $lp <span style="color:#f92672">=</span> hex( $2 );
+</span></span><span style="display:flex;"><span>         ($li) <span style="color:#f92672">=</span> $1 <span style="color:#f92672">=~</span><span style="color:#e6db74"> /(.{2})(.{2})(.{2})(.{2})/</span>;
+</span></span><span style="display:flex;"><span>         $li <span style="color:#f92672">=</span> inet_ntoa( pack(<span style="color:#e6db74">&#34;N&#34;</span>, hex( $4<span style="color:#f92672">.</span>$3<span style="color:#f92672">.</span>$2<span style="color:#f92672">.</span>$1 ) ) );
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">last</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   close TCP;
+</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># if not found, check /proc/net/tcp6 :</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">if</span> ( ( <span style="color:#f92672">!</span> $st ) <span style="color:#f92672">&amp;&amp;</span> ( <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;/proc/net/tcp6&#39;</span> ) ) {
+</span></span><span style="display:flex;"><span>      open TCP, <span style="color:#e6db74">&#34;&lt;/proc/net/tcp6&#34;</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">while</span> ( <span style="color:#e6db74">&lt;TCP&gt;</span> ) {
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">if</span> (<span style="color:#e6db74"> /^\s*\d+:\s+\d{16}FFFF0000(.{8}):(.{4})\s+
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">               \d{16}FFFF0000$hex_rem\s+(.{2})\s/x</span> ) {
+</span></span><span style="display:flex;"><span>            $st <span style="color:#f92672">=</span> $3;
+</span></span><span style="display:flex;"><span>            $lp <span style="color:#f92672">=</span> hex( $2 );
+</span></span><span style="display:flex;"><span>            ($li) <span style="color:#f92672">=</span> $1 <span style="color:#f92672">=~</span><span style="color:#e6db74"> /(.{2})(.{2})(.{2})(.{2})/</span>;
+</span></span><span style="display:flex;"><span>            $li <span style="color:#f92672">=</span> inet_ntoa( pack(<span style="color:#e6db74">&#34;N&#34;</span>, hex( $4<span style="color:#f92672">.</span>$3<span style="color:#f92672">.</span>$2<span style="color:#f92672">.</span>$1 ) ) );
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">last</span>;
+</span></span><span style="display:flex;"><span>         }
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      close TCP;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">return</span> ( $li, $lp, $st );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">######################################################################</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># EOF</span>
+</span></span></code></pre></div><ol>
+<li>首先通过输入的目的IP和端口，在<code>/proc/net/tcp</code>中查找连接状态，其中IP为网络字节序，并且16进制表示，连接状态为0A（Establish）之类的形式。</li>
+<li>通过raw socket构造syn包，seq num为10（一个随机值即可）</li>
+<li>子进程同时调用pcap抓包，用于获取challenge ack的响应中的seqnum</li>
+<li>用响应中的seqnum构造RST报文</li>
+<li>最后确认下链接是否被关闭</li>
+</ol>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/tcp-cookies/">
+                <span class="button__icon">←</span>
+                <span class="button__text">tcp_syncookies</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/">
+                <span class="button__text">linux网卡聚合及bond模式原理</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

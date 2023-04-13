@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   
-    <title>Posts :: GiddyPoet</title>
+    <title>Posts :: GiddyPoet&#39;s Blog</title>
   
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,7 +50,7 @@
 <meta property="og:title" content="Posts">
 <meta property="og:description" content="" />
 <meta property="og:url" content="https://giddypoet.github.io/posts/" />
-<meta property="og:site_name" content="GiddyPoet" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
 
   
     <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
@@ -63,7 +63,7 @@
 
 
 
-  <link href="/posts/index.xml" rel="alternate" type="application/rss+xml" title="GiddyPoet" />
+  <link href="/posts/index.xml" rel="alternate" type="application/rss+xml" title="GiddyPoet&#39;s Blog" />
 
 
 
@@ -100,7 +100,11 @@
         
       
         
-          <li><a href="/showcase">Showcase</a></li>
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
         
       
       
@@ -120,10 +124,25 @@
           <li><a href="/about">About</a></li>
         
       
-        
-          <li><a href="/showcase">Showcase</a></li>
-        
       
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
       
     
   </ul>
@@ -140,13 +159,23 @@
     
       <article class="post on-list">
         <h1 class="post-title">
-          <a href="https://giddypoet.github.io/posts/mtu/"></a>
+          <a href="https://giddypoet.github.io/posts/%E6%8B%94%E7%BD%91%E7%BA%BFtcp%E8%BF%9E%E6%8E%A5%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88/">拔网线tcp连接会发生什么</a>
         </h1>
         <div class="post-meta">
+          
+            <time class="post-date">
+              2022-07-26 ::
+            </time>
           
           
         </div>
 
+        
+          <span class="post-tags">
+            
+            #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+            
+          </span>
         
 
         
@@ -154,27 +183,161 @@
 
         <div class="post-content">
           
-             title: mtu date: 2022-03-25 09:52:24 tags: [network] categories: [os] MTU Maximum Transmission Unit 最大传输单元。
-不同链路介质对网络有不同的默认MTU值，以下是一些常见的默认值:
-以太网MTU通常被设置为1500。
-为什么以太网帧mtu被设为1500 早期的以太网使用共享链路的工作方式，为了保证CSMA/CD（载波多路复用/冲突检测）机制，所以规定了以太帧长度最小为64字节，最大为1518字节。最小64字节是为了保证最极端的冲突能被检测到，64字节是能被检测到的最小值；最大不超过1518字节是为了防止过长的帧传输时间过长而占用共享链路太长时间导致其他业务阻塞。所以规定以太网帧大小为64~1518字节，虽然技术不断发展，但协议一直没有更改。
-以太网最大的数据帧是1518字节，这样刨去帧头14字节和帧尾CRC校验部分4字节，那么剩下承载上层IP报文的地方最大就只有1500字节，这个值就是以太网的默认MTU值。这个MTU就是网络层协议非常关心的地方，因为网络层协议比如IP协议会根据这个值来决定是否把上层传下来的数据进行分片，如果单个IP报文长度大于MTU，则会在发送出接口前被分片，被切割为小于或等于MTU长度的IP包。
-其实不同厂商对于MTU的定义略有不同，常见的是MTU为IP包的最大长度，如cisco，MTU是指的IP+以太网帧头部，还有的MTU=IP+以太网帧头部+CRC
-MTU划分的帧格式 Jumbo帧与MTU 帧过小，导致帧的利用率过小，同时增加分片开销，帧过大，如果丢包导致大量数据重传浪费资源
-由于现在场景已由计算密集型转变为IO密集型，大量的网络数据需要进行分片，每个数据包都需要网络设备来进行处理，由此带来的额外开销也将很大，而且这个开销随着网络速度的提高而愈加明显。
-于是一些厂商提出了巨型帧（Jumbo Frame）的概念，把以太网的最大帧长扩展到了9K，相当于增强版的MTU，区别在于：
-jumbo帧是在数据链路层处理的，MTU涉及的分片通常是在网络层进行的 jumbo帧包括二层以太网帧头和CRC部分，MTU一般不包括这部分，通常是指三层IP报文的长度。 加大帧长的好处在于，减少了网络中数据包的个数，减轻了网络设备处理包头的额外开销。大量减少的帧数目也带来了性能的提高。
-TCP MSS和MTU TCP MSS（Maximum Segment Size）是指TCP协议所允许的从对方收到的最大报文长度，即TCP数据包每次能够传输的最大数据分段，只包含TCP Payload，不包含TCP Header和TCP Option。MSS是TCP用来限制application层最大的发送字节数。为了达到最佳的传输效能，TCP协议在建立连接的时候通常要协商双方的MSS值，这个值TCP协议在实现的时候往往根据MTU值来计算（需要减去IP包头20字节和TCP包头20字节），所以通常MSS为1460=1500(MTU)- 20(IP Header) -20 (TCP Header)。
-Path MTU 简单来说就是路径上最小的MTU作为这条链路的MTU 路径MTU的探测， UDP和TCP通过ICMP实现，ICMP会回复type为3code为4的差错报文，表示需要分片，但是IP包的DF已设置，导致报文不可达被丢弃，而在icmp回复的报文中会存在下一跳的的MTU值，即PATHMTUDiscovery。
-如果主机本地链路的MTU大于端到端链路中某一点的MTU值，那么这个数据包因为有DF=1的原因，会被丢弃。 如果路由器本地链路的MTU为整个端到端链路中最小值时，数据包很幸运的被送达目的地。 对于1，路由器会回复icmp差错报文，同时在差错报文中携带了此路由器的下一跳MTU值。（Destination unreachable(fragmentation needed)），从而调整MTU值。
-tcp协议栈会根据路由器回复的icmp报文动态调整mss，实际上处于安全考虑并不是所有的路由器都会回复icmp报文，如果此时没有收到任何icmp报文，tcp会在超时重传后修改mss的值为更小的值。上述的一切基于tcp开启mtu_probing实现
-# 默认关闭 [root@giddypoet ~]# cat /proc/sys/net/ipv4/tcp_mtu_probing 0 
+            拔网线tcp连接会发生什么 这个问题需要考虑三种情况： 是否开启keepalived 是否正在收发数据 没有收发数据 是否开启tcp keepalived 可以通过sets
           
         </div>
 
         
           <div>
-            <a class="read-more button" href="/posts/mtu/">Read more →</a>
+            <a class="read-more button" href="/posts/%E6%8B%94%E7%BD%91%E7%BA%BFtcp%E8%BF%9E%E6%8E%A5%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88/">Read more →</a>
+          </div>
+        
+      </article>
+    
+      <article class="post on-list">
+        <h1 class="post-title">
+          <a href="https://giddypoet.github.io/posts/wireguard/">wireguard</a>
+        </h1>
+        <div class="post-meta">
+          
+            <time class="post-date">
+              2022-07-19 ::
+            </time>
+          
+          
+        </div>
+
+        
+          <span class="post-tags">
+            
+            #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+            
+          </span>
+        
+
+        
+
+
+        <div class="post-content">
+          
+            WireGuard WireGuard是由Jason Donenfeld等大佬用C语言编写的一个开源VPN协议，被视为下一代VPN，旨在解决现有VPN技术如IP
+          
+        </div>
+
+        
+          <div>
+            <a class="read-more button" href="/posts/wireguard/">Read more →</a>
+          </div>
+        
+      </article>
+    
+      <article class="post on-list">
+        <h1 class="post-title">
+          <a href="https://giddypoet.github.io/posts/raw-socket/">raw_socket</a>
+        </h1>
+        <div class="post-meta">
+          
+            <time class="post-date">
+              2022-07-08 ::
+            </time>
+          
+          
+        </div>
+
+        
+          <span class="post-tags">
+            
+            #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+            
+          </span>
+        
+
+        
+
+
+        <div class="post-content">
+          
+            RAW_SOCKET 我们常用的套接字类型主要就是： TCP UDP 原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力： 读写ICMPv4、IGMP
+          
+        </div>
+
+        
+          <div>
+            <a class="read-more button" href="/posts/raw-socket/">Read more →</a>
+          </div>
+        
+      </article>
+    
+      <article class="post on-list">
+        <h1 class="post-title">
+          <a href="https://giddypoet.github.io/posts/ip-range/">ip_range</a>
+        </h1>
+        <div class="post-meta">
+          
+            <time class="post-date">
+              2022-06-13 ::
+            </time>
+          
+          
+        </div>
+
+        
+          <span class="post-tags">
+            
+            #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+            
+          </span>
+        
+
+        
+
+
+        <div class="post-content">
+          
+            ip地址范围判断问题 在实现场景中，时长遇到需要判断ip地址是否在范围内，或者ip地址是否在这个网段内，因此将简述ip地址判断问题，目前支持以
+          
+        </div>
+
+        
+          <div>
+            <a class="read-more button" href="/posts/ip-range/">Read more →</a>
+          </div>
+        
+      </article>
+    
+      <article class="post on-list">
+        <h1 class="post-title">
+          <a href="https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/">操作系统导论</a>
+        </h1>
+        <div class="post-meta">
+          
+            <time class="post-date">
+              2022-04-18 ::
+            </time>
+          
+          
+        </div>
+
+        
+          <span class="post-tags">
+            
+            #<a href="https://giddypoet.github.io/tags/os/">os</a>&nbsp;
+            
+          </span>
+        
+
+        
+
+
+        <div class="post-content">
+          
+            第一章 关于本书的对话 Operating Systems: Three Easy Pieces： 虚拟化(virtualization) 并发(concurrency) 持久性(persistence
+          
+        </div>
+
+        
+          <div>
+            <a class="read-more button" href="/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/">Read more →</a>
           </div>
         
       </article>
@@ -183,6 +346,11 @@ tcp协议栈会根据路由器回复的icmp报文动态调整mss，实际上处�
     <div class="pagination">
   <div class="pagination__buttons">
     
+    
+      <a href="/posts/page/2/" class="button next">
+        <span class="button__text">Older posts</span>
+        <span class="button__icon">→</span>
+      </a>
     
   </div>
 </div>

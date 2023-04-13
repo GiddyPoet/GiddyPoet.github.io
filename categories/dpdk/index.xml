@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>dpdk on GiddyPoet&#39;s Blog</title>
+    <link>https://giddypoet.github.io/categories/dpdk/</link>
+    <description>Recent content in dpdk on GiddyPoet&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 10 Apr 2022 14:14:33 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/categories/dpdk/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>dpdk深入浅出</title>
+      <link>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</link>
+      <pubDate>Sun, 10 Apr 2022 14:14:33 +0000</pubDate>
+      
+      <guid>https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/</guid>
+      <description>第一章 认识DPDK 主流包处理硬件平台 简单介绍了当前从互联网面临的挑战：从计算密集型设备转换为IO密集型设备，同时介绍了当前主流包处理的硬件平</description>
+      <content>&lt;h1 id=&#34;第一章-认识dpdk&#34;&gt;第一章 认识DPDK&lt;/h1&gt;
+&lt;h2 id=&#34;主流包处理硬件平台&#34;&gt;主流包处理硬件平台&lt;/h2&gt;
+&lt;p&gt;简单介绍了当前从互联网面临的挑战：&lt;code&gt;从计算密集型设备转换为IO密集型设备&lt;/code&gt;，同时介绍了当前主流包处理的硬件平台，并对其在不同领域的优缺点做了阐述：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;硬件加速器：适用于功能固化，功能具有高性能低成本的特点&lt;/li&gt;
+&lt;li&gt;网络处理器：提供了包处理逻辑软件可编程的能力，在获得灵活性的同事兼顾了高性能的硬件包处理&lt;/li&gt;
+&lt;li&gt;多核处理器：更为复杂多变的高层包处理上拥有优势&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;硬件加速器&#34;&gt;硬件加速器&lt;/h3&gt;
+&lt;p&gt;ASIC和FPGA。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;涉及集成电路和嵌入式设备，这里不再赘述。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;网络处理器&#34;&gt;网络处理器&lt;/h3&gt;
+&lt;p&gt;网络处理器(Network  Processer  Unit，NPU)是专门为处理数据包而设计的可编程通用处理器，采用多内核并行处理结构，其常被应用于通信领域的各种任务，比如包处理、协议分析、路由查找、声音/数据
+的汇聚、防火墙、QoS等。&lt;/p&gt;
+&lt;h3 id=&#34;多核处理器&#34;&gt;多核处理器&lt;/h3&gt;
+&lt;p&gt;由当前CPU性能的扩展方式引入了SOC，同时简单介绍了当前主流厂商的多核处理器的SOC平台。&lt;/p&gt;
+&lt;h2 id=&#34;初识dpdk&#34;&gt;初识DPDK&lt;/h2&gt;
+&lt;h3 id=&#34;iaintel-architecture不适合进行数据包处理吗&#34;&gt;IA(intel architecture)不适合进行数据包处理吗&lt;/h3&gt;
+&lt;p&gt;传统linux包处理流程:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;数据包到达网卡&lt;/li&gt;
+&lt;li&gt;网卡设备依据配置进行DMA操作，简单来说就是将网卡中的数据直接拷贝到内存中，避免cpu浪费大量的时间片用于数据拷贝。（其实总线上有一个总的DMA控制器用于做DMA操作，不仅网卡，同时硬盘等其他IO设备都要使用DMA控制器）&lt;/li&gt;
+&lt;li&gt;网卡发送中断，通知CPU。（此处还涉及多队列网卡，网卡不同的队列中断号不一样）&lt;/li&gt;
+&lt;li&gt;驱动软件填充读写缓冲区数据结构。&lt;/li&gt;
+&lt;li&gt;数据报文到达内核协议栈，进行高层处理。&lt;/li&gt;
+&lt;li&gt;如果最终应用在用户态，数据将从内核拷贝至用户态。（涉及零拷贝知识，mmap，sendfile等）&lt;/li&gt;
+&lt;li&gt;如果最终应用在内核态，在内核继续进行。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;影响收包性能的主要因素：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;cpu中断，频繁的上下文切换，导致性能低下&lt;/li&gt;
+&lt;li&gt;数据拷贝，从网卡拷贝到内核，从内核拷贝到用户态&lt;/li&gt;
+&lt;li&gt;操作系统调度线程切换，导致cache替换，线程在不同核之间频繁切换，核减线程导致cache miss和cache write back造成大量的性能损失。&lt;/li&gt;
+&lt;li&gt;内存页表查询，大量的IO操作会剧烈的增加内存的查找，导致性能下降。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;上述流程会引发一个问题，即便通过DMA的形式，在IO密集型的设备上，依然会因为触发大量的中断引起大量的开销，导致系统无法承受，因此引入了NAPI机制，其策略是设定中断阈值，当网卡上的中断未超过阈值，则采用中断模式，如果中断超过阈值，则系统被中断唤醒后，尽量使用轮询的方式一次性处理多个数据包，直到网络再次空闲重新传入中断等待。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;其实，在上述过程中，发现除了网卡频繁触发中断，影响包处理性能，同时在内核态和用户态之间频繁发生数据拷贝也会大大的影响包处理性能。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;netmap内存映射网卡的&lt;code&gt;packet buffer&lt;/code&gt;到用户态，实现了自己的收发报文的&lt;code&gt;circular ring&lt;/code&gt;来对应网卡的&lt;code&gt;ring&lt;/code&gt;。越过内核态。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;cpu亲和性，通过CPU亲和性，将线程绑定到cpu单个核上执行，cache miss和cache write back问题。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;DPDK通过以下技术解决了上述问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;轮询替换中断，避免中断上下文切换的开销&lt;/li&gt;
+&lt;li&gt;用户态驱动，在这种工作方式中，规避了不必要的内存拷贝，又避免了系统调用。&lt;/li&gt;
+&lt;li&gt;亲和性与独占，dpdk工作在用户态，利用线程的CPU亲和绑定的方式，特定任务值在某个核上工作。好处是可避免线程在不同核间频繁切换，核间线程切换容易导致因cache miss和cache write back造成的大量性能损失。&lt;/li&gt;
+&lt;li&gt;降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;dpdk框架简介&#34;&gt;DPDK框架简介&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://giddypoet.github.io/posts/img/dpdk_arch.png&#34;/&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;核心库&lt;code&gt;Core Libs&lt;/code&gt;：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件&lt;/li&gt;
+&lt;li&gt;PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡&lt;/li&gt;
+&lt;li&gt;Classify库：支持精确匹配(Exact Match)、最长匹配(LPM)和通配符匹配(ACL)，提供常用的包处理的查表操作&lt;/li&gt;
+&lt;li&gt;Qos库：提供网络服务质量相关组件，如限速(Meter)和调度(Sched)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;上述是DPDK主要的库，其实还提供了一些对于运行频率调整(Power)，与&lt;code&gt;Linux Kernel Stack&lt;/code&gt;建立快速通道的(KNI Kernel Network Interface)。而&lt;code&gt;Packet FrameWrok&lt;/code&gt;和&lt;code&gt;DISTRIB&lt;/code&gt;是为了搭建更为复杂的多核流水线处理模型提供了基础组件。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;解读数据包处理能力&#34;&gt;解读数据包处理能力&lt;/h2&gt;
+&lt;p&gt;实际上以太网帧数据最小是64个字节，其中包括46个字节的数据部分，2个字节的协议类型，12个字节的目的mac地址和源mac地址，以及4个字节的校验和。每个以太网帧默认帧间距为12个字节，同时每个帧还有7个字节的前导，和一个自己的帧首定界，因此一个最小以太网帧为&lt;code&gt;46+2+12+4+12+7+1=84&lt;/code&gt;个字节，672个bit。&lt;/p&gt;
+&lt;p&gt;因此10Gbit/s的网卡最大理论帧转发率为&lt;code&gt;10*1000/640=14.88Mpps&lt;/code&gt;，14.88兆个包每秒。&lt;/p&gt;
+&lt;h2 id=&#34;探索ia处理器上最艰巨的任务&#34;&gt;探索IA处理器上最艰巨的任务&lt;/h2&gt;
+&lt;p&gt;DPDK通过一系列软件优化方法（大页利用，cache对齐，线程绑定，NUMA感知，内存通道交叉访问，无锁化数据结构，预取，SIMD指令利用等）利用IA平台硬件特性，提供完整的底层开发支持库。使得单核三层转发可以轻松地突破小包30Mpps，随着CPU封装的核数越来越多，支持的PCIe通道数越来越多，整系统的三层转发吞吐在2路CPU的Xeon E5-2658v3上可以达到300Mpps。&lt;/p&gt;
+&lt;h2 id=&#34;软件包处理的潜力&#34;&gt;软件包处理的潜力&lt;/h2&gt;
+&lt;p&gt;主要介绍了DPDK的使用场景：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;加速网络节点，支持虚拟化部署&lt;/li&gt;
+&lt;li&gt;加速计算节点&lt;/li&gt;
+&lt;li&gt;加速存储节点&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;后续还介绍了一堆DPDK适用的场景，一大堆就不在此赘述了&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;实例&#34;&gt;实例&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;helloworld&lt;/li&gt;
+&lt;li&gt;skeleton&lt;/li&gt;
+&lt;li&gt;l3fwd&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;helloworld&#34;&gt;helloworld&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;ret = runtime enviroment
+eal = enviroment abstraction layer
+DPDK区分了主线程和从线程&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;对调用函数进行简单的介绍&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eal_init&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; argc, &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;argv);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;该函数主要是对DPDK基础运行环境进行设置，具体内容如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;配置初始化&lt;/li&gt;
+&lt;li&gt;内存初始化&lt;/li&gt;
+&lt;li&gt;内存池初始化&lt;/li&gt;
+&lt;li&gt;队列初始化&lt;/li&gt;
+&lt;li&gt;告警初始化&lt;/li&gt;
+&lt;li&gt;中断初始化&lt;/li&gt;
+&lt;li&gt;PCI初始化&lt;/li&gt;
+&lt;li&gt;定时器初始化&lt;/li&gt;
+&lt;li&gt;检测内存本地化(NUMA)&lt;/li&gt;
+&lt;li&gt;插件初始化&lt;/li&gt;
+&lt;li&gt;主线程初始化&lt;/li&gt;
+&lt;li&gt;轮询设备初始化&lt;/li&gt;
+&lt;li&gt;建立主从线程通道(通过管道)&lt;/li&gt;
+&lt;li&gt;将从线程设置在等待模式(&lt;code&gt;_mm_pause()&lt;/code&gt;等待主线程分发任务)&lt;/li&gt;
+&lt;li&gt;PCI设备的探测和初始化&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#define RTE_LCORE_FOREACH_SLAVE(i)					\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;	for (i = rte_get_next_lcore(-1, 1, 0);				\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;	     i&amp;lt;RTE_MAX_LCORE;						\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;	     i = rte_get_next_lcore(i, 1, 0))
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;遍历从线程，即逻辑线程。（逻辑核就是cpu当前的核数）&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eal_remote_launch&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;lcore_function_t&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;f, &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;arg, &lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; slave_id);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;主线程通过管道向从线程分发任务，将f作为函数指针传递给从线程，arg作为执行参数，在slave_id的逻辑线程上执行该函数。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;通过&lt;code&gt;lcore_config[RTE_MAX_LCORE]&lt;/code&gt;数组和逻辑线程id确定管段，通过管道启动任务。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;后续任务就是简单的执行相关函数。&lt;/p&gt;
+&lt;h3 id=&#34;skeleton&#34;&gt;Skeleton&lt;/h3&gt;
+&lt;p&gt;这个示例简单说就是一个单核的转发程序，设计初衷是实现一个最简单的报文转发程序，对报文不做任何改动。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; argc, &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;argv[])
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_mempool &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;mbuf_pool;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; nb_ports;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; portid;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* Initialize the Environment Abstraction Layer (EAL). */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eal_init&lt;/span&gt;(argc, argv);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (ret &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_exit&lt;/span&gt;(EXIT_FAILURE, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Error with EAL initialization&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	argc &lt;span style=&#34;color:#f92672&#34;&gt;-=&lt;/span&gt; ret;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	argv &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ret;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* Check that there is an even number of ports to send/receive on. */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	nb_ports &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eth_dev_count_avail&lt;/span&gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (nb_ports &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;||&lt;/span&gt; (nb_ports &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_exit&lt;/span&gt;(EXIT_FAILURE, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Error: number of ports must be even&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* Creates a new mempool in memory to hold the mbufs. */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	mbuf_pool &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_pktmbuf_pool_create&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MBUF_POOL&amp;#34;&lt;/span&gt;, NUM_MBUFS &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; nb_ports,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		MBUF_CACHE_SIZE, &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;, RTE_MBUF_DEFAULT_BUF_SIZE, &lt;span style=&#34;color:#a6e22e&#34;&gt;rte_socket_id&lt;/span&gt;());
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (mbuf_pool &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; NULL)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_exit&lt;/span&gt;(EXIT_FAILURE, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Cannot create mbuf pool&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* Initialize all ports. */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;RTE_ETH_FOREACH_DEV&lt;/span&gt;(portid)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (&lt;span style=&#34;color:#a6e22e&#34;&gt;port_init&lt;/span&gt;(portid, mbuf_pool) &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;			&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_exit&lt;/span&gt;(EXIT_FAILURE, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Cannot init port %&amp;#34;&lt;/span&gt;PRIu16 &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;					portid);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_lcore_count&lt;/span&gt;() &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;WARNING: Too many lcores enabled. Only 1 used.&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* Call lcore_main on the master core only. */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;lcore_main&lt;/span&gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#75715e&#34;&gt;/* clean up the EAL */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eal_cleanup&lt;/span&gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;注意其中采用了基于分支预测的`likely和unlikely相关函数，这是一个性能优化的小技巧。要求编译的时候使用-O2的选项，否则优化不起作用。简单来说会将可能执行的机器码放在前面，提高cpu执行效率。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;调用&lt;code&gt;rte_eal_init&lt;/code&gt;初始化运行环境&lt;/li&gt;
+&lt;li&gt;分配内存池&lt;code&gt;rte_pktmbuf_pool_create&lt;/code&gt;，此处调用了&lt;code&gt;rte_socket_id&lt;/code&gt;保证访问的内存是近端的&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;port_init&lt;/code&gt;初始化网口配置&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;lcore_main&lt;/code&gt;进行主处理流程&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_mempool &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_pktmbuf_pool_create&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;name, &lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; n,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; cache_size, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; priv_size, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; data_room_size,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; socket_id);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;内存池，这个mbuf pool主要是给网卡接收数据包提供mbuf的，当网卡通过DMA收到数据需要把数据包通过DMA传送到一块内存，正是这个mbuf pool中的内存。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;name：内存池名&lt;/li&gt;
+&lt;li&gt;n：mp里面obj的数量，在这里表示mbuf的数量，如果你的代码缓存mbuf比较多，这里就需要设置大一些，防止不够用&lt;/li&gt;
+&lt;li&gt;cache_size：mp里面cache的数量&lt;/li&gt;
+&lt;li&gt;priv_size：每一个mbuf私有数据空间的大小，不需要直接设置为0即可&lt;/li&gt;
+&lt;li&gt;data_room_size：mbuf的数据报文的大小，理论上需要加上room head的大小，建议使用默认值，默认2048+128 RTE_MBUF_DEFAULT_BUF_SIZE&lt;/li&gt;
+&lt;li&gt;socket_id：申请内存的socket，不清楚设置那个的直接使用rte_socket_id()即可&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eth_dev_configure&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; port_id, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; nb_rx_q, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; nb_tx_q,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		      &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_eth_conf &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;dev_conf);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;port_id：设备的port_id&lt;/li&gt;
+&lt;li&gt;nb_rx_q：收队列数&lt;/li&gt;
+&lt;li&gt;nb_tx_q：发送队列数&lt;/li&gt;
+&lt;li&gt;dev_conf：设备相关信息，如收发模式和速率等&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;配置网卡，包括网卡收包大小，网卡队列，端口和队列关联&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eth_rx_queue_setup&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; port_id, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; rx_queue_id,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		       &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; nb_rx_desc, &lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; socket_id,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		       &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_eth_rxconf &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;rx_conf,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		       &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_mempool &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;mp);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;port_id：设备的port_id&lt;/li&gt;
+&lt;li&gt;rx_queue_id：队列号，存在多个队列要每个都设置&lt;/li&gt;
+&lt;li&gt;nb_rx_desc：设置队列的接收描述符(desc)的个数，也决定这接收队列的大小&lt;/li&gt;
+&lt;li&gt;socket_id：numa架构下的socket id&lt;/li&gt;
+&lt;li&gt;rx_conf：接收配置文件，如释放和回写的阈值等，为NULL就采用默认配置文件。&lt;/li&gt;
+&lt;li&gt;rte_mempool：指向内存池的指针，从中分配网络内存缓冲区以填充接收环的每个描述符。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;发送和接收一致&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;inline&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eth_rx_burst&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; port_id, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; queue_id,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		 &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_mbuf &lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;rx_pkts, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; nb_pkts);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;inline&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;rte_eth_tx_burst&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; port_id, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; queue_id,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		 &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; rte_mbuf &lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;tx_pkts, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint16_t&lt;/span&gt; nb_pkts);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;port_id：设备的port_id&lt;/li&gt;
+&lt;li&gt;queue_id：队列号&lt;/li&gt;
+&lt;li&gt;rx_pkts：指针数组的地址，指向包的地址,必须大于nb_pkts&lt;/li&gt;
+&lt;li&gt;nb_pkts：取回的数据包最大个数。该值必须可分解为8的倍数，以便与任何驱动程序合作。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;l3fwd&#34;&gt;l3fwd&lt;/h3&gt;
+&lt;h1 id=&#34;cache和内存&#34;&gt;Cache和内存&lt;/h1&gt;
+&lt;h2 id=&#34;存储系统简介&#34;&gt;存储系统简介&lt;/h2&gt;
+&lt;p&gt;存储系统：磁盘、磁带、光盘存储器、内存和CPU内部的Cache。&lt;/p&gt;
+&lt;h3 id=&#34;系统架构演进&#34;&gt;系统架构演进&lt;/h3&gt;
+&lt;p&gt;早期的计算机，内存控制器还没有整合进 CPU，所有的内存访问都需要经过北桥芯片来完成。如下图所示，CPU 通过前端总线（FSB，Front Side Bus）连接到北桥芯片，然后北桥芯片连接到内存——内存控制器集成在北桥芯片里面。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://giddypoet.github.io/posts/img/cpu_fsb.jpg&#34;/&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这种架构下cpu无论访问内存，设备，同时处理器之间的交换都要通过北桥，北桥成为系统瓶颈&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;实际上现在架构中，CPU中涵盖了内存控制器，因此CPU和内存就是直连的。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CPU直连的设备通常有: PCIE、DRAM、QPI(numa架构下访问远端内存需要的，实际上QPI是FSB的一种替代方案，提供了更快的传输速率)&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;但是这种架构不同cpu逻辑核访问的都是同一块内存，因此称为UMA(一致性内存访问)，总线模型保证了所有内存访问的都是一致的，不必考虑不同内存地址之间的差距。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;在这种场景下，提升性能的方案就是，提升CPU频率，DRAM频率，和&amp;quot;FSB&amp;quot;(QPI)总线的传输速率。实际上CPU主频已经存在物理瓶颈，无法再通过提升主频提升效率，后面就是开始堆核，然后开始多CPU插槽&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;作者注：dpdk涉及的知识体系庞大，深入理解dpdk的原理目前欠缺的知识体系较多，基础不牢地动山摇，只能一点点去补基础知识：1、计算机组成原理 （）2、操作系统 3、计算机系统基础&lt;/p&gt;
+&lt;/blockquote&gt;
+</content>
+    </item>
+    
+  </channel>
+</rss>

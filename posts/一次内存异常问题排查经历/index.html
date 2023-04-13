@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>一次内存异常问题排查经历 :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="内存异常现象 在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。 排查思路 使用free -" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="一次内存异常问题排查经历">
+<meta property="og:description" content="内存异常现象 在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。 排查思路 使用free -" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-02-03 16:28:39 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/">一次内存异常问题排查经历</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-02-03 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 6 min read (2920 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/memory/">memory</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#内存异常现象">内存异常现象</a></li>
+    <li><a href="#排查思路">排查思路</a>
+      <ul>
+        <li><a href="#使用free--mh查看系统内存占用情况">使用<code>free -mh</code>查看系统内存占用情况</a></li>
+        <li><a href="#查看procsysmeminfo">查看<code>/proc/sys/meminfo</code></a></li>
+        <li><a href="#slabtop查看为什么slab占用大量内存">slabtop查看为什么slab占用大量内存</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <h2 id="内存异常现象">内存异常现象<a href="#内存异常现象" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>在客户现场运行的环境发现服务器内存持续性的增加，设备本身有64g的内存，最终服务器使用了将近80%的内存。</p>
+<h2 id="排查思路">排查思路<a href="#排查思路" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="使用free--mh查看系统内存占用情况">使用<code>free -mh</code>查看系统内存占用情况<a href="#使用free--mh查看系统内存占用情况" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>发现buff/cache占用大量的内存</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># 此示例只代表free -mh的结果和实际情况不符，只是记忆中大致数据，显示的就是buff/cache占用大量的内存</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>root@TAC ~<span style="color:#f92672">]</span><span style="color:#75715e"># free -mh</span>
+</span></span><span style="display:flex;"><span>              total        used        free      shared  buff/cache   available
+</span></span><span style="display:flex;"><span>Mem:            62G        6.8G         8G         80M        49G         8G
+</span></span><span style="display:flex;"><span>Swap:           31G          0B         31G
+</span></span></code></pre></div><p>大致介绍一下<code>free</code>命令输出的含义</p>
+<ul>
+<li>mem 内存使用情况
+<ul>
+<li>total 总共</li>
+<li>used 已用</li>
+<li>free 空闲</li>
+<li>shared 共享使用 tmpfs所用的内存</li>
+<li>buff/cache
+<ul>
+<li>buff 内核缓存区所用内存</li>
+<li>cache 页面缓存和slab使用的内存（kmalloc）</li>
+</ul>
+</li>
+<li>available 预估启动新进程可用内存，不包含交换空间</li>
+</ul>
+</li>
+<li>swap 交换空间使用情况
+<ul>
+<li>total</li>
+<li>used</li>
+<li>free</li>
+</ul>
+</li>
+</ul>
+<h4 id="swap">swap<a href="#swap" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>swap space 是磁盘上的一块区域，可以是一个分区，也可以是一个文件。所以具体的实现可以是 swap 分区也可以是 swap 文件。当系统物理内存吃紧时，Linux 会将内存中不常访问的数据保存到 swap 上，这样系统就有更多的物理内存为各个进程服务，而当系统需要访问 swap 上存储的内容时，再将 swap 上的数据加载到内存中，这就是常说的换出和换入。交换空间可以在一定程度上缓解内存不足的情况，但是它需要读写磁盘数据，所以性能不是很高。</p>
+<p>现在的机器一般都不太缺内存，如果系统默认还是使用了 swap 是不是会拖累系统的性能？理论上是的，但实际上可能性并不是很大。并且内核提供了一个叫做 swappiness 的参数，用于配置需要将内存中不常用的数据移到 swap 中去的紧迫程度。这个参数的取值范围是 0～100，0 告诉内核尽可能的不要将内存数据移到 swap 中，也即只有在迫不得已的情况下才这么做，而 100 告诉内核只要有可能，尽量的将内存中不常访问的数据移到 swap 中。</p>
+<p>内核参数位置<code>/proc/sys/vm/swappiness</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@TAC ~<span style="color:#f92672">]</span><span style="color:#75715e"># cat /proc/sys/vm/swappiness </span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">60</span>
+</span></span></code></pre></div><h4 id="shared">shared<a href="#shared" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>主要是只tmpfs系统所占用的内存，该文件系统是挂载到内存当中的</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># 如下tmpfs所占用的的空间，该空间在重启后数据将丢失，内存文件系统</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>root@TAC tmpfiles.d<span style="color:#f92672">]</span><span style="color:#75715e"># df -h</span>
+</span></span><span style="display:flex;"><span>Filesystem      Size  Used Avail Use% Mounted on
+</span></span><span style="display:flex;"><span>/dev/sda4       3.6T   84G  3.3T   3% /
+</span></span><span style="display:flex;"><span>devtmpfs         32G     <span style="color:#ae81ff">0</span>   32G   0% /dev
+</span></span><span style="display:flex;"><span>tmpfs            32G   28K   32G   1% /dev/shm
+</span></span><span style="display:flex;"><span>tmpfs            32G   58M   32G   1% /run
+</span></span><span style="display:flex;"><span>tmpfs            32G     <span style="color:#ae81ff">0</span>   32G   0% /sys/fs/cgroup
+</span></span><span style="display:flex;"><span>/dev/sda2       976M  145M  765M  16% /boot
+</span></span><span style="display:flex;"><span>tmpfs           6.3G     <span style="color:#ae81ff">0</span>  6.3G   0% /run/user/0
+</span></span></code></pre></div><p>内核会动态分配tmpfs的大小</p>
+<h4 id="buffcache">buff/cache<a href="#buffcache" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h4>
+<p>buffer和cache是两个在计算机技术中被用滥的名词，放在不通语境下会有不同的意义。在Linux的内存管理中，这里的buffer指Linux内存的：Buffer cache。这里的cache指Linux内存中的：Page cache。翻译成中文可以叫做缓冲区缓存和页面缓存。在历史上，它们一个（buffer）被用来当成对io设备写的缓存，而另一个（cache）被用来当作对io设备的读缓存，这里的io设备，主要指的是块设备文件和文件系统上的普通文件。但是现在，它们的意义已经不一样了。在当前的内核中，page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。当然，不是所有的内存都是以页（page）进行管理的，也有很多是针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（从这个角度出发，是不是buffer cache改名叫做block cache更好？）然而，也不是所有块（block）都有固定长度，系统上块的长度主要是根据所使用的块设备决定的，而页长度在X86上无论是32位还是64位都是4k。</p>
+<ul>
+<li>buff: block buff针对块（block）进行管理的，这部分内存使用如果要用到cache功能，则都集中到buffer cache中来使用。（不正确的理解，用来读）</li>
+<li>cache: page cache顾名思义就是针对内存页的缓存，说白了就是，如果有内存是以page进行分配管理的，都可以使用page cache作为其缓存来管理使用。（不正确的理解，用来写）</li>
+</ul>
+<h3 id="查看procsysmeminfo">查看<code>/proc/sys/meminfo</code><a href="#查看procsysmeminfo" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>发现buff/cache占用大量内存，则就应该跟进查看具体buff/cache哪个部分占用更为大量的内存
+根据meminfo发现大量slab占用内存，将近42个g</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@TAC tmpfiles.d<span style="color:#f92672">]</span><span style="color:#75715e"># cat /proc/meminfo </span>
+</span></span><span style="display:flex;"><span>MemTotal:       <span style="color:#ae81ff">65430552</span> kB
+</span></span><span style="display:flex;"><span>MemFree:        <span style="color:#ae81ff">56802616</span> kB
+</span></span><span style="display:flex;"><span>MemAvailable:   <span style="color:#ae81ff">57562116</span> kB
+</span></span><span style="display:flex;"><span>Buffers:          <span style="color:#ae81ff">259960</span> kB
+</span></span><span style="display:flex;"><span>Cached:           <span style="color:#ae81ff">978228</span> kB
+</span></span><span style="display:flex;"><span>SwapCached:            <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>Active:          <span style="color:#ae81ff">7181820</span> kB
+</span></span><span style="display:flex;"><span>Inactive:         <span style="color:#ae81ff">501588</span> kB
+</span></span><span style="display:flex;"><span>Active<span style="color:#f92672">(</span>anon<span style="color:#f92672">)</span>:    <span style="color:#ae81ff">6445436</span> kB
+</span></span><span style="display:flex;"><span>Inactive<span style="color:#f92672">(</span>anon<span style="color:#f92672">)</span>:    <span style="color:#ae81ff">98936</span> kB
+</span></span><span style="display:flex;"><span>Active<span style="color:#f92672">(</span>file<span style="color:#f92672">)</span>:     <span style="color:#ae81ff">736384</span> kB
+</span></span><span style="display:flex;"><span>Inactive<span style="color:#f92672">(</span>file<span style="color:#f92672">)</span>:   <span style="color:#ae81ff">402652</span> kB
+</span></span><span style="display:flex;"><span>Unevictable:           <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>Mlocked:               <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>SwapTotal:      <span style="color:#ae81ff">32834556</span> kB
+</span></span><span style="display:flex;"><span>SwapFree:       <span style="color:#ae81ff">32834556</span> kB
+</span></span><span style="display:flex;"><span>Dirty:               <span style="color:#ae81ff">288</span> kB
+</span></span><span style="display:flex;"><span>Writeback:             <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>AnonPages:       <span style="color:#ae81ff">6445280</span> kB
+</span></span><span style="display:flex;"><span>Mapped:           <span style="color:#ae81ff">220768</span> kB
+</span></span><span style="display:flex;"><span>Shmem:             <span style="color:#ae81ff">99160</span> kB
+</span></span><span style="display:flex;"><span>Slab:             <span style="color:#ae81ff">244800</span> kB
+</span></span><span style="display:flex;"><span>SReclaimable:     <span style="color:#ae81ff">143828</span> kB
+</span></span><span style="display:flex;"><span>SUnreclaim:       <span style="color:#ae81ff">100972</span> kB
+</span></span><span style="display:flex;"><span>KernelStack:       <span style="color:#ae81ff">23776</span> kB
+</span></span><span style="display:flex;"><span>PageTables:        <span style="color:#ae81ff">56356</span> kB
+</span></span><span style="display:flex;"><span>NFS_Unstable:          <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>Bounce:                <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>WritebackTmp:          <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>CommitLimit:    <span style="color:#ae81ff">65549832</span> kB
+</span></span><span style="display:flex;"><span>Committed_AS:   <span style="color:#ae81ff">47565480</span> kB
+</span></span><span style="display:flex;"><span>VmallocTotal:   <span style="color:#ae81ff">34359738367</span> kB
+</span></span><span style="display:flex;"><span>VmallocUsed:      <span style="color:#ae81ff">469040</span> kB
+</span></span><span style="display:flex;"><span>VmallocChunk:   <span style="color:#ae81ff">34358892540</span> kB
+</span></span><span style="display:flex;"><span>HardwareCorrupted:     <span style="color:#ae81ff">0</span> kB
+</span></span><span style="display:flex;"><span>AnonHugePages:   <span style="color:#ae81ff">5654528</span> kB
+</span></span><span style="display:flex;"><span>HugePages_Total:       <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>HugePages_Free:        <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>HugePages_Rsvd:        <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>HugePages_Surp:        <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>Hugepagesize:       <span style="color:#ae81ff">2048</span> kB
+</span></span><span style="display:flex;"><span>DirectMap4k:      <span style="color:#ae81ff">257584</span> kB
+</span></span><span style="display:flex;"><span>DirectMap2M:     <span style="color:#ae81ff">7776256</span> kB
+</span></span><span style="display:flex;"><span>DirectMap1G:    <span style="color:#ae81ff">60817408</span> kB
+</span></span></code></pre></div><ul>
+<li>MemTotal: 所有内存(RAM)大小,减去一些预留空间和内核的大小。</li>
+<li>MemFree: 完全没有用到的物理内存，lowFree+highFree</li>
+<li>MemAvailable: 在不使用交换空间的情况下，启动一个新的应用最大可用内存的大小，计算方式：MemFree+Active(file)+Inactive(file)-(watermark+min(watermark,Active(file)+Inactive(file)/2))</li>
+<li>Buffers: 块设备所占用的缓存页，包括：直接读写块设备以及文件系统元数据(metadata)，比如superblock使用的缓存页。</li>
+<li>Cached: 表示普通文件数据所占用的缓存页。</li>
+<li>SwapCached: swap cache中包含的是被确定要swapping换页，但是尚未写入物理交换区的匿名内存页。那些匿名内存页，比如用户进程malloc申请的内存页是没有关联任何文件的，如果发生swapping换页，这类内存会被写入到交换区。</li>
+<li>Active: active包含active anon和active file</li>
+<li>Inactive: inactive包含inactive anon和inactive file</li>
+<li>Active(anon): anonymous pages（匿名页），用户进程的内存页分为两种：与文件关联的内存页(比如程序文件,数据文件对应的内存页)和与内存无关的内存页（比如进程的堆栈，用malloc申请的内存），前者称为file pages或mapped pages,后者称为匿名页。</li>
+<li>Inactive(anon): 见上</li>
+<li>Active(file): 见上</li>
+<li>Inactive(file): 见上</li>
+<li>SwapTotal: 可用的swap空间的总的大小(swap分区在物理内存不够的情况下，把硬盘空间的一部分释放出来，以供当前程序使用)</li>
+<li>SwapFree: 当前剩余的swap的大小</li>
+<li>Dirty: 需要写入磁盘的内存去的大小</li>
+<li>Writeback: 正在被写回的内存区的大小</li>
+<li>AnonPages: 未映射页的内存的大小</li>
+<li>Mapped: 设备和文件等映射的大小</li>
+<li>Slab: 内核数据结构slab的大小</li>
+<li>SReclaimable: 可回收的slab的大小</li>
+<li>SUnreclaim: 不可回收的slab的大小</li>
+<li>PageTables: 管理内存页页面的大小</li>
+<li>NFS_Unstable: 不稳定页表的大小</li>
+<li>VmallocTotal: Vmalloc内存区的大小</li>
+<li>VmallocUsed: 已用Vmalloc内存区的大小</li>
+<li>VmallocChunk: vmalloc区可用的连续最大快的大小</li>
+</ul>
+<h3 id="slabtop查看为什么slab占用大量内存">slabtop查看为什么slab占用大量内存<a href="#slabtop查看为什么slab占用大量内存" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>根据slabtop现场发现，大量kmalloc-2048占用大量内存，大概率是由于内核新加的一个驱动程序异常导致内存被大量占用，卸载后恢复正常</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>root@TAC tmpfiles.d<span style="color:#f92672">]</span><span style="color:#75715e"># slabtop </span>
+</span></span><span style="display:flex;"><span>Active / Total Objects <span style="color:#f92672">(</span>% used<span style="color:#f92672">)</span>    : <span style="color:#ae81ff">972765</span> / <span style="color:#ae81ff">979478</span> <span style="color:#f92672">(</span>99.3%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Active / Total Slabs <span style="color:#f92672">(</span>% used<span style="color:#f92672">)</span>      : <span style="color:#ae81ff">21676</span> / <span style="color:#ae81ff">21676</span> <span style="color:#f92672">(</span>100.0%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Active / Total Caches <span style="color:#f92672">(</span>% used<span style="color:#f92672">)</span>     : <span style="color:#ae81ff">77</span> / <span style="color:#ae81ff">110</span> <span style="color:#f92672">(</span>70.0%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Active / Total Size <span style="color:#f92672">(</span>% used<span style="color:#f92672">)</span>       : 238632.48K / 242106.66K <span style="color:#f92672">(</span>98.6%<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Minimum / Average / Maximum Object : 0.01K / 0.25K / 12.62K
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">224532</span> <span style="color:#ae81ff">224197</span>  99%    0.19K   5346	 <span style="color:#ae81ff">42</span>     42768K dentry
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">159393</span> <span style="color:#ae81ff">159393</span> 100%    0.10K   4087	 <span style="color:#ae81ff">39</span>     16348K buffer_head
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">65052</span>  <span style="color:#ae81ff">65052</span> 100%    0.11K   1807	 36	 7228K kernfs_node_cache
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">58432</span>  <span style="color:#ae81ff">56763</span>  97%    0.06K    913	 64	 3652K kmalloc-64
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">51119</span>  <span style="color:#ae81ff">51119</span> 100%    1.01K   1649	 <span style="color:#ae81ff">31</span>     52768K ext4_inode_cache
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">42587</span>  <span style="color:#ae81ff">42587</span> 100%    0.21K   1151	 37	 9208K vm_area_struct
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">32946</span>  <span style="color:#ae81ff">32946</span> 100%    0.04K    323	102	 1292K ext4_extent_status
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">32538</span>  <span style="color:#ae81ff">32538</span> 100%    0.04K    319	102	 1276K selinux_inode_security
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">29580</span>  <span style="color:#ae81ff">29580</span> 100%    0.13K    493	 60	 3944K ext4_groupinfo_4k
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">26880</span>  <span style="color:#ae81ff">26880</span> 100%    0.19K    640	 42	 5120K kmalloc-192
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">24320</span>  <span style="color:#ae81ff">23098</span>  94%    0.25K    380	 64	 6080K kmalloc-256
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">23856</span>  <span style="color:#ae81ff">23856</span> 100%    0.07K    426	 56	 1704K Acpi-ParseExt
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">21930</span>  <span style="color:#ae81ff">21291</span>  97%    0.08K    430	 51	 1720K anon_vma
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">21824</span>  <span style="color:#ae81ff">21824</span> 100%    0.50K    341	 <span style="color:#ae81ff">64</span>     10912K kmalloc-512
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">17920</span>  <span style="color:#ae81ff">17920</span> 100%    0.01K     35	512	  140K kmalloc-8
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">16640</span>  <span style="color:#ae81ff">16640</span> 100%    0.02K     65	256	  260K kmalloc-16
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">14847</span>  <span style="color:#ae81ff">14528</span>  97%    0.64K    303	 49	 9696K proc_inode_cache
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">13200</span>  <span style="color:#ae81ff">11762</span>  89%    0.58K    240	 55	 7680K inode_cache
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">9912</span>   <span style="color:#ae81ff">9912</span> 100%    0.57K    177	 56	 5664K radix_tree_node
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">9088</span>   <span style="color:#ae81ff">9088</span> 100%    0.03K     71	128	  284K kmalloc-32
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">8896</span>   <span style="color:#ae81ff">8708</span>  97%    1.00K    278	 32	 8896K kmalloc-1024
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">7308</span>   <span style="color:#ae81ff">7308</span> 100%    0.09K    174	 42	  696K kmalloc-96
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">5952</span>   <span style="color:#ae81ff">5952</span> 100%    0.12K     93	 64	  744K kmalloc-128
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4672</span>   <span style="color:#ae81ff">4672</span> 100%    0.06K     73	 64	  292K ext4_free_data
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4590</span>   <span style="color:#ae81ff">4590</span> 100%    0.05K     54	 85	  216K shared_policy_node
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">3468</span>   <span style="color:#ae81ff">3468</span> 100%    0.62K     68	 51	 2176K sock_inode_cache
+</span></span></code></pre></div>
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/linux%E7%BD%91%E5%8D%A1%E8%81%9A%E5%90%88%E5%8F%8Abond%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86/">
+                <span class="button__icon">←</span>
+                <span class="button__text">linux网卡聚合及bond模式原理</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/dpdk%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/">
+                <span class="button__text">dpdk安装部署</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

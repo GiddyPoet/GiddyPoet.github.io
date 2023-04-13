@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>raw_socket :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="RAW_SOCKET 我们常用的套接字类型主要就是： TCP UDP 原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力： 读写ICMPv4、IGMP" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/raw-socket/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="raw_socket">
+<meta property="og:description" content="RAW_SOCKET 我们常用的套接字类型主要就是： TCP UDP 原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力： 读写ICMPv4、IGMP" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/raw-socket/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="os" />
+
+
+  <meta property="article:published_time" content="2022-07-08 14:58:53 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/raw-socket/">raw_socket</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-07-08 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 2 min read (988 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#原始套接字创建">原始套接字创建</a></li>
+    <li><a href="#原始套接字输出">原始套接字输出</a></li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <h1 id="raw_socket">RAW_SOCKET<a href="#raw_socket" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>我们常用的套接字类型主要就是：</p>
+<ul>
+<li>TCP</li>
+<li>UDP
+原始套接字区别于上述的套接字，提供了普通TCP和UDP套接字不具备的3个能力：</li>
+<li>读写ICMPv4、IGMPv4和IGMPv6等分组</li>
+<li>有了原始套接字，进程可以读取内核不处理的IP type类型</li>
+<li>有了原始套接字，进程可以使用<code>IP_HDRINCL</code>套接字选项构造TCP或UDP分组</li>
+</ul>
+<h2 id="原始套接字创建">原始套接字创建<a href="#原始套接字创建" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>原始套接字协议类型：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">// netinet/in.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">enum</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    IPPROTO_IP <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>,	   <span style="color:#75715e">/* Dummy protocol for TCP.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_IP		IPPROTO_IP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_ICMP <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>,	   <span style="color:#75715e">/* Internet Control Message Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_ICMP		IPPROTO_ICMP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_IGMP <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>,	   <span style="color:#75715e">/* Internet Group Management Protocol. */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_IGMP		IPPROTO_IGMP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_IPIP <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>,	   <span style="color:#75715e">/* IPIP tunnels (older KA9Q tunnels use 94).  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_IPIP		IPPROTO_IPIP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_TCP <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>,	   <span style="color:#75715e">/* Transmission Control Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_TCP		IPPROTO_TCP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_EGP <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>,	   <span style="color:#75715e">/* Exterior Gateway Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_EGP		IPPROTO_EGP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_PUP <span style="color:#f92672">=</span> <span style="color:#ae81ff">12</span>,	   <span style="color:#75715e">/* PUP protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_PUP		IPPROTO_PUP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_UDP <span style="color:#f92672">=</span> <span style="color:#ae81ff">17</span>,	   <span style="color:#75715e">/* User Datagram Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_UDP		IPPROTO_UDP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_IDP <span style="color:#f92672">=</span> <span style="color:#ae81ff">22</span>,	   <span style="color:#75715e">/* XNS IDP protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_IDP		IPPROTO_IDP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_TP <span style="color:#f92672">=</span> <span style="color:#ae81ff">29</span>,	   <span style="color:#75715e">/* SO Transport Protocol Class 4.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_TP		IPPROTO_TP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_DCCP <span style="color:#f92672">=</span> <span style="color:#ae81ff">33</span>,	   <span style="color:#75715e">/* Datagram Congestion Control Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_DCCP		IPPROTO_DCCP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_IPV6 <span style="color:#f92672">=</span> <span style="color:#ae81ff">41</span>,     <span style="color:#75715e">/* IPv6 header.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_IPV6		IPPROTO_IPV6
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_RSVP <span style="color:#f92672">=</span> <span style="color:#ae81ff">46</span>,	   <span style="color:#75715e">/* Reservation Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_RSVP		IPPROTO_RSVP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_GRE <span style="color:#f92672">=</span> <span style="color:#ae81ff">47</span>,	   <span style="color:#75715e">/* General Routing Encapsulation.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_GRE		IPPROTO_GRE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_ESP <span style="color:#f92672">=</span> <span style="color:#ae81ff">50</span>,      <span style="color:#75715e">/* encapsulating security payload.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_ESP		IPPROTO_ESP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_AH <span style="color:#f92672">=</span> <span style="color:#ae81ff">51</span>,       <span style="color:#75715e">/* authentication header.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_AH		IPPROTO_AH
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_MTP <span style="color:#f92672">=</span> <span style="color:#ae81ff">92</span>,	   <span style="color:#75715e">/* Multicast Transport Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_MTP		IPPROTO_MTP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_BEETPH <span style="color:#f92672">=</span> <span style="color:#ae81ff">94</span>,   <span style="color:#75715e">/* IP option pseudo header for BEET.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_BEETPH		IPPROTO_BEETPH
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_ENCAP <span style="color:#f92672">=</span> <span style="color:#ae81ff">98</span>,	   <span style="color:#75715e">/* Encapsulation Header.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_ENCAP		IPPROTO_ENCAP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_PIM <span style="color:#f92672">=</span> <span style="color:#ae81ff">103</span>,	   <span style="color:#75715e">/* Protocol Independent Multicast.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_PIM		IPPROTO_PIM
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_COMP <span style="color:#f92672">=</span> <span style="color:#ae81ff">108</span>,	   <span style="color:#75715e">/* Compression Header Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_COMP		IPPROTO_COMP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_SCTP <span style="color:#f92672">=</span> <span style="color:#ae81ff">132</span>,	   <span style="color:#75715e">/* Stream Control Transmission Protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_SCTP		IPPROTO_SCTP
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_UDPLITE <span style="color:#f92672">=</span> <span style="color:#ae81ff">136</span>, <span style="color:#75715e">/* UDP-Lite protocol.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_UDPLITE		IPPROTO_UDPLITE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_MPLS <span style="color:#f92672">=</span> <span style="color:#ae81ff">137</span>,    <span style="color:#75715e">/* MPLS in IP.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_MPLS           IPPROTO_MPLS
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_RAW <span style="color:#f92672">=</span> <span style="color:#ae81ff">255</span>,	   <span style="color:#75715e">/* Raw IP packets.  */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define IPPROTO_RAW		IPPROTO_RAW
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    IPPROTO_MAX
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><blockquote>
+<p>实际上头文件包含了该协议类型，但是内核协议栈不一定支持该协议类型</p>
+</blockquote>
+<p>创建<code>RAW SOCKET</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;netinet/in.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/socket.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> fd;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// protocol 根据协议指定
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    fd <span style="color:#f92672">=</span> <span style="color:#a6e22e">socket</span>(AF_INET, SOCK_RAW, protocol);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> on <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 如果设置了IP_HDRINCL，则由程序构造IP包头，否则内核根据路由决定源IP是
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">setsockopt</span>(fd, IPPROTO_IP, IP_HDRINCL, <span style="color:#f92672">&amp;</span>on, <span style="color:#66d9ef">sizeof</span>(on)) <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// error handler 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 在不设置IP_HDRINCL时，根据bind选择源IP，否则失效
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// struct sockaddr_in addr;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// memset(&amp;addr, 0, sizeof(addr));
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// addr.sin_family = AF_INET;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// addr.sin_port = htons(80);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// addr.sin_addr.s_addr = inet_addr(&#34;1.1.1.1&#34;);
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// bind(fd, (struct sockaddr *) &amp;addr, sizeof(addr));
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr));
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><blockquote>
+<p>bind实际上就是绑定源端口，在IP_HDRINCL设置的情况下，应该使用iphdr设置源地址，由于RAW_SOCKET不存在端口的概念，因此设置端口本身是无效的。
+connect用于设置外部地址，同样目的端口无效，调用之后可以用write或者send调用，指定目的地址，如果没有调用connect也可以直接使用sendto指定目的地址。</p>
+</blockquote>
+<h2 id="原始套接字输出">原始套接字输出<a href="#原始套接字输出" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>输出调用：</p>
+<ul>
+<li>sendto, sendmsg: 指定目的IP地址完成</li>
+<li>write，writev，send：通过connect之后可以发送</li>
+</ul>
+<p>是否开启IP_HDRINCL：</p>
+<ul>
+<li>未开启：内核填充IP包头</li>
+<li>开启：输出函数缓冲区必须包含IP首部</li>
+</ul>
+<blockquote>
+<p>对于自己构造的IP包，可以将标识字段置0，让内核控制该选项，即便是自定义IP头，首部校验和也是有内核计算存储，同时ipv4选项字段是可选字段。</p>
+</blockquote>
+<p><img src="/posts/img/iphdr.jpg"/></p>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/wireguard/">
+                <span class="button__icon">←</span>
+                <span class="button__text">wireguard</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/ip-range/">
+                <span class="button__text">ip_range</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

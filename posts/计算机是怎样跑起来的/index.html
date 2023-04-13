@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>计算机是怎样跑起来的 :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="&amp;laquo;计算机是怎么跑起来的&amp;raquo; 读书笔记 计算机三大原则 计算机的三个根本性基础 计算机是执行输入、运算、输出的机器 程序是指令和数" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="计算机是怎样跑起来的">
+<meta property="og:description" content="&amp;laquo;计算机是怎么跑起来的&amp;raquo; 读书笔记 计算机三大原则 计算机的三个根本性基础 计算机是执行输入、运算、输出的机器 程序是指令和数" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="computer" />
+
+
+  <meta property="article:published_time" content="2022-04-12 20:20:48 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/">计算机是怎样跑起来的</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-04-12 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 3 min read (1216 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/computer/">computer</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#计算机的三个根本性基础">计算机的三个根本性基础</a></li>
+    <li><a href="#输入运算输出是硬件的基础">输入、运算、输出是硬件的基础</a></li>
+    <li><a href="#软件是指令和数据的集合">软件是指令和数据的集合</a></li>
+    <li><a href="#对计算机来说什么都是数字">对计算机来说什么都是数字</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#制作微型计算机所必需的元件">制作微型计算机所必需的元件</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#程序的流程分为三种">程序的流程分为三种</a></li>
+    <li><a href="#特殊的程序流程--中断处理">特殊的程序流程&ndash;中断处理</a></li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <blockquote>
+<p>&laquo;计算机是怎么跑起来的&raquo; 读书笔记</p>
+</blockquote>
+<h1 id="计算机三大原则">计算机三大原则<a href="#计算机三大原则" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="计算机的三个根本性基础">计算机的三个根本性基础<a href="#计算机的三个根本性基础" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<ol>
+<li>计算机是执行输入、运算、输出的机器</li>
+<li>程序是指令和数据的集合</li>
+<li>计算机的处理方式与人们的思维习惯不同</li>
+</ol>
+<h2 id="输入运算输出是硬件的基础">输入、运算、输出是硬件的基础<a href="#输入运算输出是硬件的基础" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>计算机是执行输入、运算、输出三种操作的机器。IC电路引脚也是围绕这个点进行设计的。</p>
+<h2 id="软件是指令和数据的集合">软件是指令和数据的集合<a href="#软件是指令和数据的集合" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>objdump xxx
+</span></span></code></pre></div><h2 id="对计算机来说什么都是数字">对计算机来说什么都是数字<a href="#对计算机来说什么都是数字" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<blockquote>
+<p>这一章围绕作者提出的计算机的三个根本性基础，举例阐述佐证了作者的观点。</p>
+</blockquote>
+<h1 id="试着制造一台计算机吧">试着制造一台计算机吧<a href="#试着制造一台计算机吧" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="制作微型计算机所必需的元件">制作微型计算机所必需的元件<a href="#制作微型计算机所必需的元件" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>基础元件：</p>
+<ol>
+<li>cpu：解释、执行程序（文中采用的是Z80 CPU）</li>
+<li>内存：存储程序和数据（文中采用的是TC5517）</li>
+<li>I/O：连接外部设备（文中采用的是Z80 PIO）</li>
+</ol>
+<p>为了驱动CPU运转，时钟信号必不可少，通过高低电平切换，驱动CPU操作。简单来说时钟信号用于同步操作。</p>
+<blockquote>
+<p>下述其实是D触发器，当CLK为高电平的时候，当clk是1的时候，D的值就会被写进去，然后clk=0的时候，Q就会一直是之前那个D，clk是0的时候，D的值再变，Q也不会变。为什么需要clk呢，因为你的设计里面，这个寄存器在等上一个寄存器的数据，你不知道上一个寄存器的数据存好了没，是新的还是旧的，你要写进去的数据写好了没。如果每个寄存器都用不同的clk，这样设计很容易不同步async，就是我想同时写几个register，但是这个register已经写完了，那个我不知道他存好了没，全局的clk能帮助解决很多这类问题。这个clk很大程度上左右了设计里面很多东西的读写速度。</p>
+</blockquote>
+<blockquote>
+<p>当然，实际上的设计一般clk还会AND 一个叫enable的输入，那么当enable是0的时候，clk那边就一直是0，你要写进去这个flipflop，就需要enable=1，clk=1，这时候D就被存进去了。</p>
+</blockquote>
+<p><img src="/posts/img/register.png"/></p>
+<p>输入程序的装置也是必不可少的，通过拨动指拨开关来输入程序，8个开关作为输入元件，输出元件是8个LED。</p>
+<p>同时还有DMA，将输入输出直接写入内存当中。</p>
+<blockquote>
+<p>此章节主要介绍了计算机的组成，设计到一些嵌入式单片机的知识，未做详细的描述，将其略过。</p>
+</blockquote>
+<h1 id="体验一次手工汇编">体验一次手工汇编<a href="#体验一次手工汇编" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<p>实际上通过上述计算机输入的二进制序列，实现汇编指令，驱动CPU实现指令。</p>
+<blockquote>
+<p>这里不再赘述</p>
+</blockquote>
+<h1 id="程序像河水一样流动着">程序像河水一样流动着<a href="#程序像河水一样流动着" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="程序的流程分为三种">程序的流程分为三种<a href="#程序的流程分为三种" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>计算机的硬件系统由CPU、I/O和内存三部分构成。内存中存储这程序，也就是指令和数据。CPU配合着时钟发生器的时钟信号，从内存中读出指令，然后再依次对其进行解释和执行。</p>
+<p>CPU中有各种各样的各司其职的寄存器。其中有一个被称为PC（Program Counter，程序计数器）的寄存器，负责存储内存地址，该地址指向下一条即将执行的指令，每解释执行完一条指令，PC寄存器的值就会自动被更新为下一条指令的地址。</p>
+<p><img src="/posts/img/pc_register.jpg"/></p>
+<p>实际上程序的流程总共有三种，由PC控制器控制：</p>
+<ol>
+<li>顺序执行</li>
+<li>条件分支</li>
+<li>循环</li>
+</ol>
+<h2 id="特殊的程序流程--中断处理">特殊的程序流程&ndash;中断处理<a href="#特殊的程序流程--中断处理" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>处理中断</p>
+<hr>
+<blockquote>
+<p>该书后续的介绍都较为浅显，偏入门的知识介绍，暂时不在阅读</p>
+</blockquote>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AF%BC%E8%AE%BA/">
+                <span class="button__icon">←</span>
+                <span class="button__text">操作系统导论</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/">
+                <span class="button__text">dpdk深入浅出</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

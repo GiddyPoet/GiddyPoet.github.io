@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>dpdk深入浅出 :: GiddyPoet&#39;s Blog</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="第一章 认识DPDK 主流包处理硬件平台 简单介绍了当前从互联网面临的挑战：从计算密集型设备转换为IO密集型设备，同时介绍了当前主流包处理的硬件平" />
+<meta name="keywords" content="" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://giddypoet.github.io/styles.css">
+
+
+
+
+
+
+
+  <link rel="shortcut icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+  <link rel="apple-touch-icon" href="https://giddypoet.github.io/img/theme-colors/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="dpdk深入浅出">
+<meta property="og:description" content="第一章 认识DPDK 主流包处理硬件平台 简单介绍了当前从互联网面临的挑战：从计算密集型设备转换为IO密集型设备，同时介绍了当前主流包处理的硬件平" />
+<meta property="og:url" content="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/" />
+<meta property="og:site_name" content="GiddyPoet&#39;s Blog" />
+
+  
+    <meta property="og:image" content="https://giddypoet.github.io/img/favicon/blue.png">
+  
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+  <meta property="article:section" content="dpdk" />
+
+
+  <meta property="article:published_time" content="2022-04-10 14:14:33 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    GiddyPoet&#39;s Blog
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="/categories">Categories</a></li>
+        
+      
+        
+          <li><a href="/showcase">Tags</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+        <li>
+          <ul class="menu">
+            <li class="menu__trigger">Show more&nbsp;▾</li>
+            <li>
+              <ul class="menu__dropdown">
+                
+                  
+                    <li><a href="/categories">Categories</a></li>
+                  
+                
+                  
+                    <li><a href="/showcase">Tags</a></li>
+                  
+                
+              </ul>
+            </li>
+          </ul>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="https://giddypoet.github.io/posts/dpdk%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/">dpdk深入浅出</a>
+  </h1>
+  <div class="post-meta">
+    
+      <time class="post-date">
+        2022-04-10 ::
+        
+      </time>
+    
+    
+    
+      <span class="post-reading-time">:: 9 min read (4455 words)</span>
+    
+  </div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="https://giddypoet.github.io/tags/network/">network</a>&nbsp;
+      
+    </span>
+  
+  
+
+
+  
+    <div class="table-of-contents">
+      <h2>
+        Table of Contents
+      </h2>
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#主流包处理硬件平台">主流包处理硬件平台</a>
+      <ul>
+        <li><a href="#硬件加速器">硬件加速器</a></li>
+        <li><a href="#网络处理器">网络处理器</a></li>
+        <li><a href="#多核处理器">多核处理器</a></li>
+      </ul>
+    </li>
+    <li><a href="#初识dpdk">初识DPDK</a>
+      <ul>
+        <li><a href="#iaintel-architecture不适合进行数据包处理吗">IA(intel architecture)不适合进行数据包处理吗</a></li>
+        <li><a href="#dpdk框架简介">DPDK框架简介</a></li>
+      </ul>
+    </li>
+    <li><a href="#解读数据包处理能力">解读数据包处理能力</a></li>
+    <li><a href="#探索ia处理器上最艰巨的任务">探索IA处理器上最艰巨的任务</a></li>
+    <li><a href="#软件包处理的潜力">软件包处理的潜力</a></li>
+    <li><a href="#实例">实例</a>
+      <ul>
+        <li><a href="#helloworld">helloworld</a></li>
+        <li><a href="#skeleton">Skeleton</a></li>
+        <li><a href="#l3fwd">l3fwd</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#存储系统简介">存储系统简介</a>
+      <ul>
+        <li><a href="#系统架构演进">系统架构演进</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  
+
+  <div class="post-content"><div>
+        <h1 id="第一章-认识dpdk">第一章 认识DPDK<a href="#第一章-认识dpdk" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="主流包处理硬件平台">主流包处理硬件平台<a href="#主流包处理硬件平台" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>简单介绍了当前从互联网面临的挑战：<code>从计算密集型设备转换为IO密集型设备</code>，同时介绍了当前主流包处理的硬件平台，并对其在不同领域的优缺点做了阐述：</p>
+<ol>
+<li>硬件加速器：适用于功能固化，功能具有高性能低成本的特点</li>
+<li>网络处理器：提供了包处理逻辑软件可编程的能力，在获得灵活性的同事兼顾了高性能的硬件包处理</li>
+<li>多核处理器：更为复杂多变的高层包处理上拥有优势</li>
+</ol>
+<h3 id="硬件加速器">硬件加速器<a href="#硬件加速器" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>ASIC和FPGA。</p>
+<blockquote>
+<p>涉及集成电路和嵌入式设备，这里不再赘述。</p>
+</blockquote>
+<h3 id="网络处理器">网络处理器<a href="#网络处理器" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>网络处理器(Network  Processer  Unit，NPU)是专门为处理数据包而设计的可编程通用处理器，采用多内核并行处理结构，其常被应用于通信领域的各种任务，比如包处理、协议分析、路由查找、声音/数据
+的汇聚、防火墙、QoS等。</p>
+<h3 id="多核处理器">多核处理器<a href="#多核处理器" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>由当前CPU性能的扩展方式引入了SOC，同时简单介绍了当前主流厂商的多核处理器的SOC平台。</p>
+<h2 id="初识dpdk">初识DPDK<a href="#初识dpdk" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<h3 id="iaintel-architecture不适合进行数据包处理吗">IA(intel architecture)不适合进行数据包处理吗<a href="#iaintel-architecture不适合进行数据包处理吗" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>传统linux包处理流程:</p>
+<ol>
+<li>数据包到达网卡</li>
+<li>网卡设备依据配置进行DMA操作，简单来说就是将网卡中的数据直接拷贝到内存中，避免cpu浪费大量的时间片用于数据拷贝。（其实总线上有一个总的DMA控制器用于做DMA操作，不仅网卡，同时硬盘等其他IO设备都要使用DMA控制器）</li>
+<li>网卡发送中断，通知CPU。（此处还涉及多队列网卡，网卡不同的队列中断号不一样）</li>
+<li>驱动软件填充读写缓冲区数据结构。</li>
+<li>数据报文到达内核协议栈，进行高层处理。</li>
+<li>如果最终应用在用户态，数据将从内核拷贝至用户态。（涉及零拷贝知识，mmap，sendfile等）</li>
+<li>如果最终应用在内核态，在内核继续进行。</li>
+</ol>
+<p>影响收包性能的主要因素：</p>
+<ol>
+<li>cpu中断，频繁的上下文切换，导致性能低下</li>
+<li>数据拷贝，从网卡拷贝到内核，从内核拷贝到用户态</li>
+<li>操作系统调度线程切换，导致cache替换，线程在不同核之间频繁切换，核减线程导致cache miss和cache write back造成大量的性能损失。</li>
+<li>内存页表查询，大量的IO操作会剧烈的增加内存的查找，导致性能下降。</li>
+</ol>
+<blockquote>
+<p>上述流程会引发一个问题，即便通过DMA的形式，在IO密集型的设备上，依然会因为触发大量的中断引起大量的开销，导致系统无法承受，因此引入了NAPI机制，其策略是设定中断阈值，当网卡上的中断未超过阈值，则采用中断模式，如果中断超过阈值，则系统被中断唤醒后，尽量使用轮询的方式一次性处理多个数据包，直到网络再次空闲重新传入中断等待。</p>
+</blockquote>
+<blockquote>
+<p>其实，在上述过程中，发现除了网卡频繁触发中断，影响包处理性能，同时在内核态和用户态之间频繁发生数据拷贝也会大大的影响包处理性能。</p>
+</blockquote>
+<blockquote>
+<p>netmap内存映射网卡的<code>packet buffer</code>到用户态，实现了自己的收发报文的<code>circular ring</code>来对应网卡的<code>ring</code>。越过内核态。</p>
+</blockquote>
+<blockquote>
+<p>cpu亲和性，通过CPU亲和性，将线程绑定到cpu单个核上执行，cache miss和cache write back问题。</p>
+</blockquote>
+<p>DPDK通过以下技术解决了上述问题：</p>
+<ol>
+<li>轮询替换中断，避免中断上下文切换的开销</li>
+<li>用户态驱动，在这种工作方式中，规避了不必要的内存拷贝，又避免了系统调用。</li>
+<li>亲和性与独占，dpdk工作在用户态，利用线程的CPU亲和绑定的方式，特定任务值在某个核上工作。好处是可避免线程在不同核间频繁切换，核间线程切换容易导致因cache miss和cache write back造成的大量性能损失。</li>
+<li>降低内存开销，通过大页内存降低TLB miss，利用内存多通道的交错访问能够有效提高内存访问的有效带宽。</li>
+</ol>
+<h3 id="dpdk框架简介">DPDK框架简介<a href="#dpdk框架简介" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p><img src="/posts/img/dpdk_arch.png"/></p>
+<ul>
+<li>核心库<code>Core Libs</code>：提供系统抽象、大页内存、缓存池、定时器及无锁环等基础组件</li>
+<li>PMD库：提供全用户态的驱动，以便通过轮询和线程绑定得到极高的网络吞吐，支持各种本地和虚拟网卡</li>
+<li>Classify库：支持精确匹配(Exact Match)、最长匹配(LPM)和通配符匹配(ACL)，提供常用的包处理的查表操作</li>
+<li>Qos库：提供网络服务质量相关组件，如限速(Meter)和调度(Sched)</li>
+</ul>
+<blockquote>
+<p>上述是DPDK主要的库，其实还提供了一些对于运行频率调整(Power)，与<code>Linux Kernel Stack</code>建立快速通道的(KNI Kernel Network Interface)。而<code>Packet FrameWrok</code>和<code>DISTRIB</code>是为了搭建更为复杂的多核流水线处理模型提供了基础组件。</p>
+</blockquote>
+<h2 id="解读数据包处理能力">解读数据包处理能力<a href="#解读数据包处理能力" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>实际上以太网帧数据最小是64个字节，其中包括46个字节的数据部分，2个字节的协议类型，12个字节的目的mac地址和源mac地址，以及4个字节的校验和。每个以太网帧默认帧间距为12个字节，同时每个帧还有7个字节的前导，和一个自己的帧首定界，因此一个最小以太网帧为<code>46+2+12+4+12+7+1=84</code>个字节，672个bit。</p>
+<p>因此10Gbit/s的网卡最大理论帧转发率为<code>10*1000/640=14.88Mpps</code>，14.88兆个包每秒。</p>
+<h2 id="探索ia处理器上最艰巨的任务">探索IA处理器上最艰巨的任务<a href="#探索ia处理器上最艰巨的任务" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>DPDK通过一系列软件优化方法（大页利用，cache对齐，线程绑定，NUMA感知，内存通道交叉访问，无锁化数据结构，预取，SIMD指令利用等）利用IA平台硬件特性，提供完整的底层开发支持库。使得单核三层转发可以轻松地突破小包30Mpps，随着CPU封装的核数越来越多，支持的PCIe通道数越来越多，整系统的三层转发吞吐在2路CPU的Xeon E5-2658v3上可以达到300Mpps。</p>
+<h2 id="软件包处理的潜力">软件包处理的潜力<a href="#软件包处理的潜力" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>主要介绍了DPDK的使用场景：</p>
+<ol>
+<li>加速网络节点，支持虚拟化部署</li>
+<li>加速计算节点</li>
+<li>加速存储节点</li>
+</ol>
+<blockquote>
+<p>后续还介绍了一堆DPDK适用的场景，一大堆就不在此赘述了</p>
+</blockquote>
+<h2 id="实例">实例<a href="#实例" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<ol>
+<li>helloworld</li>
+<li>skeleton</li>
+<li>l3fwd</li>
+</ol>
+<h3 id="helloworld">helloworld<a href="#helloworld" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<blockquote>
+<p>ret = runtime enviroment
+eal = enviroment abstraction layer
+DPDK区分了主线程和从线程</p>
+</blockquote>
+<p>对调用函数进行简单的介绍</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">rte_eal_init</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>argv);
+</span></span></code></pre></div><p>该函数主要是对DPDK基础运行环境进行设置，具体内容如下：</p>
+<ol>
+<li>配置初始化</li>
+<li>内存初始化</li>
+<li>内存池初始化</li>
+<li>队列初始化</li>
+<li>告警初始化</li>
+<li>中断初始化</li>
+<li>PCI初始化</li>
+<li>定时器初始化</li>
+<li>检测内存本地化(NUMA)</li>
+<li>插件初始化</li>
+<li>主线程初始化</li>
+<li>轮询设备初始化</li>
+<li>建立主从线程通道(通过管道)</li>
+<li>将从线程设置在等待模式(<code>_mm_pause()</code>等待主线程分发任务)</li>
+<li>PCI设备的探测和初始化</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#define RTE_LCORE_FOREACH_SLAVE(i)					\
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">	for (i = rte_get_next_lcore(-1, 1, 0);				\
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">	     i&lt;RTE_MAX_LCORE;						\
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">	     i = rte_get_next_lcore(i, 1, 0))
+</span></span></span></code></pre></div><p>遍历从线程，即逻辑线程。（逻辑核就是cpu当前的核数）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">rte_eal_remote_launch</span>(<span style="color:#66d9ef">lcore_function_t</span> <span style="color:#f92672">*</span>f, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>arg, <span style="color:#66d9ef">unsigned</span> slave_id);
+</span></span></code></pre></div><p>主线程通过管道向从线程分发任务，将f作为函数指针传递给从线程，arg作为执行参数，在slave_id的逻辑线程上执行该函数。</p>
+<blockquote>
+<p>通过<code>lcore_config[RTE_MAX_LCORE]</code>数组和逻辑线程id确定管段，通过管道启动任务。</p>
+</blockquote>
+<p>后续任务就是简单的执行相关函数。</p>
+<h3 id="skeleton">Skeleton<a href="#skeleton" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>这个示例简单说就是一个单核的转发程序，设计初衷是实现一个最简单的报文转发程序，对报文不做任何改动。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">struct</span> rte_mempool <span style="color:#f92672">*</span>mbuf_pool;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">unsigned</span> nb_ports;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">uint16_t</span> portid;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* Initialize the Environment Abstraction Layer (EAL). */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#a6e22e">rte_eal_init</span>(argc, argv);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (ret <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">rte_exit</span>(EXIT_FAILURE, <span style="color:#e6db74">&#34;Error with EAL initialization</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	argc <span style="color:#f92672">-=</span> ret;
+</span></span><span style="display:flex;"><span>	argv <span style="color:#f92672">+=</span> ret;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* Check that there is an even number of ports to send/receive on. */</span>
+</span></span><span style="display:flex;"><span>	nb_ports <span style="color:#f92672">=</span> <span style="color:#a6e22e">rte_eth_dev_count_avail</span>();
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (nb_ports <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">||</span> (nb_ports <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">1</span>))
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">rte_exit</span>(EXIT_FAILURE, <span style="color:#e6db74">&#34;Error: number of ports must be even</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* Creates a new mempool in memory to hold the mbufs. */</span>
+</span></span><span style="display:flex;"><span>	mbuf_pool <span style="color:#f92672">=</span> <span style="color:#a6e22e">rte_pktmbuf_pool_create</span>(<span style="color:#e6db74">&#34;MBUF_POOL&#34;</span>, NUM_MBUFS <span style="color:#f92672">*</span> nb_ports,
+</span></span><span style="display:flex;"><span>		MBUF_CACHE_SIZE, <span style="color:#ae81ff">0</span>, RTE_MBUF_DEFAULT_BUF_SIZE, <span style="color:#a6e22e">rte_socket_id</span>());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (mbuf_pool <span style="color:#f92672">==</span> NULL)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">rte_exit</span>(EXIT_FAILURE, <span style="color:#e6db74">&#34;Cannot create mbuf pool</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* Initialize all ports. */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">RTE_ETH_FOREACH_DEV</span>(portid)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">port_init</span>(portid, mbuf_pool) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">rte_exit</span>(EXIT_FAILURE, <span style="color:#e6db74">&#34;Cannot init port %&#34;</span>PRIu16 <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,
+</span></span><span style="display:flex;"><span>					portid);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">rte_lcore_count</span>() <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">WARNING: Too many lcores enabled. Only 1 used.</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* Call lcore_main on the master core only. */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">lcore_main</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">/* clean up the EAL */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">rte_eal_cleanup</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>注意其中采用了基于分支预测的`likely和unlikely相关函数，这是一个性能优化的小技巧。要求编译的时候使用-O2的选项，否则优化不起作用。简单来说会将可能执行的机器码放在前面，提高cpu执行效率。</p>
+</blockquote>
+<ol>
+<li>调用<code>rte_eal_init</code>初始化运行环境</li>
+<li>分配内存池<code>rte_pktmbuf_pool_create</code>，此处调用了<code>rte_socket_id</code>保证访问的内存是近端的</li>
+<li><code>port_init</code>初始化网口配置</li>
+<li><code>lcore_main</code>进行主处理流程</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> rte_mempool <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">rte_pktmbuf_pool_create</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>name, <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> n,
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> cache_size, <span style="color:#66d9ef">uint16_t</span> priv_size, <span style="color:#66d9ef">uint16_t</span> data_room_size,
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> socket_id);
+</span></span></code></pre></div><p>内存池，这个mbuf pool主要是给网卡接收数据包提供mbuf的，当网卡通过DMA收到数据需要把数据包通过DMA传送到一块内存，正是这个mbuf pool中的内存。</p>
+<ul>
+<li>name：内存池名</li>
+<li>n：mp里面obj的数量，在这里表示mbuf的数量，如果你的代码缓存mbuf比较多，这里就需要设置大一些，防止不够用</li>
+<li>cache_size：mp里面cache的数量</li>
+<li>priv_size：每一个mbuf私有数据空间的大小，不需要直接设置为0即可</li>
+<li>data_room_size：mbuf的数据报文的大小，理论上需要加上room head的大小，建议使用默认值，默认2048+128 RTE_MBUF_DEFAULT_BUF_SIZE</li>
+<li>socket_id：申请内存的socket，不清楚设置那个的直接使用rte_socket_id()即可</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">rte_eth_dev_configure</span>(<span style="color:#66d9ef">uint16_t</span> port_id, <span style="color:#66d9ef">uint16_t</span> nb_rx_q, <span style="color:#66d9ef">uint16_t</span> nb_tx_q,
+</span></span><span style="display:flex;"><span>		      <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> rte_eth_conf <span style="color:#f92672">*</span>dev_conf);
+</span></span></code></pre></div><ul>
+<li>port_id：设备的port_id</li>
+<li>nb_rx_q：收队列数</li>
+<li>nb_tx_q：发送队列数</li>
+<li>dev_conf：设备相关信息，如收发模式和速率等</li>
+</ul>
+<blockquote>
+<p>配置网卡，包括网卡收包大小，网卡队列，端口和队列关联</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">rte_eth_rx_queue_setup</span>(<span style="color:#66d9ef">uint16_t</span> port_id, <span style="color:#66d9ef">uint16_t</span> rx_queue_id,
+</span></span><span style="display:flex;"><span>		       <span style="color:#66d9ef">uint16_t</span> nb_rx_desc, <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> socket_id,
+</span></span><span style="display:flex;"><span>		       <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> rte_eth_rxconf <span style="color:#f92672">*</span>rx_conf,
+</span></span><span style="display:flex;"><span>		       <span style="color:#66d9ef">struct</span> rte_mempool <span style="color:#f92672">*</span>mp);
+</span></span></code></pre></div><ul>
+<li>port_id：设备的port_id</li>
+<li>rx_queue_id：队列号，存在多个队列要每个都设置</li>
+<li>nb_rx_desc：设置队列的接收描述符(desc)的个数，也决定这接收队列的大小</li>
+<li>socket_id：numa架构下的socket id</li>
+<li>rx_conf：接收配置文件，如释放和回写的阈值等，为NULL就采用默认配置文件。</li>
+<li>rte_mempool：指向内存池的指针，从中分配网络内存缓冲区以填充接收环的每个描述符。</li>
+</ul>
+<blockquote>
+<p>发送和接收一致</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">inline</span> <span style="color:#66d9ef">uint16_t</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">rte_eth_rx_burst</span>(<span style="color:#66d9ef">uint16_t</span> port_id, <span style="color:#66d9ef">uint16_t</span> queue_id,
+</span></span><span style="display:flex;"><span>		 <span style="color:#66d9ef">struct</span> rte_mbuf <span style="color:#f92672">**</span>rx_pkts, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint16_t</span> nb_pkts);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">inline</span> <span style="color:#66d9ef">uint16_t</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">rte_eth_tx_burst</span>(<span style="color:#66d9ef">uint16_t</span> port_id, <span style="color:#66d9ef">uint16_t</span> queue_id,
+</span></span><span style="display:flex;"><span>		 <span style="color:#66d9ef">struct</span> rte_mbuf <span style="color:#f92672">**</span>tx_pkts, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint16_t</span> nb_pkts);
+</span></span></code></pre></div><ul>
+<li>port_id：设备的port_id</li>
+<li>queue_id：队列号</li>
+<li>rx_pkts：指针数组的地址，指向包的地址,必须大于nb_pkts</li>
+<li>nb_pkts：取回的数据包最大个数。该值必须可分解为8的倍数，以便与任何驱动程序合作。</li>
+</ul>
+<h3 id="l3fwd">l3fwd<a href="#l3fwd" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<h1 id="cache和内存">Cache和内存<a href="#cache和内存" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<h2 id="存储系统简介">存储系统简介<a href="#存储系统简介" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h2>
+<p>存储系统：磁盘、磁带、光盘存储器、内存和CPU内部的Cache。</p>
+<h3 id="系统架构演进">系统架构演进<a href="#系统架构演进" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h3>
+<p>早期的计算机，内存控制器还没有整合进 CPU，所有的内存访问都需要经过北桥芯片来完成。如下图所示，CPU 通过前端总线（FSB，Front Side Bus）连接到北桥芯片，然后北桥芯片连接到内存——内存控制器集成在北桥芯片里面。</p>
+<p><img src="/posts/img/cpu_fsb.jpg"/></p>
+<blockquote>
+<p>这种架构下cpu无论访问内存，设备，同时处理器之间的交换都要通过北桥，北桥成为系统瓶颈</p>
+</blockquote>
+<p>实际上现在架构中，CPU中涵盖了内存控制器，因此CPU和内存就是直连的。</p>
+<blockquote>
+<p>CPU直连的设备通常有: PCIE、DRAM、QPI(numa架构下访问远端内存需要的，实际上QPI是FSB的一种替代方案，提供了更快的传输速率)</p>
+</blockquote>
+<p>但是这种架构不同cpu逻辑核访问的都是同一块内存，因此称为UMA(一致性内存访问)，总线模型保证了所有内存访问的都是一致的，不必考虑不同内存地址之间的差距。</p>
+<blockquote>
+<p>在这种场景下，提升性能的方案就是，提升CPU频率，DRAM频率，和&quot;FSB&quot;(QPI)总线的传输速率。实际上CPU主频已经存在物理瓶颈，无法再通过提升主频提升效率，后面就是开始堆核，然后开始多CPU插槽</p>
+</blockquote>
+<blockquote>
+<p>作者注：dpdk涉及的知识体系庞大，深入理解dpdk的原理目前欠缺的知识体系较多，基础不牢地动山摇，只能一点点去补基础知识：1、计算机组成原理 （）2、操作系统 3、计算机系统基础</p>
+</blockquote>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+    <div class="pagination__title">
+        <span class="pagination__title-h">Read other posts</span>
+        <hr />
+    </div>
+    <div class="pagination__buttons">
+        
+        <span class="button previous">
+            <a href="https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/">
+                <span class="button__icon">←</span>
+                <span class="button__text">计算机是怎样跑起来的</span>
+            </a>
+        </span>
+        
+        
+        <span class="button next">
+            <a href="https://giddypoet.github.io/posts/mtu/">
+                <span class="button__text">mtu</span>
+                <span class="button__icon">→</span>
+            </a>
+        </span>
+        
+    </div>
+</div>
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2023 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>computer on GiddyPoet&#39;s Blog</title>
+    <link>https://giddypoet.github.io/categories/computer/</link>
+    <description>Recent content in computer on GiddyPoet&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 12 Apr 2022 20:20:48 +0000</lastBuildDate><atom:link href="https://giddypoet.github.io/categories/computer/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>计算机是怎样跑起来的</title>
+      <link>https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/</link>
+      <pubDate>Tue, 12 Apr 2022 20:20:48 +0000</pubDate>
+      
+      <guid>https://giddypoet.github.io/posts/%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%98%AF%E6%80%8E%E6%A0%B7%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84/</guid>
+      <description>&amp;laquo;计算机是怎么跑起来的&amp;raquo; 读书笔记 计算机三大原则 计算机的三个根本性基础 计算机是执行输入、运算、输出的机器 程序是指令和数</description>
+      <content>&lt;blockquote&gt;
+&lt;p&gt;&amp;laquo;计算机是怎么跑起来的&amp;raquo; 读书笔记&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&#34;计算机三大原则&#34;&gt;计算机三大原则&lt;/h1&gt;
+&lt;h2 id=&#34;计算机的三个根本性基础&#34;&gt;计算机的三个根本性基础&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;计算机是执行输入、运算、输出的机器&lt;/li&gt;
+&lt;li&gt;程序是指令和数据的集合&lt;/li&gt;
+&lt;li&gt;计算机的处理方式与人们的思维习惯不同&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;输入运算输出是硬件的基础&#34;&gt;输入、运算、输出是硬件的基础&lt;/h2&gt;
+&lt;p&gt;计算机是执行输入、运算、输出三种操作的机器。IC电路引脚也是围绕这个点进行设计的。&lt;/p&gt;
+&lt;h2 id=&#34;软件是指令和数据的集合&#34;&gt;软件是指令和数据的集合&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;objdump xxx
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;对计算机来说什么都是数字&#34;&gt;对计算机来说什么都是数字&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这一章围绕作者提出的计算机的三个根本性基础，举例阐述佐证了作者的观点。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&#34;试着制造一台计算机吧&#34;&gt;试着制造一台计算机吧&lt;/h1&gt;
+&lt;h2 id=&#34;制作微型计算机所必需的元件&#34;&gt;制作微型计算机所必需的元件&lt;/h2&gt;
+&lt;p&gt;基础元件：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;cpu：解释、执行程序（文中采用的是Z80 CPU）&lt;/li&gt;
+&lt;li&gt;内存：存储程序和数据（文中采用的是TC5517）&lt;/li&gt;
+&lt;li&gt;I/O：连接外部设备（文中采用的是Z80 PIO）&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;为了驱动CPU运转，时钟信号必不可少，通过高低电平切换，驱动CPU操作。简单来说时钟信号用于同步操作。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;下述其实是D触发器，当CLK为高电平的时候，当clk是1的时候，D的值就会被写进去，然后clk=0的时候，Q就会一直是之前那个D，clk是0的时候，D的值再变，Q也不会变。为什么需要clk呢，因为你的设计里面，这个寄存器在等上一个寄存器的数据，你不知道上一个寄存器的数据存好了没，是新的还是旧的，你要写进去的数据写好了没。如果每个寄存器都用不同的clk，这样设计很容易不同步async，就是我想同时写几个register，但是这个register已经写完了，那个我不知道他存好了没，全局的clk能帮助解决很多这类问题。这个clk很大程度上左右了设计里面很多东西的读写速度。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;当然，实际上的设计一般clk还会AND 一个叫enable的输入，那么当enable是0的时候，clk那边就一直是0，你要写进去这个flipflop，就需要enable=1，clk=1，这时候D就被存进去了。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://giddypoet.github.io/posts/img/register.png&#34;/&gt;&lt;/p&gt;
+&lt;p&gt;输入程序的装置也是必不可少的，通过拨动指拨开关来输入程序，8个开关作为输入元件，输出元件是8个LED。&lt;/p&gt;
+&lt;p&gt;同时还有DMA，将输入输出直接写入内存当中。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;此章节主要介绍了计算机的组成，设计到一些嵌入式单片机的知识，未做详细的描述，将其略过。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&#34;体验一次手工汇编&#34;&gt;体验一次手工汇编&lt;/h1&gt;
+&lt;p&gt;实际上通过上述计算机输入的二进制序列，实现汇编指令，驱动CPU实现指令。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这里不再赘述&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&#34;程序像河水一样流动着&#34;&gt;程序像河水一样流动着&lt;/h1&gt;
+&lt;h2 id=&#34;程序的流程分为三种&#34;&gt;程序的流程分为三种&lt;/h2&gt;
+&lt;p&gt;计算机的硬件系统由CPU、I/O和内存三部分构成。内存中存储这程序，也就是指令和数据。CPU配合着时钟发生器的时钟信号，从内存中读出指令，然后再依次对其进行解释和执行。&lt;/p&gt;
+&lt;p&gt;CPU中有各种各样的各司其职的寄存器。其中有一个被称为PC（Program Counter，程序计数器）的寄存器，负责存储内存地址，该地址指向下一条即将执行的指令，每解释执行完一条指令，PC寄存器的值就会自动被更新为下一条指令的地址。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://giddypoet.github.io/posts/img/pc_register.jpg&#34;/&gt;&lt;/p&gt;
+&lt;p&gt;实际上程序的流程总共有三种，由PC控制器控制：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;顺序执行&lt;/li&gt;
+&lt;li&gt;条件分支&lt;/li&gt;
+&lt;li&gt;循环&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;特殊的程序流程--中断处理&#34;&gt;特殊的程序流程&amp;ndash;中断处理&lt;/h2&gt;
+&lt;p&gt;处理中断&lt;/p&gt;
+&lt;hr&gt;
+&lt;blockquote&gt;
+&lt;p&gt;该书后续的介绍都较为浅显，偏入门的知识介绍，暂时不在阅读&lt;/p&gt;
+&lt;/blockquote&gt;
+</content>
+    </item>
+    
+  </channel>
+</rss>
