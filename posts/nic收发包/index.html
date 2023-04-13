@@ -84,7 +84,7 @@
   <header class="header">
   <div class="header__inner">
     <div class="header__logo">
-      <a href="/">
+      <a href="/posts">
   <div class="logo">
     GiddyPoet&#39;s Blog
   </div>
@@ -98,7 +98,7 @@
     <ul class="menu__dropdown">
       
         
-          <li><a href="/">Home</a></li>
+          <li><a href="/posts">Home</a></li>
         
       
         
@@ -110,7 +110,7 @@
         
       
         
-          <li><a href="/about/about">About</a></li>
+          <li><a href="/about">About</a></li>
         
       
       
@@ -127,7 +127,7 @@
     
       
         
-          <li><a href="/">Home</a></li>
+          <li><a href="/posts">Home</a></li>
         
       
         
@@ -139,7 +139,7 @@
         
       
         
-          <li><a href="/about/about">About</a></li>
+          <li><a href="/about">About</a></li>
         
       
       
@@ -254,26 +254,6 @@
 <p>非NAPI：每个数据包到来，都会产生硬件中断，中断处理程序将收到的包放入当前cpu的收包队列softnet_data-&gt;input_pkt_queue中，并且将非napi设备对应的虚拟设备napi结构softnet-&gt;backlog结构挂在当前cpu的待收包设备链表softnet_data-&gt;poll_list中，并触发软中断，软中断处理过程中，会调用backlog的回调处理函数process_backlog，将收包队列input_pkt_queue合并到softdata-&gt;process_queue后面，并依次处理该队列中的数据包；</p>
 
       </div></div>
-
-  
-    
-<div class="pagination">
-    <div class="pagination__title">
-        <span class="pagination__title-h">Read other posts</span>
-        <hr />
-    </div>
-    <div class="pagination__buttons">
-        
-        <span class="button previous">
-            <a href="https://giddypoet.github.io/posts/%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87/">
-                <span class="button__icon">←</span>
-                <span class="button__text">虚拟网络设备</span>
-            </a>
-        </span>
-        
-        
-    </div>
-</div>
 
   
 

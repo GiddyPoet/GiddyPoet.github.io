@@ -84,7 +84,7 @@
   <header class="header">
   <div class="header__inner">
     <div class="header__logo">
-      <a href="/">
+      <a href="/posts">
   <div class="logo">
     GiddyPoet&#39;s Blog
   </div>
@@ -98,7 +98,7 @@
     <ul class="menu__dropdown">
       
         
-          <li><a href="/">Home</a></li>
+          <li><a href="/posts">Home</a></li>
         
       
         
@@ -110,7 +110,7 @@
         
       
         
-          <li><a href="/about/about">About</a></li>
+          <li><a href="/about">About</a></li>
         
       
       
@@ -127,7 +127,7 @@
     
       
         
-          <li><a href="/">Home</a></li>
+          <li><a href="/posts">Home</a></li>
         
       
         
@@ -139,7 +139,7 @@
         
       
         
-          <li><a href="/about/about">About</a></li>
+          <li><a href="/about">About</a></li>
         
       
       
@@ -393,33 +393,6 @@
 <p>当本机发送ARP请求时，bonding驱动把对端的IP信息从ARP包中复制并保存下来。当ARP应答从对端到达时，bonding驱动把它的硬件地址提取出来，并发起一个ARP应答给bond中的某个slave(这个算法和上面一样，比如算到1口，就给发送arp请求，1回复时mac用1的mac)。使用ARP协商进行负载均衡的一个问题是：每次广播 ARP请求时都会使用bond的硬件地址，因此对端学习到这个硬件地址后，接收流量将会全部流向当前的slave。这个问题通过给所有的对端发送更新（ARP应答）来解决，往所有端口发送应答，应答中包含他们独一无二的硬件地址，从而导致流量重新分布。当新的slave加入到bond中时，或者某个未激活的slave重新激活时，接收流量也要重新分布。接收的负载被顺序地分布（round robin）在bond中最高速的slave上。</p>
 
       </div></div>
-
-  
-    
-<div class="pagination">
-    <div class="pagination__title">
-        <span class="pagination__title-h">Read other posts</span>
-        <hr />
-    </div>
-    <div class="pagination__buttons">
-        
-        <span class="button previous">
-            <a href="https://giddypoet.github.io/posts/killcx/">
-                <span class="button__icon">←</span>
-                <span class="button__text">killcx</span>
-            </a>
-        </span>
-        
-        
-        <span class="button next">
-            <a href="https://giddypoet.github.io/posts/%E4%B8%80%E6%AC%A1%E5%86%85%E5%AD%98%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E7%BB%8F%E5%8E%86/">
-                <span class="button__text">一次内存异常问题排查经历</span>
-                <span class="button__icon">→</span>
-            </a>
-        </span>
-        
-    </div>
-</div>
 
   
 
